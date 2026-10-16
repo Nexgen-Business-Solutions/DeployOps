@@ -18,11 +18,11 @@ Native Frappe application for commissioning, on-site installation and maintenanc
 - Existing Cashmatic Installation DocType is experimental and must be retired only after dependency audit/backup and authorization.
 
 ## Phased delivery and issue dependencies
-1. **Discovery and foundation**: #8 (compatibility) → #9 (app bootstrap). Technical tasks #33 and #34.
-2. **Business data and authorization**: #10–#12 (roles/profiles/job permissions), #13–#18 (ERPNext references, allocations, subscriptions, delivery notes and maintenance).
-3. **Operational workflow and native forms**: #19 (jobs), #20 (transitions) and #21 (typed checklist architecture) → #22 (responses/evidence/signatures).
-4. **First end-to-end use case**: #23 Cashmatic pre-installation and #24 Cashmatic on-site installation, backed by approved field mapping and samples.
-5. **Other checklists**: #25 BellaBot pre-installation, #26 BellaBot installation, #27 Cashmatic maintenance (verify issue titles; GitHub issue numbering can change as backlog evolves).
+1. **Discovery and foundation**: #8 (compatibility) → #9 (app bootstrap). Technical tasks #33 and #34 (confirm exact task numbers on GitHub).
+2. **Business data and authorization**: #10–#12 (roles/profiles/job permissions), #13–#17 (ERPNext references, allocations, subscriptions, delivery notes and maintenance).
+3. **Operational workflow and native forms**: #18 (jobs), #19 (transitions) and #20 (typed checklist architecture) → #21 (responses/evidence/signatures).
+4. **First end-to-end use case**: #22 Cashmatic pre-installation and #23 Cashmatic on-site installation, backed by approved field mapping and samples.
+5. **Other checklists**: #24 BellaBot pre-installation, #25 BellaBot on-site installation, #26 Cashmatic maintenance.
 6. **Reporting, QA, cleanup, release**: Reports, security tests, experimental DocType retirement and release features.
 
 ## Work sequencing rules
