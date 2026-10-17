@@ -16,7 +16,7 @@ Every statement below is labelled:
 1. **Target platform: Frappe v16 / ERPNext v16**, matching the local bench.
 2. **Local development only.** The team will not get access to Frappe Cloud, a VPS or any production or hosted staging system. All development, testing and UAT happen on the local bench.
 
-As a result, this project **does not deploy anything**. Its deliverable is a version-controlled, installable Frappe app in this GitHub repository, plus release notes. Installing it on any hosted site is outside this team's scope and is done by whoever operates that site.
+As a result, this project **does not deploy anything**. All work is delivered as a version-controlled, installable Frappe app in this GitHub repository.
 
 ## 1. Environments
 
@@ -31,7 +31,7 @@ As a result, this project **does not deploy anything**. Its deliverable is a ver
 | Node / Yarn | 24.18.0 / 1.22.22 (Frappe v16 requires Node `>=24`) |
 | MariaDB | 10.11.14 |
 | Redis | 7.0.15 |
-| wkhtmltopdf | **not installed** (see risk R5) |
+| wkhtmltopdf | **not installed** (see risk R4) |
 | Site | `deployops.local` (default site), apps: `frappe`, `erpnext` |
 | System settings | Time zone `Africa/Douala`, country Cameroon, date format `dd-mm-yyyy`, 2FA off |
 | Companies | One: `Massarie` (Cameroon, XAF) |
@@ -74,7 +74,7 @@ Section 5 (risks) and §6 (open questions) cover the effect of this.
 | Installation Note | DocType exists (0 records locally). | ARCHITECTURE §7 decision: whether sold-device installs also create or link an Installation Note. Not for rentals. |
 | Workflow | Native Frappe `Workflow` is available. | #19 can choose between a native Workflow (configurable transitions and roles) and controller-enforced states. Proposal in §4.4. |
 | Asset | DocType exists. | Not needed for V1 (ARCHITECTURE §7). |
-| PDF generation | Frappe v16 `Print Format` has a `pdf_generator` field (wkhtmltopdf or Chrome-based generator). | #27 needs one generator installed locally (R5). |
+| PDF generation | Frappe v16 `Print Format` has a `pdf_generator` field (wkhtmltopdf or Chrome-based generator). | #27 needs one generator installed locally (R4). |
 
 ## 3. Compatibility conclusion (DECIDED)
 DeployOps targets **Frappe v16 / ERPNext v16 only**:
@@ -85,29 +85,29 @@ DeployOps targets **Frappe v16 / ERPNext v16 only**:
 
 The local bench already satisfies all of these.
 
-## 4. Development and release approach (PROPOSAL)
+## 4. Development approach (PROPOSAL)
 
 ### 4.1 Pipeline (local only)
+**DECIDED:** nothing is pushed to GitHub until all the work is complete. Branches, commits and reviews stay on the local machine until then.
 ```
 deployops.local (develop)
-   → feature branch + PR (feature/<issue>-<slug>)
-   → tests on deployops-test.local   (+ GitHub Actions CI: fresh v16 bench, install app, run tests)
-   → review + merge to main
+   → local feature branch (feature/<issue>-<slug>), small commits
+   → tests on deployops-test.local (bench run-tests --app deployops)
+   → owner review of the local branch (diff + test output)
+   → merge into local main
    → fresh install / migrate on deployops-uat.local and run the UAT scenarios
    → owner acceptance
-   → tag a release (vX.Y.Z) with release notes: install steps, patches, rollback notes
+   → (once everything is complete) push to GitHub
 ```
-Nothing is deployed to a hosted environment by this team. Anyone installing a release elsewhere uses the standard `bench get-app` / `bench --site <site> install-app deployops` / `bench migrate` with the release notes.
 
-### 4.2 GitHub Actions CI
-- GitHub-hosted runners only. They need no access to any company server.
-- Each run sets up MariaDB and Redis services, a fresh `version-16` bench with ERPNext, installs DeployOps on a throwaway site and runs `bench run-tests --app deployops`.
-- If the organisation does not allow Actions on private repos (minutes or billing), the fallback is running the same test command locally and attaching the output to each PR (Q3).
+### 4.2 Tests and CI
+- During development, tests run only on the local bench. Each feature's test output is recorded with its merge, as evidence.
+- A GitHub Actions workflow is written in #34 so CI is ready when the code is pushed. Each run sets up MariaDB and Redis services, a fresh `version-16` bench with ERPNext, installs DeployOps on a throwaway site and runs `bench run-tests --app deployops`. It only starts running after the push (Q2).
 
 ### 4.3 Schema and data change rules
 - All DocTypes are defined as JSON in the app module, so they are version controlled. **No Customize Form or "custom" DocTypes created through the UI.**
 - Fields added to ERPNext DocTypes (e.g. a link from Delivery Note to a DeployOps Job) are created by code (`create_custom_fields` in `after_install` plus a patch), tagged with the DeployOps module. ERPNext core is never edited.
-- Data changes go through idempotent patches in `patches.txt`. Each patch is tested on a fresh site (`deployops-test.local`) **and** as an upgrade on `deployops-uat.local` carrying data from the previous release.
+- Data changes go through idempotent patches in `patches.txt`. Each patch is tested on a fresh site (`deployops-test.local`) **and** as an upgrade on `deployops-uat.local` carrying data from the previous version.
 - No fixture may contain customer data, credentials or employee personal data.
 
 ### 4.4 Workflow engine for #19 (initial recommendation, decided in #19)
@@ -118,7 +118,6 @@ Use controller-enforced states with an explicit transition table and server-side
 2. Code rollback: check out the previous commit or tag and run `bench migrate`.
 3. Data rollback: restore the site from the pre-migrate backup (`bench --site <site> restore ...`). Every patch documents whether it is reversible.
 4. **Do not** use `bench remove-app` / uninstall as a rollback. It drops DeployOps DocTypes and their data.
-5. Each release's notes state the rollback steps for anyone installing it elsewhere. Running them on a hosted site is that operator's responsibility.
 
 ### 4.6 Repository hygiene (needs repo admin to apply)
 - Enable branch protection on `main`: PR required, 1 approving review, CI must pass, no force-push.
@@ -128,29 +127,27 @@ Use controller-enforced states with an explicit transition table and server-side
 
 | # | Risk | Likelihood / impact | Mitigation |
 |---|---|---|---|
-| R1 | No access to production. If the app is later installed on a real site, that site's customisations, data, Stock Settings or minor version may differ from the local bench | Confirmed / High | Pin v16 in `pyproject.toml`; keep ERPNext core untouched; avoid depending on site-specific customisations; release notes list prerequisites (serialised Items, Stock Settings); Q1 |
-| R2 | The legacy `Cashmatic Installation` DocType is not on the local site, so #31 (retirement audit) cannot be done by this team | Confirmed / Medium | DeployOps must never depend on it. #31 is reduced to a written retirement procedure for the site operator, or deferred (Q2) |
-| R3 | All test data is synthetic. Real-world serial, Delivery Note and Subscription patterns may differ from what we assume | Confirmed / Medium | Build fixtures from the FUNCTIONAL_SPEC §8 scenarios; owner reviews the demo data model (Q4) |
-| R4 | `main` unprotected, no CI | Confirmed / Medium | §4.6, Q3 |
-| R5 | wkhtmltopdf is not installed locally, so PDF reports (#27) cannot be rendered yet | Confirmed / Medium | Install wkhtmltopdf 0.12.6 (patched Qt) or use the v16 Chrome generator; decide in #27 (Q5) |
-| R6 | Sensitive data: the sample PDF contains credentials and PII, and `docs/CHECKLIST_SPECS.md` line 3 names the sample customer/site | Confirmed / Medium | Owner decides whether to anonymise that line (Q6); never use the sample in fixtures |
-| R7 | Multi-company: local has one company; a real site may have more | Unknown / Medium | Permission tests (#12, #35) create a second company regardless (Q7) |
-| R8 | Board automation: `gh` token lacks project scope | Confirmed / Low | `gh auth refresh -s read:project,project` |
-| R9 | One local machine. Disk failure or WSL reset loses unpushed work and local sites | Low / Medium | Push branches often; sites can be rebuilt from the repo and fixtures |
+| R1 | The legacy `Cashmatic Installation` DocType is not on the local site, so #31 (retirement audit) cannot be done locally | Confirmed / Medium | DeployOps must never depend on it. #31 is reduced to a written retirement procedure, or deferred (Q1) |
+| R2 | All test data is synthetic. Real-world serial, Delivery Note and Subscription patterns may differ from what we assume | Confirmed / Medium | Build fixtures from the FUNCTIONAL_SPEC §8 scenarios; owner reviews the demo data model (Q3) |
+| R3 | `main` unprotected, no CI | Confirmed / Medium | §4.6, Q2 |
+| R4 | wkhtmltopdf is not installed locally, so PDF reports (#27) cannot be rendered yet | Confirmed / Medium | Install wkhtmltopdf 0.12.6 (patched Qt) or use the v16 Chrome generator; decide in #27 (Q4) |
+| R5 | Sensitive data: the sample PDF contains credentials and PII, and `docs/CHECKLIST_SPECS.md` line 3 names the sample customer/site | Confirmed / Medium | Owner decides whether to anonymise that line (Q5); never use the sample in fixtures |
+| R6 | Multi-company: local has one company | Unknown / Medium | Permission tests (#12, #35) create a second company regardless (Q6) |
+| R7 | Board automation: `gh` token lacks project scope | Confirmed / Low | `gh auth refresh -s read:project,project` |
+| R8 | One local machine. Disk failure or WSL reset loses unpushed work and local sites | Low / Medium | Push branches often; sites can be rebuilt from the repo and fixtures |
 
 ## 6. Open questions for the product owner
 
 | # | Question | Blocks |
 |---|---|---|
 | ~~Q0~~ | ~~Production version / Frappe Cloud access / staging~~ | **Answered:** v16, local only (§0) |
-| Q1 | Is the deliverable a **tagged release in this GitHub repo** (app + release notes), with installation elsewhere handled by someone else? Who is that, if anyone? | #32 |
-| Q2 | #31 (retire experimental `Cashmatic Installation`): the DocType is not available locally. Should #31 become "write a retirement procedure" only, or be deferred or closed? | #31 |
-| Q3 | Are GitHub Actions allowed (minutes or billing) on this private repo? If not, local test output attached to PRs is the test evidence. | #9 / #34 |
-| Q4 | Can the owner provide **anonymised** examples of real Item / Serial No naming, Delivery Note shape and Subscription setup, so synthetic data is realistic? (No real customer data.) | #13–#16 |
-| Q5 | PDF reports: is wkhtmltopdf or the Chrome-based generator preferred? | #27 |
-| Q6 | Should the customer/site name in `docs/CHECKLIST_SPECS.md` (line 3) be anonymised? | Hygiene |
-| Q7 | Should DeployOps jobs be company-scoped (multi-company support), even though local has one company? | #10–#12 |
-| Q8 | Who approves PRs and accepts UAT: the same person, or a separate reviewer? | All features |
+| Q1 | #31 (retire experimental `Cashmatic Installation`): the DocType is not available locally. Should #31 become "write a retirement procedure" only, or be deferred or closed? | #31 |
+| Q2 | When the code is pushed, are GitHub Actions allowed (minutes or billing) on this private repo? If not, local test output is the test evidence. | #34 |
+| Q3 | Can the owner provide **anonymised** examples of real Item / Serial No naming, Delivery Note shape and Subscription setup, so synthetic data is realistic? (No real customer data.) | #13–#16 |
+| Q4 | PDF reports: is wkhtmltopdf or the Chrome-based generator preferred? | #27 |
+| Q5 | Should the customer/site name in `docs/CHECKLIST_SPECS.md` (line 3) be anonymised? | Hygiene |
+| Q6 | Should DeployOps jobs be company-scoped (multi-company support), even though local has one company? | #10–#12 |
+| Q7 | Who approves PRs and accepts UAT: the same person, or a separate reviewer? | All features |
 
 ## 7. Manual verification performed (evidence for #33)
 1. `git -C apps/{frappe,erpnext} describe --tags`: `v16.52.0`, `v16.51.1`.
@@ -161,4 +158,4 @@ Use controller-enforced states with an explicit transition table and server-side
 No hosted or production system was accessed. None is in scope.
 
 ## 8. Next step after approval
-Start #9 / #34. Create the installable app skeleton in this repo (`pyproject.toml`, `hooks.py`, a `DeployOps` module, an empty workspace, the test bootstrap and a GitHub Actions CI on v16), create `deployops-test.local`, install the app on the local sites only, and open a PR. No DocTypes for business objects until #18 / #20 are planned and approved.
+Start #9 / #34. Create the installable app skeleton in this repo (`pyproject.toml`, `hooks.py`, a `DeployOps` module, an empty workspace, the test bootstrap and a GitHub Actions CI on v16), create `deployops-test.local`, install the app on the local sites only, and commit on a local branch for review (no push). No DocTypes for business objects until #18 / #20 are planned and approved.
