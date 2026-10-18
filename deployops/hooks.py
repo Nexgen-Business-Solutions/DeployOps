@@ -292,7 +292,17 @@ website_route_rules = [
 # Technicians only see jobs assigned to them (#18). Broader job scoping is #12.
 permission_query_conditions = {
 	"DeployOps Job": "deployops.security.job_permissions.job_query_conditions",
+	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_query_conditions",
 }
 has_permission = {
 	"DeployOps Job": "deployops.security.job_permissions.job_has_permission",
+	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_has_permission",
+}
+
+# ERPNext deliveries close sale reservations (#14). Read-only on the Delivery Note itself.
+doc_events = {
+	"Delivery Note": {
+		"on_submit": "deployops.equipment.allocations.on_delivery_note_submit",
+		"on_cancel": "deployops.equipment.allocations.on_delivery_note_cancel",
+	},
 }

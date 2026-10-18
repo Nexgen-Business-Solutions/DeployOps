@@ -5,6 +5,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from deployops.api.sources import visible_lines
+from deployops.equipment import allocations
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
 from deployops.security.equipment_access import get_allowed_items, get_category_items, is_unrestricted
@@ -53,6 +54,10 @@ class DeployOpsJob(Document):
 		self.validate_equipment_category()
 		self.validate_no_double_booking()
 		self.validate_assigned_technician()
+
+	def on_update(self):
+		# Reserve, release or deploy machines to match the job (#14).
+		allocations.sync_job(self)
 
 	def set_source_details(self, snapshot: dict):
 		"""Customer, contact and site as confirmed on the source, kept as a read-only snapshot."""
@@ -170,6 +175,15 @@ class DeployOpsJob(Document):
 
 			erpnext_sources.validate_serial(row.serial_no, row.item_code, self.company)
 
+			if self.source_doctype == erpnext_sources.SUBSCRIPTION:
+				allocated = {r.serial_no for r in allocations.active_rental_serials(self.source_name)}
+				if row.serial_no not in allocated:
+					frappe.throw(
+						_(
+							"Row #{0}: Serial No {1} is not allocated to subscription {2}; reserve it first."
+						).format(row.idx, row.serial_no, self.source_name)
+					)
+
 			listed = source_serials.get(row.item_code)
 			if listed and row.serial_no not in listed:
 				frappe.throw(
@@ -264,11 +278,24 @@ def devices_from_source(source, snapshot: dict, user: str | None = None) -> list
 		frappe.get_all("Item", filters={"name": ["in", item_codes or [""]], "has_serial_no": 1}, pluck="name")
 	)
 	allowed = None if is_unrestricted(user) else get_allowed_items(user)
-	delivered = (
-		erpnext_sources.get_delivered_serials(source.name)
-		if source.doctype == erpnext_sources.SALES_ORDER
-		else {}
-	)
+	if source.doctype == erpnext_sources.SUBSCRIPTION:
+		# A subscription bills a service; its machines are the ones allocated to it (#14).
+		return [
+			{"item_code": row.item_code, "serial_no": row.serial_no}
+			for row in allocations.active_rental_serials(source.name)
+			if allowed is None or row.item_code in allowed
+		]
+
+	delivered = {}
+	if source.doctype == erpnext_sources.SALES_ORDER:
+		delivered = erpnext_sources.get_delivered_serials(source.name)
+		for row in frappe.get_all(
+			"DeployOps Equipment Allocation",
+			filters={"source_doctype": source.doctype, "source_name": source.name, "status": "Reserved"},
+			fields=["item_code", "serial_no"],
+			order_by="creation",
+		):
+			delivered.setdefault(row.item_code, []).append(row.serial_no)
 
 	devices = []
 	for line in snapshot["lines"]:
