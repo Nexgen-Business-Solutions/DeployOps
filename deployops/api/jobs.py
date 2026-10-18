@@ -8,6 +8,7 @@ from deployops.deployops.doctype.deployops_job.deployops_job import devices_from
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
+from deployops.workflow import job_workflow
 
 
 @frappe.whitelist(methods=["POST"])
@@ -147,3 +148,24 @@ def technician_link_query(
 	)
 	matches = [[user.name, user.full_name] for user in users if item_codes <= get_allowed_items(user.name)]
 	return matches[int(start or 0) : int(start or 0) + int(page_len or 20)]
+
+
+@frappe.whitelist()
+def get_actions(job: str) -> dict:
+	"""Workflow actions the current user may take on this job and on each of its machines."""
+	require_deployops_role()
+	doc = frappe.get_doc("DeployOps Job", job)
+	doc.check_permission("read")
+	return {"job": job_workflow.get_job_actions(doc), "devices": job_workflow.get_device_actions(doc)}
+
+
+@frappe.whitelist(methods=["POST"])
+def job_action(job: str, action: str, reason: str | None = None) -> str:
+	require_deployops_role()
+	return job_workflow.apply_job_action(job, action, reason)
+
+
+@frappe.whitelist(methods=["POST"])
+def device_action(job: str, device: str, action: str, reason: str | None = None) -> str:
+	require_deployops_role()
+	return job_workflow.apply_device_action(job, device, action, reason)
