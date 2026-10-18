@@ -95,7 +95,9 @@ home_page = "frontend"
 # Installation
 # ------------
 
-# before_install = "deployops.install.before_install"
+# Roles must exist before DocTypes and the workspace that reference them are synced.
+before_install = "deployops.install.create_roles"
+before_migrate = "deployops.install.create_roles"
 # after_install = "deployops.install.after_install"
 
 # Uninstallation

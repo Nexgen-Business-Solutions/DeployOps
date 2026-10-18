@@ -10,7 +10,8 @@ no_cache = 1
 def get_context():
 	if frappe.session.user == "Guest":
 		frappe.local.flags.redirect_location = "/login?" + urlencode({"redirect-to": frappe.request.path})
-		raise frappe.Redirect
+		# 302, not Frappe's default 301: browsers cache 301s and would keep sending "/" to /login.
+		raise frappe.Redirect(302)
 
 	csrf_token = frappe.sessions.get_csrf_token()
 	context = frappe._dict()
