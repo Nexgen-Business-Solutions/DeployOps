@@ -243,6 +243,18 @@ All three are enforced **on the server** and apply to:
 
 Hiding a menu item is not security.
 
+### Roles
+The roles ship with the app and are created automatically on install and on every migrate. Assign them in **User → Roles**.
+
+| Role | Alias | Desk | React |
+|---|---|---|---|
+| DeployOps Technician | Technician | ❌ | ✅ |
+| DeployOps Supervisor | Supervisor | ✅ | ✅ |
+| DeployOps Manager | Manager | ✅ | ✅ |
+| DeployOps Administrator | Admin | ✅ | ✅ |
+
+What each role may do on each object, the ERPNext exceptions and the test coverage are in [`docs/PERMISSION_MATRIX.md`](docs/PERMISSION_MATRIX.md). The code version is `deployops/security/matrix.py`.
+
 ---
 
 ## Workflow
@@ -407,7 +419,7 @@ bench --site deployops.local set-config allow_tests true
 bench --site deployops.local run-tests --app deployops
 ```
 
-Each test runs inside a transaction that is rolled back afterwards, so test data does not remain on the site.
+Uncommitted test data is rolled back at the end of each test class. HTTP tests commit their users and records and delete them again in cleanup, so no test data remains on the site.
 
 - Tests create their own anonymised data: company, serialised items, customers, orders, deliveries, subscriptions and maintenance visits.
 - Permission tests always include a user **without** the right role, profile or assignment.
@@ -489,6 +501,7 @@ deployops/                       ← repository root (apps/deployops)
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Data ownership, candidate objects, permissions, lifecycle |
 | [`docs/CHECKLIST_SPECS.md`](docs/CHECKLIST_SPECS.md) | Source mapping for the five checklists |
 | [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md) | Verified versions, environments, ERPNext v16 findings, risks |
+| [`docs/PERMISSION_MATRIX.md`](docs/PERMISSION_MATRIX.md) | Roles, role × object rights, ERPNext exceptions, security tests, UAT steps |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding assistants |
 
 Where these documents disagree, work stops until the product owner decides.

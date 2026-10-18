@@ -3,6 +3,8 @@ from frappe.desk.desktop import Workspace
 from frappe.tests import IntegrationTestCase
 from frappe.tests.classes.context_managers import set_user
 
+from deployops.security.matrix import WORKSPACE_ROLES
+
 NO_ROLE_USER = "deployops-no-role@example.com"
 
 
@@ -17,10 +19,10 @@ class TestInstall(IntegrationTestCase):
 	def test_module_belongs_to_app(self):
 		self.assertEqual(frappe.db.get_value("Module Def", "DeployOps", "app_name"), "deployops")
 
-	def test_workspace_is_restricted_to_system_manager(self):
+	def test_workspace_is_restricted_to_desk_roles(self):
 		workspace = frappe.get_doc("Workspace", "DeployOps")
 		self.assertEqual(workspace.module, "DeployOps")
-		self.assertEqual([d.role for d in workspace.roles], ["System Manager"])
+		self.assertEqual({d.role for d in workspace.roles}, set(WORKSPACE_ROLES))
 
 	def test_workspace_hidden_from_user_without_role(self):
 		if not frappe.db.exists("User", NO_ROLE_USER):
