@@ -57,6 +57,8 @@ def make_item(code: str, serialized: bool = True) -> str:
 
 
 def make_customer(name: str, contact: str | None = None, address: str | None = None) -> str:
+	if frappe.db.exists("Customer", name):
+		return name
 	db_insert(
 		{
 			"doctype": "Customer",
@@ -194,3 +196,43 @@ def make_maintenance_schedule(customer: str, rows: list[dict], docstatus: int = 
 		},
 		docstatus=docstatus,
 	)
+
+
+def purge(company: str = COMPANY, names: dict | None = None):
+	"""Remove committed fixtures (HTTP tests must commit). Submitted rows are deleted directly.
+
+	names: extra {doctype: [names]} to delete, e.g. Items, Users, Jobs, Files.
+	"""
+	children = {
+		"Sales Order": ["Sales Order Item"],
+		"Delivery Note": ["Delivery Note Item"],
+		"Subscription": ["Subscription Plan Detail"],
+		"Maintenance Visit": ["Maintenance Visit Purpose"],
+		"Maintenance Schedule": ["Maintenance Schedule Item"],
+		"Serial and Batch Bundle": ["Serial and Batch Entry"],
+	}
+	for parent, child_tables in children.items():
+		parents = frappe.get_all(parent, filters={"company": company}, pluck="name")
+		if parents:
+			for child in child_tables:
+				frappe.db.delete(child, {"parent": ["in", parents]})
+			frappe.db.delete(parent, {"name": ["in", parents]})
+	frappe.db.delete("Serial No", {"company": company})
+
+	# Try every delete, so one failure cannot leave the rest behind; report failures at the end.
+	failures = []
+	for doctype, doc_names in (names or {}).items():
+		for name in doc_names:
+			if not frappe.db.exists(doctype, name):
+				continue
+			try:
+				# File's on_trash removes the stored file, so it must run for Files.
+				frappe.delete_doc(
+					doctype, name, force=True, ignore_permissions=True, ignore_on_trash=doctype != "File"
+				)
+			except Exception as e:
+				failures.append(f"{doctype} {name}: {e}")
+	if frappe.db.exists("Company", company):
+		frappe.db.delete("Company", {"name": company})
+	if failures:
+		raise AssertionError("Fixture cleanup failed:\n" + "\n".join(failures))
