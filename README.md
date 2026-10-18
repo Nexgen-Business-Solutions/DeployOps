@@ -5,11 +5,20 @@
 [![ERPNext](https://img.shields.io/badge/ERPNext-16-0089FF)](https://erpnext.com/)
 [![MariaDB](https://img.shields.io/badge/MariaDB-10.11-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 
 **DeployOps** is a native Frappe application for **equipment preparation, installation, commissioning and maintenance** on top of ERPNext.
 
-It replaces external Jotform checklists with **native Frappe forms** linked directly to existing ERPNext records: Customer, Item, Serial No, Sales Order, Delivery Note, Subscription, Maintenance Schedule and Maintenance Visit. Technicians work from verified customer, product and serial data instead of retyping it. Every checklist, photo, signature and decision is traceable to the physical device and the business document it came from.
+It replaces external Jotform checklists with **native Frappe DocTypes** linked directly to existing ERPNext records: Customer, Item, Serial No, Sales Order, Delivery Note, Subscription, Maintenance Schedule and Maintenance Visit. Technicians work from verified customer, product and serial data instead of retyping it. Every checklist, photo, signature and decision is traceable to the physical device and the business document it came from.
+
+DeployOps has two user interfaces on the same site:
+- a **React frontend** served at `/`, for day-to-day operational work;
+- **Frappe Desk** at `/desk`, for administration and configuration.
+
+Both read and write the same DocTypes through Frappe's server-side permissions.
 
 > **Status:** early development. The installable app skeleton exists. Business features are built one at a time, following the [roadmap](#roadmap).
 
@@ -21,6 +30,7 @@ It replaces external Jotform checklists with **native Frappe forms** linked dire
 - [Core principles](#core-principles)
 - [Business journeys](#business-journeys)
 - [Architecture](#architecture)
+- [Frontend (React)](#frontend-react)
 - [Security model](#security-model)
 - [Workflow](#workflow)
 - [Checklists in scope](#checklists-in-scope)
@@ -78,7 +88,7 @@ ERPNext stays the **system of record** for commercial, stock and maintenance dat
 
 These come from the approved product rules in [`AGENTS.md`](AGENTS.md) and [`ROADMAP.md`](ROADMAP.md). They are not optional.
 
-- **Native Frappe forms**, never embedded Jotform.
+- **Native Frappe data model**, never embedded Jotform. Every form is backed by a DeployOps DocType, whether it is shown in the React frontend or in Desk.
 - **No second master data.** ERPNext Customer, Contact, Address, Item, Serial No and the sales, delivery, subscription and maintenance documents remain the primary records.
 - **Serial No is the identity of each physical device.**
 - **Subscription is for billing only.** Rental billing uses ERPNext Subscription. DeployOps separately tracks which serial is allocated, returned or swapped.
@@ -125,23 +135,26 @@ Maintenance Visit (and Maintenance Schedule where present)
 ## Architecture
 
 ```text
-┌───────────────────────────────────────────────┐
-│           Frappe Desk (native forms)          │
-│   DocType forms · list views · print formats  │
-└───────────────────────┬───────────────────────┘
-                        │
-┌───────────────────────▼───────────────────────┐
-│            DeployOps (Python app)             │
-│  Controllers & validation · permission hooks  │
-│  Workflow rules · patches · whitelisted APIs  │
-└───────────────────────┬───────────────────────┘
-                        │
-┌───────────────────────▼───────────────────────┐
-│          ERPNext 16 / Frappe 16 (v16)         │
-│  Serial and Batch Bundle · Subscription       │
-│  Maintenance Visit · Stock ledger (read only) │
-└───────────────────────────────────────────────┘
+┌──────────────────────────────┐   ┌───────────────────────────────┐
+│   React frontend  ( / )      │   │   Frappe Desk  ( /desk )      │
+│ React 19 · TypeScript · Vite │   │ DocType forms · list views    │
+│ frappe-react-sdk             │   │ print formats · admin/config  │
+└──────────────┬───────────────┘   └───────────────┬───────────────┘
+               │  /api (session + CSRF)            │
+┌──────────────▼───────────────────────────────────▼───────────────┐
+│                     DeployOps (Python app)                       │
+│   Controllers & validation · permission hooks · whitelisted APIs │
+│   Workflow rules · patches                                       │
+└────────────────────────────────┬─────────────────────────────────┘
+                                 │
+┌────────────────────────────────▼─────────────────────────────────┐
+│                    ERPNext 16 / Frappe 16 (v16)                  │
+│   Serial and Batch Bundle · Subscription · Maintenance Visit     │
+│   Stock ledger (read only)                                       │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+All business rules and permission checks live in the Python app. The React frontend is a client only: it never decides who may see or change what.
 
 ### Planned objects
 These are **candidates**. Final schemas are decided in #18 and #20 before they are created.
@@ -161,6 +174,53 @@ Verified in [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md).
 - **Subscription has no item or serial field**, so rental devices need an explicit allocation record.
 - **Maintenance Visit Purpose** carries `item_code` and `serial_no`, so maintenance checklists link per serial.
 - DeployOps **reads** Serial No. It never writes `status`, `warehouse` or `customer`.
+
+---
+
+## Frontend (React)
+
+The operational UI is a React single-page app in [`frontend/`](frontend/). It was scaffolded with [Doppio](https://github.com/NagariaHussain/doppio) (`bench add-spa`).
+
+| Item | Value |
+|---|---|
+| Stack | React 19, TypeScript 6, Vite 8, `frappe-react-sdk`, oxlint |
+| Source | `frontend/src/` |
+| Served at | `/` on the site, e.g. `http://deployops.local:8004/` |
+| Desk | `/desk` (`/app` redirects there) |
+| Build output | `deployops/public/frontend/` and `deployops/www/frontend.html` (generated, git-ignored) |
+| Page controller | `deployops/www/frontend.py` (login check, CSRF token, boot data) |
+
+### URL routing
+Set in `deployops/hooks.py`:
+
+| URL | Served by |
+|---|---|
+| `/` | React (`home_page = "frontend"`) |
+| `/<anything>` | React (catch-all `website_route_rules`) |
+| `/login`, `/update-password`, `/printview`, `/message` | Frappe (explicit rules listed before the catch-all) |
+| `/desk/...`, `/app/...` | Frappe Desk |
+| `/api/...`, `/assets/...`, `/files/...`, `/private/...` | Frappe (never routed to React) |
+
+If another Frappe website page has to stay reachable, add an exact rule for it **above** the catch-all. Otherwise React serves it.
+
+### Authentication
+- `frontend.py` redirects guests to `/login?redirect-to=<requested path>`. The React page is never served to a user who isn't logged in.
+- Every request to `/api` runs with the user's session and CSRF token, so DocType permissions, permission hooks and equipment/job restrictions apply exactly as in Desk.
+
+### Commands
+```bash
+# from apps/deployops
+yarn install                 # installs root and frontend/ dependencies (postinstall)
+yarn dev                     # Vite dev server on :8080 with hot reload
+yarn build                   # production build into deployops/public/frontend
+```
+- **Dev server:** `bench start` must be running. Open `http://deployops.local:8080`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
+- **Production build:** `bench build` (or `bench build --app deployops`) also runs `yarn build` for this app, because the root `package.json` has a `build` script.
+
+### Frontend rules
+- No permission logic in React. Hide buttons for usability if needed, but the server must refuse the action anyway.
+- No secrets, passwords, OTPs or pairing codes in frontend state, local storage, logs or bundles.
+- Talk to Frappe only through `/api` (resources and whitelisted methods). Never bypass DocType validation.
 
 ---
 
@@ -289,6 +349,7 @@ From the bench directory:
 bench get-app git@github.com:Nexgen-Business-Solutions/DeployOps.git --branch main
 bench --site <your-site> install-app deployops
 bench --site <your-site> migrate
+bench build --app deployops        # builds the React frontend too
 ```
 
 - The repository is called `DeployOps`, but the app is called `deployops`. `bench get-app` renames the folder to `apps/deployops` automatically.
@@ -299,6 +360,8 @@ Check the result:
 ```bash
 bench --site <your-site> list-apps
 ```
+
+Then open `http://<your-site>:<port>/` for the React frontend, or `/desk` for Frappe Desk.
 
 ---
 
@@ -317,7 +380,15 @@ cd ~/frappe/massarie_project
 bench start                                   # run the dev server
 bench --site deployops.local migrate          # apply schema and patches
 bench --site deployops.local clear-cache
+
+cd apps/deployops && yarn dev                 # React dev server on :8080 (needs bench start)
 ```
+
+| URL | What |
+|---|---|
+| `http://deployops.local:8004/` | Built React frontend, served by Frappe |
+| `http://deployops.local:8004/desk` | Frappe Desk |
+| `http://deployops.local:8080/` | React dev server with hot reload |
 
 ### Schema and data rules
 - DocTypes are defined as JSON in this app. **Do not** create them with Customize Form or through the UI.
@@ -363,6 +434,14 @@ Configured tools:
 - **prettier** and **eslint** for JavaScript;
 - **pre-commit-hooks**: trailing whitespace, merge conflicts, AST, JSON, TOML, YAML and debug statements.
 
+Pre-commit does not check `.ts` / `.tsx` files. For the React frontend, run:
+
+```bash
+cd frontend
+yarn lint                    # oxlint
+npx tsc -b                   # type check (vite build does not type-check)
+```
+
 ---
 
 ## Project structure
@@ -375,12 +454,23 @@ deployops/                       ← repository root (apps/deployops)
 │   ├── CHECKLIST_SPECS.md
 │   ├── COMPATIBILITY_REPORT.md
 │   └── FUNCTIONAL_SPEC.md
+├── frontend/                    ← React SPA (source)
+│   ├── src/
+│   ├── index.html
+│   ├── package.json
+│   ├── proxyOptions.ts          ← dev-server proxy to the bench
+│   └── vite.config.ts
 ├── deployops/                   ← Python package
 │   ├── deployops/               ← "DeployOps" module (DocTypes, workspace)
 │   ├── config/
 │   ├── patches/
 │   ├── public/
+│   │   └── frontend/            ← React build output (generated, git-ignored)
 │   ├── templates/
+│   ├── tests/
+│   ├── www/
+│   │   ├── frontend.py          ← page controller for the React app
+│   │   └── frontend.html        ← React entry page (generated, git-ignored)
 │   ├── hooks.py
 │   ├── modules.txt
 │   └── patches.txt
@@ -388,6 +478,7 @@ deployops/                       ← repository root (apps/deployops)
 ├── ROADMAP.md
 ├── README.md
 ├── license.txt
+├── package.json                 ← yarn scripts: dev, build, postinstall
 └── pyproject.toml
 ```
 
@@ -418,6 +509,10 @@ Where these documents disagree, work stops until the product owner decides.
 | Missing assets or stale UI | `bench build --app deployops` then `bench --site <site> clear-cache` |
 | Schema changes not applied | `bench --site <site> migrate` |
 | PDF printing fails | Install wkhtmltopdf 0.12.6 (patched Qt) or switch the Print Format to the Chrome generator |
+| `/` shows a blank page or 404 | The frontend was never built: `bench build --app deployops` (or `yarn build`) |
+| A Frappe page (e.g. `/me`) opens the React app | Add an exact rule for it above the catch-all in `website_route_rules`, then `bench --site <site> clear-cache` |
+| Route changes in `hooks.py` have no effect | `bench --site <site> clear-cache`. Route rules are cached |
+| `yarn dev` API calls fail | `bench start` must be running; the proxy reads `webserver_port` from `sites/common_site_config.json` |
 
 ---
 

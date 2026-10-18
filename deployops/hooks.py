@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -67,7 +67,7 @@ app_license = "mit"
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+home_page = "frontend"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -277,3 +277,12 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+# The React frontend is served at "/". Frappe's own website pages are listed first so the
+# catch-all does not swallow them (exact routes always win over the <path:> converter).
+website_route_rules = [
+	{"from_route": "/login", "to_route": "login"},
+	{"from_route": "/update-password", "to_route": "update-password"},
+	{"from_route": "/printview", "to_route": "printview"},
+	{"from_route": "/message", "to_route": "message"},
+	{"from_route": "/<path:app_path>", "to_route": "frontend"},
+]
