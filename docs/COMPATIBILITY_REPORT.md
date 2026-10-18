@@ -43,12 +43,8 @@ The local bench already meets all of these.
 | Companies | One: `Massarie` (Cameroon, XAF) |
 | Data | Empty development site: no Customers, Items, Serial Nos, Sales Orders, Delivery Notes, Subscriptions or Maintenance Visits/Schedules; 3 users |
 
-### 3.2 Proposed local sites
-| Site | Purpose |
-|---|---|
-| `deployops.local` | Day-to-day development and manual demos |
-| `deployops-test.local` | Automated tests (`allow_tests: true`); rebuilt whenever needed |
-| `deployops-uat.local` | Stands in for staging. The app is installed fresh, `bench migrate` is run, and the FUNCTIONAL_SPEC §8 scenarios are demonstrated with anonymised demo data |
+### 3.2 Site
+All development and testing uses the existing `deployops.local` site.
 
 ### 3.3 Repository
 - `Nexgen-Business-Solutions/DeployOps`, private, default branch `main`. The local remote is named `upstream`.
@@ -79,20 +75,18 @@ The local bench already meets all of these.
 
 ### 5.1 Installing the app locally
 ```
-bench get-app <path or repo> deployops      # app lives in apps/DeployOps
+bench get-app <path or repo> deployops      # app lives in apps/deployops
 bench --site deployops.local install-app deployops
 bench --site deployops.local migrate
 ```
-The same steps apply to `deployops-test.local` and `deployops-uat.local`.
 
 ### 5.2 Development flow
 ```
 deployops.local (develop)
-   → local feature branch (feature/<issue>-<slug>)
-   → tests on deployops-test.local (bench run-tests --app deployops)
+   → task branch (task/<issue>-<slug>)
+   → tests on deployops.local (bench run-tests --app deployops)
    → owner review and approval of the changes and test output
-   → commit and merge (only after approval)
-   → fresh install / migrate on deployops-uat.local and run the UAT scenarios
+   → commit and push (only after approval)
    → owner acceptance
 ```
 A GitHub Actions workflow is written in #34 so CI is ready once code is pushed. It runs a fresh `version-16` bench with ERPNext, installs DeployOps on a throwaway site and runs the tests.
