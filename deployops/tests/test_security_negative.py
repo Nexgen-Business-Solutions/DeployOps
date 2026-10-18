@@ -15,7 +15,7 @@ from frappe.utils import get_test_client, get_url, set_request
 
 import deployops
 from deployops.roles import ALL_ROLES
-from deployops.security.matrix import ERPNEXT_DENIED, erpnext_allowed
+from deployops.security.matrix import DOCTYPE_MATRIX, ERPNEXT_DENIED, allowed, erpnext_allowed
 from deployops.tests.utils import make_role_user
 
 TEST_CUSTOMER = "DeployOps Test Customer"
@@ -69,6 +69,18 @@ class TestSecurityNegative(IntegrationTestCase):
 	def test_guest_cannot_read_erpnext_records(self):
 		for doctype in ERPNEXT_DENIED:
 			with self.subTest(doctype=doctype):
+				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
+
+	def test_deployops_doctype_api_follows_matrix(self):
+		existing = [dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt)]
+		for role, sid in self.sids.items():
+			for doctype in existing:
+				with self.subTest(role=role, doctype=doctype):
+					response = self.request(f"/api/resource/{doctype}", {"sid": sid})
+					self.assertEqual(response.status_code, 200 if allowed(doctype, role, "read") else 403)
+
+		for doctype in existing:
+			with self.subTest(guest=True, doctype=doctype):
 				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
 
 	def test_roles_cannot_list_erpnext_records(self):
