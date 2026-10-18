@@ -41,7 +41,11 @@ def get_allowed_items(user: str | None = None) -> set[str]:
 	if is_unrestricted(user):
 		return set(frappe.get_all("Item", filters={"has_serial_no": 1}, pluck="name"))
 
-	categories = get_allowed_categories(user)
+	return get_category_items(get_allowed_categories(user))
+
+
+def get_category_items(categories: list[str]) -> set[str]:
+	"""Serial-numbered Items in the given categories (explicit Items plus Item Groups and sub-groups)."""
 	if not categories:
 		return set()
 

@@ -24,6 +24,22 @@ def db_insert(doc_dict: dict, docstatus: int = 0) -> "frappe.model.document.Docu
 	return doc
 
 
+def make_company(name: str = COMPANY) -> str:
+	"""A bare Company row so Link validation passes; no accounts are needed because nothing posts."""
+	if not frappe.db.exists("Company", name):
+		db_insert(
+			{
+				"doctype": "Company",
+				"name": name,
+				"company_name": name,
+				"abbr": "".join(word[0] for word in name.split() if word[0].isalnum())[:5],
+				"default_currency": "XAF",
+				"country": "Cameroon",
+			}
+		)
+	return name
+
+
 def make_item(code: str, serialized: bool = True) -> str:
 	if not frappe.db.exists("Item", code):
 		db_insert(

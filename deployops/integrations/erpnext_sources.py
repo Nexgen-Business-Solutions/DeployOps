@@ -188,3 +188,37 @@ def validate_serial(serial_no: str, item_code: str | None = None, company: str |
 		)
 
 	return serial
+
+
+def get_delivered_serials(sales_order: str) -> dict[str, list[str]]:
+	"""Serials delivered against a Sales Order, per Item, minus any returned since.
+
+	Read from submitted Delivery Notes made from the order; returns are subtracted.
+	"""
+	notes = frappe.get_all(
+		"Delivery Note Item",
+		filters={"against_sales_order": sales_order, "docstatus": 1},
+		pluck="parent",
+		distinct=True,
+	)
+	notes = frappe.get_all(
+		"Delivery Note", filters={"name": ["in", notes or [""]], "is_return": 0}, pluck="name"
+	)
+	if not notes:
+		return {}
+
+	returned = set()
+	for name in frappe.get_all(
+		"Delivery Note",
+		filters={"return_against": ["in", notes], "is_return": 1, "docstatus": 1},
+		pluck="name",
+	):
+		for line in get_equipment_lines(frappe.get_doc(DELIVERY_NOTE, name)):
+			returned.update(line["serial_nos"])
+
+	delivered: dict[str, list[str]] = {}
+	for name in notes:
+		for line in get_equipment_lines(frappe.get_doc(DELIVERY_NOTE, name)):
+			serials = [s for s in line["serial_nos"] if s not in returned]
+			delivered.setdefault(line["item_code"], []).extend(serials)
+	return delivered
