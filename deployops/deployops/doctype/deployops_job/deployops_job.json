@@ -26,7 +26,10 @@
   "address",
   "address_display",
   "devices_section",
-  "devices"
+  "devices",
+  "previous_status",
+  "history_section",
+  "status_log"
  ],
  "fields": [
   {
@@ -183,11 +186,33 @@
    "fieldtype": "Table",
    "label": "Devices",
    "options": "DeployOps Job Device"
+  },
+  {
+   "fieldname": "previous_status",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Status Before Block",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "history_section",
+   "fieldtype": "Section Break",
+   "label": "Status History"
+  },
+  {
+   "fieldname": "status_log",
+   "fieldtype": "Table",
+   "label": "Status Log",
+   "no_copy": 1,
+   "options": "DeployOps Job Status Log",
+   "read_only": 1
   }
  ],
  "icon": "tool",
  "links": [],
- "modified": "2026-10-18 15:00:00.000000",
+ "modified": "2026-10-18 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Job",

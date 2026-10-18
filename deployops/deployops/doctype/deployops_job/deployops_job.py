@@ -18,7 +18,12 @@ CLOSED_STATUSES = ("Completed", "Cancelled")
 
 class DeployOpsJob(Document):
 	def validate(self):
-		source = erpnext_sources.validate_source(self.source_doctype, self.source_name, self.company)
+		if self.is_new():
+			source = erpnext_sources.validate_source(self.source_doctype, self.source_name, self.company)
+		else:
+			# Checked once, at creation: a source may later be closed or completed in ERPNext
+			# (normal after delivery) without stopping the work on its job.
+			source = frappe.get_doc(self.source_doctype, self.source_name)
 		snapshot = erpnext_sources.get_source_snapshot(source)
 
 		if self.is_new():
@@ -35,7 +40,9 @@ class DeployOpsJob(Document):
 				for device in devices_from_source(source, snapshot):
 					self.append("devices", device)
 		else:
+			self.validate_not_closed()
 			self.validate_status_unchanged()
+			self.validate_workflow_fields_unchanged()
 
 		for row in self.devices:
 			# Rows added during validate miss Frappe's field defaults.
@@ -61,10 +68,72 @@ class DeployOpsJob(Document):
 		self.address = address.get("name")
 		self.address_display = address.get("display")
 
+	def validate_not_closed(self):
+		if self.flags.allow_status_change:
+			return
+		if frappe.db.get_value("DeployOps Job", self.name, "status") in ("Completed", "Cancelled"):
+			frappe.throw(_("A completed or cancelled job cannot be changed."))
+
 	def validate_status_unchanged(self):
-		# Status changes go through the workflow (#19); until then a job stays as created.
-		if self.has_value_changed("status") and not self.flags.allow_status_change:
+		# Status changes only go through the job workflow (#19).
+		if self.flags.allow_status_change:
+			return
+		if self.has_value_changed("status") or self.has_value_changed("previous_status"):
 			frappe.throw(_("The job status can only be changed through the job workflow."))
+
+	def validate_workflow_fields_unchanged(self):
+		"""Machine statuses and the status log are only written by the workflow."""
+		if self.flags.allow_status_change:
+			return
+
+		saved_status = frappe.db.get_value("DeployOps Job", self.name, "status")
+		saved = {
+			row.name: row
+			for row in frappe.get_all(
+				"DeployOps Job Device",
+				filters={"parent": self.name, "parenttype": "DeployOps Job"},
+				fields=["name", "item_code", "serial_no", "device_status"],
+			)
+		}
+		current = {row.name: row for row in self.devices if row.name}
+
+		removed = set(saved) - set(current)
+		if removed and saved_status != "Draft":
+			frappe.throw(
+				_("Machines can only be removed while the job is Draft; use Cancel Machine instead.")
+			)
+
+		for row in self.devices:
+			before = saved.get(row.name)
+			if not before:
+				if saved_status == "Pending Review":
+					frappe.throw(_("Machines cannot be added while the job is waiting for review."))
+				row.device_status = "Pending"
+				continue
+			if row.device_status != before.device_status:
+				frappe.throw(_("Machine status can only be changed through the job workflow."))
+			changed = (row.item_code, row.serial_no or None) != (before.item_code, before.serial_no or None)
+			if changed and (
+				saved_status == "Pending Review" or before.device_status in ("Completed", "Cancelled")
+			):
+				frappe.throw(
+					_("Row #{0}: a {1} machine cannot be changed.").format(
+						row.idx,
+						_("completed or cancelled")
+						if before.device_status in ("Completed", "Cancelled")
+						else _("submitted"),
+					)
+				)
+
+		saved_log = frappe.get_all(
+			"DeployOps Job Status Log",
+			filters={"parent": self.name, "parenttype": "DeployOps Job"},
+			pluck="name",
+		)
+		if sorted(row.name for row in self.status_log if row.name) != sorted(saved_log) or any(
+			not row.name for row in self.status_log
+		):
+			frappe.throw(_("The status log can only be written by the job workflow."))
 
 	def validate_devices(self, snapshot: dict):
 		source_items = {line["item_code"] for line in snapshot["lines"]}

@@ -33,6 +33,37 @@ frappe.ui.form.on("DeployOps Job", {
 		}));
 	},
 
+	// Workflow buttons (#19): the server lists only the moves this user may make right now.
+	refresh(frm) {
+		if (frm.is_new()) return;
+
+		frappe.call({
+			method: "deployops.api.jobs.get_actions",
+			args: { job: frm.doc.name },
+			callback(r) {
+				const { job = [], devices = {} } = r.message || {};
+				for (const action of job) {
+					frm.add_custom_button(
+						action.label,
+						() =>
+							run_workflow(
+								frm,
+								"deployops.api.jobs.job_action",
+								{ action: action.action },
+								action
+							),
+						__("Actions")
+					);
+				}
+				if (Object.keys(devices).length) {
+					frm.add_custom_button(__("Update Machine"), () =>
+						update_machine_dialog(frm, devices)
+					);
+				}
+			},
+		});
+	},
+
 	source_doctype(frm) {
 		frm.set_value("source_name", null);
 	},
@@ -78,3 +109,84 @@ frappe.ui.form.on("DeployOps Job", {
 		});
 	},
 });
+
+function run_workflow(frm, method, args, action) {
+	const call = (reason) =>
+		frappe.call({
+			method,
+			args: { job: frm.doc.name, reason, ...args },
+			freeze: true,
+			callback: () => frm.reload_doc(),
+		});
+
+	if (action.reason_required) {
+		frappe.prompt(
+			{ fieldname: "reason", fieldtype: "Small Text", label: __("Reason"), reqd: 1 },
+			(values) => call(values.reason),
+			action.label,
+			action.label
+		);
+	} else {
+		frappe.confirm(__("{0}?", [action.label]), () => call());
+	}
+}
+
+function update_machine_dialog(frm, devices) {
+	const label = (row) =>
+		row.serial_no
+			? `${row.item_code} / ${row.serial_no}`
+			: `${row.item_code} (row ${row.idx})`;
+	const rows = frm.doc.devices.filter((row) => devices[row.name]);
+
+	const dialog = new frappe.ui.Dialog({
+		title: __("Update Machine"),
+		fields: [
+			{
+				fieldname: "device",
+				fieldtype: "Select",
+				label: __("Machine"),
+				reqd: 1,
+				options: rows.map((row) => ({
+					value: row.name,
+					label: `${label(row)} — ${__(row.device_status)}`,
+				})),
+				onchange() {
+					const actions = devices[dialog.get_value("device")] || [];
+					dialog.set_df_property(
+						"action",
+						"options",
+						actions.map((a) => ({ value: a.action, label: a.label }))
+					);
+					dialog.set_value("action", actions.length ? actions[0].action : null);
+				},
+			},
+			{ fieldname: "action", fieldtype: "Select", label: __("Action"), reqd: 1 },
+			{
+				fieldname: "reason",
+				fieldtype: "Small Text",
+				label: __("Reason (required to block or cancel)"),
+			},
+		],
+		primary_action_label: __("Apply"),
+		primary_action(values) {
+			frappe.call({
+				method: "deployops.api.jobs.device_action",
+				args: {
+					job: frm.doc.name,
+					device: values.device,
+					action: values.action,
+					reason: values.reason,
+				},
+				freeze: true,
+				callback: () => {
+					dialog.hide();
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	dialog.show();
+	if (rows.length) {
+		dialog.set_value("device", rows[0].name);
+	}
+}
