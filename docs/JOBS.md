@@ -1,6 +1,6 @@
 # DeployOps — Jobs (#18 / #39)
 
-**Status:** Approved design, implemented on 2026-10-18. Workflow transitions and approvals are #19; job-level scoping for Supervisors and Managers is #12.
+**Status:** Approved design, implemented on 2026-10-18. Workflow transitions and approvals are #19. Job-level visibility (#12) is in §4.
 **Code:** [`deployops/deployops/doctype/deployops_job/`](../deployops/deployops/doctype/deployops_job/), [`deployops/api/jobs.py`](../deployops/api/jobs.py), [`deployops/security/job_permissions.py`](../deployops/security/job_permissions.py).
 
 A **DeployOps Job** is one intervention (preparation, installation or maintenance) on one or more machines, started from an ERPNext source document.
@@ -52,7 +52,17 @@ A **DeployOps Job** is one intervention (preparation, installation or maintenanc
 
 From the approved matrix ([PERMISSION_MATRIX.md](PERMISSION_MATRIX.md)): Technician read/write; Supervisor create/write/print; Manager create/write/cancel/print/export; Admin create/write/cancel/print/export; **nobody deletes**.
 
-- **Technicians only see jobs assigned to them** (list, form, API, reports). Access is judged by the *saved* assignee, so editing the field cannot grant or lose access.
+- **Who sees which job (#12):**
+
+| Role | Sees |
+|---|---|
+| Technician | Only jobs **assigned to them** |
+| Supervisor, Manager | Jobs whose machines are **all** within their equipment profile. A job without machines: when its equipment category is theirs, or when it has no category |
+| DeployOps Administrator (and System Manager) | Every job |
+| Anyone else | No job |
+
+  Judged from the **saved** job (assignee and machines), so editing a job in memory cannot grant or lose access. Revoking a category hides its jobs immediately. Teams or regions ("management scope") are not defined yet; scoping is by equipment only.
+- **No way around it:** the same rule applies to the list, report view, `frappe.client.get_list` / `get` / `get_value`, `/api/resource`, form load, link search, `/printview` and **private attachments** on a job (a file attached to a job is downloadable only by users who may read that job). All are tested over real HTTP in `deployops/tests/test_job_visibility.py`.
 - **Level-1 fields** (job type, company, source, planned date, assigned technician, equipment category) are visible to all job roles but **only Supervisor, Manager and Admin can change them**. A Technician can fill in device serials but cannot reassign or replan a job.
 - The **source and serial pickers** use DeployOps' own queries (`source_link_query`, `serial_link_query`), because DeployOps roles have no direct ERPNext permissions. The serial picker offers the source's serials, or in-stock serials of that Item (any status for Maintenance).
 
@@ -62,6 +72,7 @@ From the approved matrix ([PERMISSION_MATRIX.md](PERMISSION_MATRIX.md)): Technic
 |---|---|
 | `deployops/tests/test_job.py` | Snapshot and devices from a Sales Order (units, no spares), Delivery Note (one row per serial), Subscription (none); unusable source and wrong company refused; `make_job` API; device rules (item not on source, non-serial item, serial not on the delivery, serial of another item, duplicate serial); serial required by job type; no double booking (other job type allowed, allowed again once completed); status locked; equipment category; assignee rules; Supervisor limited to own equipment and refused on a source with none of it; Technician cannot create, sees only assigned jobs, cannot reassign or replan but can fill serials; both pickers |
 | `deployops/tests/test_permission_matrix.py`, `test_security_negative.py` | Job DocPerms match the matrix; Job API allowed and refused per the matrix |
+| `deployops/tests/test_job_visibility.py` | Supervisor and Manager scoped by equipment (all machines; no-machine jobs by category); Admin sees all; Technician only assigned; document access matches the list; revocation is immediate; users without a DeployOps role see nothing; over HTTP: list, report view, get_list, link search, direct URL, `frappe.client.get`, form load, `get_value`, print and private attachments |
 
 ## 6. UAT steps (manual, on the DeployOps Demo data)
 

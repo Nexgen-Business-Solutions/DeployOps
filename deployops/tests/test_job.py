@@ -248,7 +248,16 @@ class TestJobPermissions(JobTestCase):
 			self.assertEqual(frappe.get_list(JOB, pluck="name"), [mine.name])
 			self.assertTrue(frappe.has_permission(JOB, "read", mine.name))
 			self.assertFalse(frappe.has_permission(JOB, "read", other.name))
-		with set_user(make_role_user(MANAGER)):
+		# Managers see jobs within their equipment profile (#12).
+		manager = make_role_user(MANAGER)
+		frappe.get_doc(
+			{
+				"doctype": "DeployOps Equipment Access Profile",
+				"user": manager,
+				"categories": [{"category": "_Test Cash"}],
+			}
+		).insert(ignore_permissions=True)
+		with set_user(manager):
 			self.assertEqual(set(frappe.get_list(JOB, pluck="name")), {mine.name, other.name})
 
 	def test_technician_cannot_reassign_or_change_planning(self):
