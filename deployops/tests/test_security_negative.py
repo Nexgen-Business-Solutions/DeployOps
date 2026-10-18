@@ -83,6 +83,16 @@ class TestSecurityNegative(IntegrationTestCase):
 			with self.subTest(guest=True, doctype=doctype):
 				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
 
+	def test_guest_cannot_call_source_lookups(self):
+		for method, params in (
+			("get_source_summary", {"doctype": "Sales Order", "name": "x"}),
+			("search_sources", {"doctype": "Sales Order"}),
+			("get_serial", {"serial_no": "x"}),
+		):
+			with self.subTest(method=method):
+				response = self.request(f"/api/method/deployops.api.sources.{method}", params)
+				self.assertEqual(response.status_code, 403)
+
 	def test_roles_cannot_list_erpnext_records(self):
 		for role, sid in self.sids.items():
 			for doctype in ERPNEXT_DENIED:
