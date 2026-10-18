@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
 import './App.css'
 import { FrappeProvider } from 'frappe-react-sdk'
 function App() {
