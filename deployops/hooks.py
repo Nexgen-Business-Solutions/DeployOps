@@ -288,3 +288,11 @@ website_route_rules = [
 	{"from_route": "/message", "to_route": "message"},
 	{"from_route": "/<path:app_path>", "to_route": "frontend"},
 ]
+
+# Technicians only see jobs assigned to them (#18). Broader job scoping is #12.
+permission_query_conditions = {
+	"DeployOps Job": "deployops.security.job_permissions.job_query_conditions",
+}
+has_permission = {
+	"DeployOps Job": "deployops.security.job_permissions.job_has_permission",
+}

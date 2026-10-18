@@ -503,6 +503,7 @@ deployops/                       ← repository root (apps/deployops)
 | [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md) | Verified versions, environments, ERPNext v16 findings, risks |
 | [`docs/PERMISSION_MATRIX.md`](docs/PERMISSION_MATRIX.md) | Roles, role × object rights, ERPNext exceptions, security tests, UAT steps |
 | [`docs/ERPNEXT_SOURCES.md`](docs/ERPNEXT_SOURCES.md) | Usable ERPNext sources, lookup snapshot, source API and its access rules |
+| [`docs/JOBS.md`](docs/JOBS.md) | Job data model, creation from a source, rules, permissions, tests, UAT steps |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding assistants |
 
 Where these documents disagree, work stops until the product owner decides.

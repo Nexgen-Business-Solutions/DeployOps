@@ -72,7 +72,9 @@ class TestSecurityNegative(IntegrationTestCase):
 				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
 
 	def test_deployops_doctype_api_follows_matrix(self):
-		existing = [dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt)]
+		existing = [
+			dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt) and not frappe.get_meta(dt).istable
+		]
 		for role, sid in self.sids.items():
 			for doctype in existing:
 				with self.subTest(role=role, doctype=doctype):
