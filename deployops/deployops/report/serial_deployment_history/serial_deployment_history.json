@@ -1,0 +1,35 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2026-10-18 20:00:00.000000",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-10-18 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "Serial Deployment History",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "DeployOps Equipment Allocation",
+ "report_name": "Serial Deployment History",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "DeployOps Technician"
+  },
+  {
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "role": "DeployOps Manager"
+  },
+  {
+   "role": "DeployOps Administrator"
+  }
+ ]
+}

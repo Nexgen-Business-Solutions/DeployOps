@@ -3,6 +3,7 @@ from frappe.tests import IntegrationTestCase
 from frappe.tests.classes.context_managers import set_user
 
 from deployops.api import jobs as job_api
+from deployops.equipment import allocations
 from deployops.roles import MANAGER, SUPERVISOR, TECHNICIAN
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.utils import make_role_user
@@ -93,13 +94,20 @@ class TestJobCreation(JobTestCase):
 			[(self.cash, "JOB-CR-1"), (self.cash, "JOB-CR-2"), (self.robot, "JOB-BB-1")],
 		)
 
-	def test_from_subscription_devices_are_added_explicitly(self):
+	def test_from_subscription_devices_are_the_allocated_machines(self):
 		subscription = fx.make_subscription(self.customer).name
-		job = make_job(
-			"Subscription", subscription, devices=[{"item_code": self.robot, "serial_no": "JOB-BB-1"}]
-		)
-		self.assertEqual(job.devices[0].serial_no, "JOB-BB-1")
 		self.assertEqual(make_job("Subscription", subscription, job_type="Pre-installation").devices, [])
+
+		allocations.reserve("JOB-BB-1", "Subscription", subscription, fx.COMPANY)
+		job = make_job("Subscription", subscription, job_type="Pre-installation")
+		self.assertEqual([(d.item_code, d.serial_no) for d in job.devices], [(self.robot, "JOB-BB-1")])
+		with self.assertRaises(frappe.ValidationError):  # not allocated to this subscription
+			make_job(
+				"Subscription",
+				subscription,
+				job_type="Pre-installation",
+				devices=[{"item_code": self.cash, "serial_no": "JOB-CR-1"}],
+			)
 
 	def test_unusable_source_and_wrong_company_refused(self):
 		draft = fx.make_sales_order(self.customer, [self.cash], docstatus=0).name

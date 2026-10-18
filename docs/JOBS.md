@@ -35,7 +35,7 @@ A **DeployOps Job** is one intervention (preparation, installation or maintenanc
 - one row per serial when the source lists serials (Delivery Note, Maintenance Visit/Schedule);
 - for a Sales Order, one row per unit ordered. Units **already delivered** get their serial from the order's submitted Delivery Notes, minus any returned since; the rest stay empty to be picked during preparation (no stock unit is chosen automatically);
 - only serial-numbered Items, and only those within the creator's equipment profile;
-- a **Subscription** gives no devices: the rented machine is added explicitly.
+- a **Subscription** gives the machines **allocated** to it (see [ALLOCATIONS.md](ALLOCATIONS.md)); a rental job may only use those.
 
 ## 3. Rules (enforced on the server)
 

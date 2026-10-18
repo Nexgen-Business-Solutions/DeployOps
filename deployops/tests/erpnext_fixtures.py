@@ -99,7 +99,8 @@ def make_address(name: str) -> str:
 	return name
 
 
-def make_serial(serial_no: str, item_code: str, company: str = COMPANY) -> str:
+def make_serial(serial_no: str, item_code: str, company: str = COMPANY, customer: str | None = None) -> str:
+	"""In stock by default (Active, in a warehouse); delivered when a customer is given."""
 	db_insert(
 		{
 			"doctype": "Serial No",
@@ -107,6 +108,9 @@ def make_serial(serial_no: str, item_code: str, company: str = COMPANY) -> str:
 			"serial_no": serial_no,
 			"item_code": item_code,
 			"company": company,
+			"status": "Delivered" if customer else "Active",
+			"warehouse": None if customer else "_Test Stores",
+			"customer": customer,
 		}
 	)
 	return serial_no

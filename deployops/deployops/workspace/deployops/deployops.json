@@ -1,7 +1,7 @@
 {
  "app": "deployops",
  "charts": [],
- "content": "[{\"id\": \"dpo-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>DeployOps</b></span>\", \"col\": 12}}, {\"id\": \"dpo-sc-jobs\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Jobs\", \"col\": 3}}, {\"id\": \"dpo-sc-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Equipment Categories\", \"col\": 3}}, {\"id\": \"dpo-sc-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Equipment Access Profiles\", \"col\": 3}}]",
+ "content": "[{\"id\": \"dpo-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>DeployOps</b></span>\", \"col\": 12}}, {\"id\": \"dpo-sc-jobs\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Jobs\", \"col\": 3}}, {\"id\": \"dpo-sc-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Equipment Categories\", \"col\": 3}}, {\"id\": \"dpo-sc-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Equipment Access Profiles\", \"col\": 3}}, {\"id\": \"dpo-sc-equipment-allocations\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Equipment Allocations\", \"col\": 3}}, {\"id\": \"dpo-sc-serial-deployment-history\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Serial Deployment History\", \"col\": 3}}]",
  "creation": "2026-10-18 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "DeployOps",
  "links": [],
- "modified": "2026-10-18 15:00:00.000000",
+ "modified": "2026-10-18 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps",
@@ -55,6 +55,20 @@
    "label": "Equipment Access Profiles",
    "link_to": "DeployOps Equipment Access Profile",
    "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Equipment Allocations",
+   "link_to": "DeployOps Equipment Allocation",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Serial Deployment History",
+   "link_to": "Serial Deployment History",
+   "type": "Report",
+   "report_ref_doctype": "DeployOps Equipment Allocation"
   }
  ],
  "standard": 1,
