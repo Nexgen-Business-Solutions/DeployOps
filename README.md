@@ -308,10 +308,10 @@ Every feature follows the same steps (from [`AGENTS.md`](AGENTS.md)):
 2. **Inspect** the current app code and the real ERPNext v16 schema. Never assume fields.
 3. **Propose a plan:** data model, flows, affected files, security boundary, tests, migrations, risks and decisions needed.
 4. **Resolve** unclear business rules with the product owner **before** coding.
-5. **Implement** on a local feature branch: `feature/<issue>-<short-name>`, for example `feature/22-cashmatic-preinstallation`.
-6. **Test** success, failure, validation, permissions, multiple devices and migrations on `deployops-test.local`.
+5. **Implement** on a task branch: `task/<issue>-<short-name>`, for example `task/34-bootstrap-tests-install-workspace`. Never push directly to a feature branch.
+6. **Test** success, failure, validation, permissions, multiple devices and migrations on `deployops.local`.
 7. **Review:** the owner reviews the diff and the test output. **Nothing is committed or pushed before approval.**
-8. **Accept:** fresh install or migrate on `deployops-uat.local`, run the UAT scenarios, owner sign-off.
+8. **Accept:** the owner signs off after checking the change on `deployops.local`.
 9. Issue status is updated only after acceptance.
 
 ### Definition of Done
@@ -367,13 +367,7 @@ Then open `http://<your-site>:<port>/` for the React frontend, or `/desk` for Fr
 
 ## Local development
 
-All development happens on a local bench. There is no hosted environment.
-
-| Site | Purpose |
-|---|---|
-| `deployops.local` | Day-to-day development and demos |
-| `deployops-test.local` | Automated tests (`allow_tests: true`) |
-| `deployops-uat.local` | Fresh install and UAT scenarios |
+All development and testing happens on the local site `deployops.local`. There is no hosted environment.
 
 ```bash
 cd ~/frappe/massarie_project
@@ -409,9 +403,11 @@ Do **not** use `bench remove-app` as a rollback. It deletes the DeployOps DocTyp
 ## Testing
 
 ```bash
-bench --site deployops-test.local set-config allow_tests true
-bench --site deployops-test.local run-tests --app deployops
+bench --site deployops.local set-config allow_tests true
+bench --site deployops.local run-tests --app deployops
 ```
+
+Each test runs inside a transaction that is rolled back afterwards, so test data does not remain on the site.
 
 - Tests create their own anonymised data: company, serialised items, customers, orders, deliveries, subscriptions and maintenance visits.
 - Permission tests always include a user **without** the right role, profile or assignment.
