@@ -1,0 +1,12 @@
+{
+  "name": "deployops",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Equipment preparation, installation, commissioning and maintenance for ERPNext",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "(cd frontend && yarn install)",
+    "build": "(cd frontend && yarn build)",
+    "dev": "(cd frontend && yarn dev)"
+  }
+}
