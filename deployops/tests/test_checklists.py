@@ -282,6 +282,43 @@ class TestFilling(ChecklistTestCase):
 		)
 		self.assertEqual(len(snapshot["values"]["installation_photos"]), 3)
 
+	def test_signatures_record_signer_time_and_user(self):
+		with set_user(self.technician):
+			doc = self.complete(self.doc())
+			doc.keys_receiver_name = "Alice Keys"
+			doc.client_representative = "Bob Client"
+			doc.client_signature = SIGNATURE
+			doc.save()
+			record = {row.signature_field: row for row in doc.signatures}
+			self.assertEqual(
+				(record["keys_receiver_signature"].signer_name, record["client_signature"].signer_name),
+				("Alice Keys", "Bob Client"),
+			)
+			self.assertEqual(record["client_signature"].captured_by, self.technician)
+			first = record["client_signature"].signed_on
+
+			doc.signatures = []  # the record cannot be edited; it is rebuilt from the form
+			doc.remarks = "unrelated change"
+			doc.save()
+			self.assertEqual(
+				{row.signature_field: row.signed_on for row in doc.signatures}["client_signature"], first
+			)
+
+			doc.client_signature = None
+			doc.save()
+			self.assertNotIn("client_signature", [row.signature_field for row in doc.signatures])
+			doc.submit()
+		snapshot = frappe.parse_json(frappe.db.get_value(CASH_INSTALL, self.name, "submission_snapshot"))
+		self.assertEqual(snapshot["signatures"]["keys_receiver_signature"]["signer_name"], "Alice Keys")
+
+	def test_a_signature_needs_the_signer_name(self):
+		with set_user(self.technician):
+			doc = self.complete(self.doc())
+			doc.client_signature = SIGNATURE
+			doc.client_representative = None
+			doc.save()
+			self.assertIn("Client representative signature: the signer's name is required.", doc.missing())
+
 	def test_a_form_started_on_an_older_version_cannot_be_submitted(self):
 		frappe.db.set_value(CASH_INSTALL, self.name, "form_version", 0)
 		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
@@ -368,6 +405,29 @@ class TestAccess(ChecklistTestCase):
 		with set_user(other):
 			self.assertFalse(frappe.has_permission(CASH_INSTALL, "read", name))
 			self.assertNotIn(name, frappe.get_list(CASH_INSTALL, pluck="name"))
+
+	def test_evidence_files_follow_the_form(self):
+		name = self.start(self.working_job())
+		url = self.attach(CASH_INSTALL, name)[0]
+		file = frappe.get_doc("File", {"file_url": url})
+		other = "_other-tech@deployops.test"
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": other,
+				"first_name": "Other",
+				"send_welcome_email": 0,
+				"roles": [{"role": "DeployOps Technician"}],
+			}
+		).insert(ignore_permissions=True)
+		for user, allowed in (
+			(self.technician, True),
+			(self.supervisor, True),
+			(other, False),
+			("Guest", False),
+		):
+			with self.subTest(user=user):
+				self.assertEqual(bool(frappe.has_permission("File", "read", file, user=user)), allowed)
 
 	def test_manager_can_cancel_a_submitted_form(self):
 		name = self.start(self.working_job())

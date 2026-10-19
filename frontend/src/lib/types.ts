@@ -115,4 +115,5 @@ export type FormView = {
 	can_edit: boolean;
 	sections: Section[];
 	values: Values;
+	signatures: Record<string, { signer_name: string | null; signed_on: string | null }>;
 };

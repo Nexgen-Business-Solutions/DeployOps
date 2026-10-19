@@ -124,8 +124,16 @@ def _form_content(doc) -> dict:
 	"""A submitted form shows its snapshot, so it keeps the questions it was answered against."""
 	if doc.docstatus and doc.submission_snapshot:
 		snapshot = frappe.parse_json(doc.submission_snapshot)
-		return {"sections": snapshot["sections"], "values": snapshot["values"]}
-	return {"sections": layout.sections(doc), "values": layout.values(doc)}
+		return {
+			"sections": snapshot["sections"],
+			"values": snapshot["values"],
+			"signatures": snapshot.get("signatures") or layout.signatures(doc),
+		}
+	return {
+		"sections": layout.sections(doc),
+		"values": layout.values(doc),
+		"signatures": layout.signatures(doc),
+	}
 
 
 @frappe.whitelist()

@@ -7,6 +7,10 @@ from deployops.checklists.form import ChecklistForm
 
 class DeployOpsBellaBotInstallation(ChecklistForm):
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict] = {
+		"customer_signature": "customer_signatory",
+		"technician_signature": "technician",
+	}
 	ANY_OF: ClassVar[dict] = {
 		"localization_section": [
 			"step_initial_localization",

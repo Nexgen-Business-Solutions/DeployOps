@@ -186,6 +186,7 @@ export default function Form() {
 													disabled={!editable}
 													doctype={data.doctype}
 													docname={data.name}
+													signedBy={data.signatures?.[field.fieldname]}
 													onChange={(value) => change(field.fieldname, value)}
 												/>
 											))}

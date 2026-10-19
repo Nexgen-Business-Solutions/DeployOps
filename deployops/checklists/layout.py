@@ -8,9 +8,9 @@ from frappe import _
 from frappe.model import no_value_fields
 from frappe.utils import strip_html
 
-from deployops.checklists.form import CONDITION, FILE_COLUMNS, HEADER_FIELDS
+from deployops.checklists.form import CONDITION, FILE_COLUMNS, HEADER_FIELDS, SIGNATURES
 
-SKIPPED = {"naming_series", "amended_from", *HEADER_FIELDS}
+SKIPPED = {"naming_series", "amended_from", SIGNATURES, *HEADER_FIELDS}
 
 
 def _condition(expression: str | None) -> dict | None:
@@ -100,3 +100,11 @@ def values(doc) -> dict:
 		else:
 			result[df.fieldname] = as_text(doc.get(df.fieldname))
 	return result
+
+
+def signatures(doc) -> dict:
+	"""Signature field → who signed and when, for the app to show under each signature."""
+	return {
+		row.signature_field: {"signer_name": row.signer_name, "signed_on": as_text(row.signed_on)}
+		for row in doc.get(SIGNATURES) or []
+	}

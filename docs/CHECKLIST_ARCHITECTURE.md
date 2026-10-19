@@ -71,6 +71,21 @@ All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each Doc
 - **Removing a field** keeps its column and old data in the database, and old snapshots still show it.
 - **Renaming a field** (fieldname) needs a data patch in `deployops/patches/` to copy the values, or old drafts lose that answer.
 
+### Signatures (#21)
+- Every form keeps a **Signature record** (child table `DeployOps Checklist Signature`), filled by the server only. For each signature it holds the signer's name, when it was signed and which user captured it.
+- Each form's `SIGNERS` says where the signer's name comes from: a name field on the form (keys receiver, client representative, customer), or the job's technician.
+- The time stays the same until the drawing itself changes, and the record is rebuilt on every save, so it can't be edited by hand.
+- A signature without a signer name cannot be submitted.
+- The snapshot includes the record, and the app shows "Signed by … · time" under each signature.
+- BellaBot Installation got a **Customer name** field for its customer signature, which had none.
+
+### Evidence files (#21)
+Photos and files are private and attached to the form, so access to them follows the form, and the form follows the job. Tested: the assigned technician and a Supervisor in scope can open a file; another technician and Guest cannot.
+
+### Not built (noted for a later decision)
+- **Step exceptions** ("incomplete reasons" in #21): a technician marks a required step N/A or Blocked with a reason, instead of ticking it. Proposed: one shared table per form (step, status, reason, who, when). A step counts as answered if ticked or excepted, and Blocked steps are flagged for review. Held back by the owner on 2026-10-20.
+- **Machine completion:** a machine can be marked Done on the job without a submitted checklist. Not part of #21's scope.
+
 ## 5. Mapping notes (pending #40 sign-off)
 
 These differ from the Jotforms, either to keep a single source of truth or to fix source problems:
@@ -102,6 +117,8 @@ The app's own calls are in [FRONTEND.md](FRONTEND.md).
 - conditions;
 - locking after submit;
 - the version stamp and the snapshot saved on submit; an older-version draft cannot be submitted;
+- the signature record (signer, time, user, kept until the drawing changes); signer name required;
+- evidence files open only for users who can see the form;
 - job data is fixed;
 - secrets, foreign files and bad signatures are refused;
 - **each of the five forms can be completed and submitted**;
