@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-10-20 11:30:00.000000",
+ "creation": "2026-10-20 12:00:00.000000",
  "description": "BellaBot Pro on-site installation and commissioning (Massarie deployment standard). Source: https://form.jotform.com/262743396548066 (field mapping pending #40 sign-off).",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -102,6 +102,7 @@
   "customer_handover_and_acceptance_section",
   "handover_confirmed",
   "accepted_on",
+  "customer_signatory",
   "customer_signature",
   "customer_remarks",
   "sign_off_section",
@@ -111,6 +112,7 @@
   "technician_signature",
   "signed_off_on",
   "snapshot_section",
+  "signatures",
   "submission_snapshot",
   "amended_from"
  ],
@@ -659,6 +661,12 @@
    "reqd": 1
   },
   {
+   "fieldname": "customer_signatory",
+   "fieldtype": "Data",
+   "label": "Customer name",
+   "reqd": 1
+  },
+  {
    "fieldname": "customer_signature",
    "fieldtype": "Signature",
    "label": "Customer signature",
@@ -708,6 +716,15 @@
    "label": "Submitted snapshot"
   },
   {
+   "description": "Who signed each signature and when; recorded by the system.",
+   "fieldname": "signatures",
+   "fieldtype": "Table",
+   "label": "Signature record",
+   "no_copy": 1,
+   "options": "DeployOps Checklist Signature",
+   "read_only": 1
+  },
+  {
    "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
    "fieldname": "submission_snapshot",
    "fieldtype": "JSON",
@@ -729,7 +746,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 11:30:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps BellaBot Installation",

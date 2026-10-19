@@ -7,6 +7,7 @@ from deployops.checklists.form import ChecklistForm
 
 class DeployOpsBellaBotPreinstallation(ChecklistForm):
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict] = {"employee_signature": "technician"}
 	ANY_OF: ClassVar[dict] = {
 		"content_types_section": ["step_mp4_video", "step_jpeg_image", "step_png_image", "step_gif_image"],
 		"operating_days_section": [

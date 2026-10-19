@@ -6,7 +6,8 @@ Each form is a native DocType whose fields come from its source Jotform. Drafts 
 - ``ANY_OF``: section → Check fields, at least one visible box must be ticked;
 - ``MIN_ROWS``: table → minimum rows (e.g. three installation photos);
 - ``FIXED_ROWS``: table → (column, labels), rows created with the form and never changed;
-- ``FORM_VERSION``: bump it whenever the DocType's questions change (see CHECKLIST_ARCHITECTURE.md).
+- ``FORM_VERSION``: bump it whenever the DocType's questions change (see CHECKLIST_ARCHITECTURE.md);
+- ``SIGNERS``: Signature field → the field holding the signer's name ("technician" = the job's technician).
 
 Each form records the version it was started on, and on submit keeps a snapshot of every question
 and answer, so a submitted checklist always shows what was actually asked.
@@ -22,11 +23,14 @@ import frappe
 from frappe import _
 from frappe.model import no_value_fields
 from frappe.model.document import Document
+from frappe.utils import now_datetime
 
 from deployops.checklists.cards import card_for, form_for_device
 from deployops.workflow import job_workflow
 
 JOB = "DeployOps Job"
+# Filled by the server only: who signed each signature and when (#21).
+SIGNATURES = "signatures"
 HEADER_FIELDS = (
 	"job",
 	"job_device",
@@ -74,6 +78,7 @@ class ChecklistForm(Document):
 	MIN_ROWS: ClassVar[dict[str, int]] = {}
 	FIXED_ROWS: ClassVar[dict[str, tuple[str, tuple[str, ...]]]] = {}
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict[str, str]] = {}
 	INTRO = ""
 
 	def before_insert(self):
@@ -127,6 +132,7 @@ class ChecklistForm(Document):
 		self.validate_header()
 		self.validate_fixed_rows()
 		self.validate_values()
+		self.record_signatures()
 
 	def validate_header(self):
 		before = self.get_doc_before_save()
@@ -179,6 +185,34 @@ class ChecklistForm(Document):
 		):
 			frappe.throw(_("{0}: upload the file to this checklist first.").format(_(df.label)))
 
+	def signer_name(self, fieldname: str) -> str | None:
+		source = self.SIGNERS.get(fieldname)
+		if source == "technician":
+			return frappe.db.get_value("User", self.technician, "full_name") if self.technician else None
+		return self.get(source) if source else None
+
+	def record_signatures(self):
+		"""Rebuild the signature record from the form: signer name, and when and by whom each
+		signature was captured. Times are kept from the saved record until the drawing changes."""
+		before = self.get_doc_before_save()
+		saved = {row.signature_field: row for row in (before.get(SIGNATURES) if before else [])}
+		rows = []
+		for df in self.meta.fields:
+			if df.fieldtype != "Signature" or not self.get(df.fieldname):
+				continue
+			old = saved.get(df.fieldname)
+			unchanged = old and before and before.get(df.fieldname) == self.get(df.fieldname)
+			rows.append(
+				{
+					"signature_field": df.fieldname,
+					"signature_label": df.label,
+					"signer_name": self.signer_name(df.fieldname),
+					"signed_on": old.signed_on if unchanged else now_datetime(),
+					"captured_by": old.captured_by if unchanged else frappe.session.user,
+				}
+			)
+		self.set(SIGNATURES, rows)
+
 	def refuse_secret(self, label):
 		frappe.throw(
 			_("{0}: do not enter passwords, PINs, OTPs or pairing codes in a checklist.").format(_(label))
@@ -207,6 +241,7 @@ class ChecklistForm(Document):
 				"form_version": self.form_version,
 				"sections": layout.sections(self),
 				"values": layout.values(self),
+				"signatures": layout.signatures(self),
 			},
 			indent=None,
 		)
@@ -219,9 +254,11 @@ class ChecklistForm(Document):
 		problems = []
 		any_of_fields = {field for fields in self.ANY_OF.values() for field in fields}
 		for df in self.meta.fields:
-			if df.fieldname in HEADER_FIELDS or not self.is_visible(df):
+			if df.fieldname in HEADER_FIELDS or df.fieldname == SIGNATURES or not self.is_visible(df):
 				continue
 			label = _(df.label)
+			if df.fieldtype == "Signature" and self.get(df.fieldname) and not self.signer_name(df.fieldname):
+				problems.append(_("{0}: the signer's name is required.").format(label))
 			if df.fieldtype == "Section Break" and df.fieldname in self.ANY_OF:
 				boxes = [self.meta.get_field(name) for name in self.ANY_OF[df.fieldname]]
 				visible = [box for box in boxes if self.is_visible(box)]

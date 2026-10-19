@@ -7,6 +7,11 @@ from deployops.checklists.form import ChecklistForm
 
 class DeployOpsCashmaticInstallation(ChecklistForm):
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict] = {
+		"keys_receiver_signature": "keys_receiver_name",
+		"client_signature": "client_representative",
+		"technician_signature": "technician",
+	}
 	ANY_OF: ClassVar[dict] = {
 		"web_panel_explanation_section": [
 			"step_level_status",

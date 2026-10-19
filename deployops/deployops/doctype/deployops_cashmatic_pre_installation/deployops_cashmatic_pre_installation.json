@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-10-20 11:30:00.000000",
+ "creation": "2026-10-20 12:00:00.000000",
  "description": "Please complete the following checklist one week before the installation date. Source: https://form.jotform.com/253063954693264 (field mapping pending #40 sign-off).",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -69,6 +69,7 @@
   "additional_remarks",
   "employee_signature",
   "snapshot_section",
+  "signatures",
   "submission_snapshot",
   "amended_from"
  ],
@@ -468,6 +469,15 @@
    "label": "Submitted snapshot"
   },
   {
+   "description": "Who signed each signature and when; recorded by the system.",
+   "fieldname": "signatures",
+   "fieldtype": "Table",
+   "label": "Signature record",
+   "no_copy": 1,
+   "options": "DeployOps Checklist Signature",
+   "read_only": 1
+  },
+  {
    "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
    "fieldname": "submission_snapshot",
    "fieldtype": "JSON",
@@ -489,7 +499,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 11:30:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Cashmatic Pre-installation",

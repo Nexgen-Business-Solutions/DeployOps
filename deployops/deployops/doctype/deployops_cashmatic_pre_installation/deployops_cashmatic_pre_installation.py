@@ -7,6 +7,7 @@ from deployops.checklists.form import ChecklistForm
 
 class DeployOpsCashmaticPreinstallation(ChecklistForm):
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict] = {"employee_signature": "technician"}
 	MIN_ROWS: ClassVar[dict] = {"preparation_photos": 1}
 	FIXED_ROWS: ClassVar[dict] = {
 		"working_hours": (

@@ -7,6 +7,10 @@ from deployops.checklists.form import ChecklistForm
 
 class DeployOpsCashmaticMaintenance(ChecklistForm):
 	FORM_VERSION = 1
+	SIGNERS: ClassVar[dict] = {
+		"technician_signature": "technician",
+		"customer_signature": "customer_signatory",
+	}
 	FIXED_ROWS: ClassVar[dict] = {
 		"cashbox_tasks": (
 			"task",

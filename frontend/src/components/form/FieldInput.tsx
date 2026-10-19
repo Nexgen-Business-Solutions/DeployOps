@@ -17,11 +17,12 @@ type Props = {
 	disabled: boolean;
 	doctype: string;
 	docname: string;
+	signedBy?: { signer_name: string | null; signed_on: string | null };
 	onChange: (value: Value) => void;
 };
 
 /** One field of a checklist form, chosen by its Frappe field type. */
-export function FieldInput({ field, value, error, disabled: locked, doctype, docname, onChange }: Props) {
+export function FieldInput({ field, value, error, disabled: locked, doctype, docname, signedBy, onChange }: Props) {
 	const disabled = locked || Boolean(field.read_only);
 	if (field.fieldtype === "HTML") {
 		return (
@@ -107,7 +108,17 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 			control = <input className={inputClass} type="time" value={toInputTime(value)} disabled={disabled} onChange={(e) => onChange(e.target.value ? `${e.target.value}:00` : null)} />;
 			break;
 		case "Signature":
-			control = <SignaturePad value={text || null} disabled={disabled} onChange={onChange} />;
+			control = (
+				<>
+					<SignaturePad value={text || null} disabled={disabled} onChange={onChange} />
+					{text && signedBy && (
+						<p className="mt-2 text-[13px] text-muted">
+							Signed by {signedBy.signer_name || "—"}
+							{signedBy.signed_on ? ` · ${new Date(signedBy.signed_on.replace(" ", "T")).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}` : ""}
+						</p>
+					)}
+				</>
+			);
 			break;
 		case "Table": {
 			const rows = (value as Row[] | undefined) ?? [];
