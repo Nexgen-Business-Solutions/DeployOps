@@ -1,0 +1,803 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-20 11:30:00.000000",
+ "description": "Please complete the following checklist before leaving the site. Source: https://form.jotform.com/253064644317254 (field mapping pending #40 sign-off).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "job",
+  "job_device",
+  "customer_name",
+  "site_address",
+  "column_break_header",
+  "item_code",
+  "item_name",
+  "serial_no",
+  "technician",
+  "company",
+  "form_version",
+  "machine_positioning_evaluation_section",
+  "step_follow_all_steps_outlined_in_visual_pre",
+  "step_confirm_reviewing_the_notes_for_a_special",
+  "step_identify_the_optimal_installation_location",
+  "step_indoor_dry_area_stable_surface",
+  "step_security_cctv_coverage",
+  "step_temperature_10_30_c_humidity_80",
+  "step_maintain_a_minimum_clearance_of_7_cm_on",
+  "step_provide_enough_space_on_the_right_side_for",
+  "power_and_network_section",
+  "step_voltage_and_grounding_verified",
+  "step_turn_on_then_press_and_hold_cashmatic_at",
+  "step_go_to_settings_and_connect_to_the_network",
+  "step_settings_ip_address_change_from_dhcp_to",
+  "step_open_the_web_panel_by_typing_the_ip",
+  "network_type",
+  "ip_address",
+  "verifications_section",
+  "step_verify_there_are_3_user_accounts_admin",
+  "step_verify_the_machine_is_already_activated",
+  "software_version",
+  "firmware_version",
+  "preparing_the_machine_section",
+  "step_start_the_first_refill_following_the",
+  "step_advise_the_client_to_mix_denominations",
+  "step_explain_the_cashbox_capacity_its_maximum",
+  "step_explain_that_the_app_sends_a_notification",
+  "cashbox",
+  "customer_training_section",
+  "step_explain_the_device_menu_following_cdig",
+  "step_go_through_the_web_panel_and_explain_all",
+  "step_test_the_machine_with_a_payment_and_a",
+  "step_install_my_cashmatic_app_on_the_client_s",
+  "step_go_through_my_cashmatic_app_with_the",
+  "step_security_and_keys_custody",
+  "step_explain_the_exterior_parts_screen_buttons",
+  "step_explain_the_interior_parts_remove_and",
+  "step_explain_the_capacity_of_each_part",
+  "web_panel_explanation_section",
+  "step_level_status",
+  "step_standard_operations",
+  "step_extraordinary_operations",
+  "step_reports",
+  "step_settings",
+  "step_logs",
+  "step_users_management",
+  "step_update",
+  "step_info",
+  "step_door_access",
+  "step_shutdown_restart",
+  "step_change_language",
+  "firsthand_training_section",
+  "step_make_a_payment",
+  "step_refill_deposit",
+  "step_withdraw_and_withdraw_by_denomination",
+  "step_monitor_transactions_by_day_in_reports",
+  "step_edit_users",
+  "step_change_device_settings",
+  "step_open_the_door",
+  "step_empty_and_float_all_options",
+  "step_download_the_log_to_identify_a_problem",
+  "step_tip_management",
+  "step_remove_the_cashbox_auto_and_manual_reset",
+  "step_remove_the_recycler_and_check_info",
+  "step_remove_the_smart_hopper_and_check_info",
+  "problem_solving_section",
+  "step_error_codes_and_simple_recovery",
+  "step_jammed_notes_and_how_to_solve_them",
+  "step_jammed_coins_and_how_to_solve_them",
+  "warnings_section",
+  "step_review_the_warnings_for_use",
+  "step_review_the_precautions_for_use",
+  "step_review_the_maintenance_instructions",
+  "step_disposal_precautions_when_purchased",
+  "pos_integration_section",
+  "pos_integration",
+  "pos_brand",
+  "pos_connector",
+  "installation_section",
+  "installation_photos",
+  "installed_on",
+  "condition_at_delivery",
+  "key_handover_confirmation_section",
+  "keys_receiver_name",
+  "keys_receiver_signature",
+  "keys_handover_date",
+  "sign_off_section",
+  "client_representative",
+  "client_title",
+  "client_department",
+  "client_signature",
+  "technician_signature",
+  "remarks",
+  "snapshot_section",
+  "submission_snapshot",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "DO-CIN-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DO-CIN-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job",
+   "options": "DeployOps Job",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "job_device",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Job machine row",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Machine",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Machine name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Serial number",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "description": "Version of this checklist's questions when the form was started.",
+   "fieldname": "form_version",
+   "fieldtype": "Int",
+   "label": "Form version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Pre & Post Installation guide (V-PP-V-1.0).",
+   "fieldname": "machine_positioning_evaluation_section",
+   "fieldtype": "Section Break",
+   "label": "Machine positioning evaluation"
+  },
+  {
+   "fieldname": "step_follow_all_steps_outlined_in_visual_pre",
+   "fieldtype": "Check",
+   "label": "Follow all steps outlined in Visual - Pre and Post Installation (V-PP-V-1.0).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_confirm_reviewing_the_notes_for_a_special",
+   "fieldtype": "Check",
+   "label": "Confirm reviewing the notes for a special installation request in the pre-visit checklist.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_identify_the_optimal_installation_location",
+   "fieldtype": "Check",
+   "label": "Identify the optimal installation location based on customer traffic flow and available space.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_indoor_dry_area_stable_surface",
+   "fieldtype": "Check",
+   "label": "Indoor, dry area, stable surface.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_security_cctv_coverage",
+   "fieldtype": "Check",
+   "label": "Security CCTV / coverage.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_temperature_10_30_c_humidity_80",
+   "fieldtype": "Check",
+   "label": "Temperature 10-30 °C, humidity < 80 %.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_maintain_a_minimum_clearance_of_7_cm_on",
+   "fieldtype": "Check",
+   "label": "Maintain a minimum clearance of 7 cm on the left side so the door can open properly.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_provide_enough_space_on_the_right_side_for",
+   "fieldtype": "Check",
+   "label": "Provide enough space on the right side for key access.",
+   "reqd": 1
+  },
+  {
+   "description": "If the steps are not clear, scan the QR code on CDIG page 14 for a video tutorial.",
+   "fieldname": "power_and_network_section",
+   "fieldtype": "Section Break",
+   "label": "Power and network"
+  },
+  {
+   "fieldname": "step_voltage_and_grounding_verified",
+   "fieldtype": "Check",
+   "label": "Voltage and grounding verified.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_turn_on_then_press_and_hold_cashmatic_at",
+   "fieldtype": "Check",
+   "label": "Turn ON, then press and hold CASHMATIC at the bottom of the screen until the menu opens.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_go_to_settings_and_connect_to_the_network",
+   "fieldtype": "Check",
+   "label": "Go to Settings and connect to the network.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_settings_ip_address_change_from_dhcp_to",
+   "fieldtype": "Check",
+   "label": "Settings - IP address - change from DHCP to Static.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_open_the_web_panel_by_typing_the_ip",
+   "fieldtype": "Check",
+   "label": "Open the WEB PANEL by typing the IP address in the browser (Google Chrome recommended).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "network_type",
+   "fieldtype": "Select",
+   "label": "Type of network",
+   "options": "\nWi-Fi\nEthernet cable",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "verifications_section",
+   "fieldtype": "Section Break",
+   "label": "Verifications"
+  },
+  {
+   "fieldname": "step_verify_there_are_3_user_accounts_admin",
+   "fieldtype": "Check",
+   "label": "Verify there are 3 user accounts (Admin, Manager, Cashier).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_verify_the_machine_is_already_activated",
+   "fieldtype": "Check",
+   "label": "Verify the machine is already activated (device info).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "software_version",
+   "fieldtype": "Data",
+   "label": "Software version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "firmware_version",
+   "fieldtype": "Data",
+   "label": "Firmware version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "preparing_the_machine_section",
+   "fieldtype": "Section Break",
+   "label": "Preparing the machine"
+  },
+  {
+   "fieldname": "step_start_the_first_refill_following_the",
+   "fieldtype": "Check",
+   "label": "Start the First Refill following the instructions in CDIG page 13.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_advise_the_client_to_mix_denominations",
+   "fieldtype": "Check",
+   "label": "Advise the client to mix denominations during refills to keep cash circulating and avoid delays.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_explain_the_cashbox_capacity_its_maximum",
+   "fieldtype": "Check",
+   "label": "Explain the cashbox capacity, its maximum holding limit and best practices.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_explain_that_the_app_sends_a_notification",
+   "fieldtype": "Check",
+   "label": "Explain that the app sends a notification once the cashbox reaches 80 % of its capacity.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cashbox",
+   "fieldtype": "Select",
+   "label": "CashBOX",
+   "options": "\n500 Banknote\n1000 Banknote"
+  },
+  {
+   "fieldname": "customer_training_section",
+   "fieldtype": "Section Break",
+   "label": "Customer training"
+  },
+  {
+   "fieldname": "step_explain_the_device_menu_following_cdig",
+   "fieldtype": "Check",
+   "label": "Explain the device menu following CDIG page 14.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_go_through_the_web_panel_and_explain_all",
+   "fieldtype": "Check",
+   "label": "Go through the Web Panel and explain all options.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_test_the_machine_with_a_payment_and_a",
+   "fieldtype": "Check",
+   "label": "Test the machine with a payment and a refund.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_install_my_cashmatic_app_on_the_client_s",
+   "fieldtype": "Check",
+   "label": "Install MY CASHMATIC APP on the client's preferred device and check it works remotely.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_go_through_my_cashmatic_app_with_the",
+   "fieldtype": "Check",
+   "label": "Go through MY CASHMATIC APP with the client and explain all options.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_security_and_keys_custody",
+   "fieldtype": "Check",
+   "label": "Security and keys custody.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_explain_the_exterior_parts_screen_buttons",
+   "fieldtype": "Check",
+   "label": "Explain the exterior parts (screen, buttons on the back, coin acceptor, note acceptor).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_explain_the_interior_parts_remove_and",
+   "fieldtype": "Check",
+   "label": "Explain the interior parts: remove and insert the cashbox, coin dispenser and recycler.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_explain_the_capacity_of_each_part",
+   "fieldtype": "Check",
+   "label": "Explain the capacity of each part.",
+   "reqd": 1
+  },
+  {
+   "description": "Explain all options.",
+   "fieldname": "web_panel_explanation_section",
+   "fieldtype": "Section Break",
+   "label": "Web panel explanation"
+  },
+  {
+   "fieldname": "step_level_status",
+   "fieldtype": "Check",
+   "label": "Level status"
+  },
+  {
+   "fieldname": "step_standard_operations",
+   "fieldtype": "Check",
+   "label": "Standard operations"
+  },
+  {
+   "fieldname": "step_extraordinary_operations",
+   "fieldtype": "Check",
+   "label": "Extraordinary operations"
+  },
+  {
+   "fieldname": "step_reports",
+   "fieldtype": "Check",
+   "label": "Reports"
+  },
+  {
+   "fieldname": "step_settings",
+   "fieldtype": "Check",
+   "label": "Settings"
+  },
+  {
+   "fieldname": "step_logs",
+   "fieldtype": "Check",
+   "label": "Logs"
+  },
+  {
+   "fieldname": "step_users_management",
+   "fieldtype": "Check",
+   "label": "Users management"
+  },
+  {
+   "fieldname": "step_update",
+   "fieldtype": "Check",
+   "label": "Update"
+  },
+  {
+   "fieldname": "step_info",
+   "fieldtype": "Check",
+   "label": "Info"
+  },
+  {
+   "fieldname": "step_door_access",
+   "fieldtype": "Check",
+   "label": "Door access"
+  },
+  {
+   "fieldname": "step_shutdown_restart",
+   "fieldtype": "Check",
+   "label": "Shutdown / restart"
+  },
+  {
+   "fieldname": "step_change_language",
+   "fieldtype": "Check",
+   "label": "Change language"
+  },
+  {
+   "description": "The customer must know how to...",
+   "fieldname": "firsthand_training_section",
+   "fieldtype": "Section Break",
+   "label": "Firsthand training"
+  },
+  {
+   "fieldname": "step_make_a_payment",
+   "fieldtype": "Check",
+   "label": "Make a payment"
+  },
+  {
+   "fieldname": "step_refill_deposit",
+   "fieldtype": "Check",
+   "label": "Refill / deposit"
+  },
+  {
+   "fieldname": "step_withdraw_and_withdraw_by_denomination",
+   "fieldtype": "Check",
+   "label": "Withdraw and withdraw by denomination"
+  },
+  {
+   "fieldname": "step_monitor_transactions_by_day_in_reports",
+   "fieldtype": "Check",
+   "label": "Monitor transactions by day in Reports"
+  },
+  {
+   "fieldname": "step_edit_users",
+   "fieldtype": "Check",
+   "label": "Edit users"
+  },
+  {
+   "fieldname": "step_change_device_settings",
+   "fieldtype": "Check",
+   "label": "Change device settings"
+  },
+  {
+   "fieldname": "step_open_the_door",
+   "fieldtype": "Check",
+   "label": "Open the door"
+  },
+  {
+   "fieldname": "step_empty_and_float_all_options",
+   "fieldtype": "Check",
+   "label": "Empty and float (all options)"
+  },
+  {
+   "fieldname": "step_download_the_log_to_identify_a_problem",
+   "fieldtype": "Check",
+   "label": "Download the log to identify a problem"
+  },
+  {
+   "fieldname": "step_tip_management",
+   "fieldtype": "Check",
+   "label": "Tip management"
+  },
+  {
+   "fieldname": "step_remove_the_cashbox_auto_and_manual_reset",
+   "fieldtype": "Check",
+   "label": "Remove the cashbox (auto and manual reset)"
+  },
+  {
+   "fieldname": "step_remove_the_recycler_and_check_info",
+   "fieldtype": "Check",
+   "label": "Remove the recycler and check info"
+  },
+  {
+   "fieldname": "step_remove_the_smart_hopper_and_check_info",
+   "fieldtype": "Check",
+   "label": "Remove the Smart Hopper and check info"
+  },
+  {
+   "description": "Support: +1 844 627-7274 · info@massarie.com",
+   "fieldname": "problem_solving_section",
+   "fieldtype": "Section Break",
+   "label": "Problem solving"
+  },
+  {
+   "fieldname": "step_error_codes_and_simple_recovery",
+   "fieldtype": "Check",
+   "label": "Error codes and simple recovery"
+  },
+  {
+   "fieldname": "step_jammed_notes_and_how_to_solve_them",
+   "fieldtype": "Check",
+   "label": "Jammed notes and how to solve them"
+  },
+  {
+   "fieldname": "step_jammed_coins_and_how_to_solve_them",
+   "fieldtype": "Check",
+   "label": "Jammed coins and how to solve them"
+  },
+  {
+   "description": "The customer must know...",
+   "fieldname": "warnings_section",
+   "fieldtype": "Section Break",
+   "label": "Warnings and precautions"
+  },
+  {
+   "fieldname": "step_review_the_warnings_for_use",
+   "fieldtype": "Check",
+   "label": "Review the warnings for use"
+  },
+  {
+   "fieldname": "step_review_the_precautions_for_use",
+   "fieldtype": "Check",
+   "label": "Review the precautions for use"
+  },
+  {
+   "fieldname": "step_review_the_maintenance_instructions",
+   "fieldtype": "Check",
+   "label": "Review the maintenance instructions"
+  },
+  {
+   "fieldname": "step_disposal_precautions_when_purchased",
+   "fieldtype": "Check",
+   "label": "Disposal precautions (when purchased)"
+  },
+  {
+   "fieldname": "pos_integration_section",
+   "fieldtype": "Section Break",
+   "label": "POS integration"
+  },
+  {
+   "fieldname": "pos_integration",
+   "fieldtype": "Select",
+   "label": "POS integration",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.pos_integration=='Yes'",
+   "fieldname": "pos_brand",
+   "fieldtype": "Data",
+   "label": "POS brand / version",
+   "mandatory_depends_on": "eval:doc.pos_integration=='Yes'"
+  },
+  {
+   "depends_on": "eval:doc.pos_integration=='Yes'",
+   "fieldname": "pos_connector",
+   "fieldtype": "Data",
+   "label": "API / app connector required",
+   "mandatory_depends_on": "eval:doc.pos_integration=='Yes'"
+  },
+  {
+   "fieldname": "installation_section",
+   "fieldtype": "Section Break",
+   "label": "Installation"
+  },
+  {
+   "description": "At least 3 photos.",
+   "fieldname": "installation_photos",
+   "fieldtype": "Table",
+   "label": "Photos of installation",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "installed_on",
+   "fieldtype": "Datetime",
+   "label": "Date and time of installation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "condition_at_delivery",
+   "fieldtype": "Data",
+   "label": "Condition at delivery",
+   "reqd": 1
+  },
+  {
+   "description": "By signing, the receiver acknowledges receipt of the keys.",
+   "fieldname": "key_handover_confirmation_section",
+   "fieldtype": "Section Break",
+   "label": "Key handover confirmation"
+  },
+  {
+   "fieldname": "keys_receiver_name",
+   "fieldtype": "Data",
+   "label": "Keys receiver name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "keys_receiver_signature",
+   "fieldtype": "Signature",
+   "label": "Keys receiver signature",
+   "reqd": 1
+  },
+  {
+   "fieldname": "keys_handover_date",
+   "fieldtype": "Date",
+   "label": "Handover date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sign_off_section",
+   "fieldtype": "Section Break",
+   "label": "Sign-off"
+  },
+  {
+   "fieldname": "client_representative",
+   "fieldtype": "Data",
+   "label": "Client representative",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client_title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client_department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client_signature",
+   "fieldtype": "Signature",
+   "label": "Client representative signature"
+  },
+  {
+   "fieldname": "technician_signature",
+   "fieldtype": "Signature",
+   "label": "Technician signature"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Submitted snapshot"
+  },
+  {
+   "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
+   "fieldname": "submission_snapshot",
+   "fieldtype": "JSON",
+   "label": "Submission snapshot",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "DeployOps Cashmatic Installation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "list",
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 11:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Cashmatic Installation",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Technician",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Administrator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

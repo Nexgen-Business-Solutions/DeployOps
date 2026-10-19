@@ -289,14 +289,25 @@ website_route_rules = [
 	{"from_route": "/<path:app_path>", "to_route": "frontend"},
 ]
 
+# The five checklist forms (#41), one DocType each; see deployops/checklists/cards.py.
+CHECKLIST_FORMS = (
+	"DeployOps Cashmatic Pre-installation",
+	"DeployOps Cashmatic Installation",
+	"DeployOps BellaBot Pre-installation",
+	"DeployOps BellaBot Installation",
+	"DeployOps Cashmatic Maintenance",
+)
+
 # Technicians only see jobs assigned to them (#18). Broader job scoping is #12.
 permission_query_conditions = {
 	"DeployOps Job": "deployops.security.job_permissions.job_query_conditions",
 	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_query_conditions",
+	**{doctype: "deployops.security.job_permissions.form_query_conditions" for doctype in CHECKLIST_FORMS},
 }
 has_permission = {
 	"DeployOps Job": "deployops.security.job_permissions.job_has_permission",
 	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_has_permission",
+	**{doctype: "deployops.security.job_permissions.form_has_permission" for doctype in CHECKLIST_FORMS},
 }
 
 # ERPNext deliveries close sale reservations (#14). Read-only on the Delivery Note itself.

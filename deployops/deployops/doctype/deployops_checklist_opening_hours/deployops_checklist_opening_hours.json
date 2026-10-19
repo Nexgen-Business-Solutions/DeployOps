@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "creation": "2026-10-20 11:30:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "day",
+  "closed",
+  "open_time",
+  "close_time"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "day",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Day",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "closed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Closed"
+  },
+  {
+   "columns": 2,
+   "fieldname": "open_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Open"
+  },
+  {
+   "columns": 2,
+   "fieldname": "close_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Close"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-20 11:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Checklist Opening Hours",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

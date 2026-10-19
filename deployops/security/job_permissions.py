@@ -99,3 +99,19 @@ def job_has_permission(doc, user: str | None = None, permission_type: str | None
 	if isinstance(doc, str):
 		doc = frappe.get_doc(JOB, doc)
 	return job_in_scope(doc, user)
+
+
+# Checklist forms (#41) are visible exactly when their job is.
+def form_query_conditions(user: str | None = None, doctype: str | None = None) -> str:
+	conditions = job_query_conditions(user)
+	if not conditions or not doctype:
+		return conditions
+	return f"`tab{doctype}`.`job` in (select `tabDeployOps Job`.`name` from `tabDeployOps Job` where {conditions})"
+
+
+def form_has_permission(doc, user: str | None = None, permission_type: str | None = None) -> bool:
+	user = user or frappe.session.user
+	job = doc.job if doc.is_new() else frappe.db.get_value(doc.doctype, doc.name, "job")
+	if not job or not frappe.db.exists(JOB, job):
+		return False
+	return job_in_scope(frappe.get_doc(JOB, job), user)

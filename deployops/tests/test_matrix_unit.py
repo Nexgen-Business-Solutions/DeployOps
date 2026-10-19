@@ -1,5 +1,6 @@
 from frappe.tests import UnitTestCase
 
+from deployops.checklists.cards import FORM_DOCTYPES as CHECKLIST_FORMS
 from deployops.roles import ADMINISTRATOR, ALIASES, ALL_ROLES, DESK_ACCESS, MANAGER, SUPERVISOR, TECHNICIAN
 from deployops.security.matrix import (
 	DESK_ROLES,
@@ -11,7 +12,7 @@ from deployops.security.matrix import (
 )
 
 VALID_LETTERS = set(PTYPES) | {"a"}
-NO_DELETE = ("DeployOps Job", "DeployOps Checklist Response", "DeployOps Equipment Allocation")
+NO_DELETE = ("DeployOps Job", *CHECKLIST_FORMS, "DeployOps Equipment Allocation")
 
 
 class TestRolesUnit(UnitTestCase):

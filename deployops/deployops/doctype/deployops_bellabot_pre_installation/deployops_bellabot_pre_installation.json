@@ -1,0 +1,883 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-20 11:30:00.000000",
+ "description": "Pre-installation and site readiness assessment for BellaBot Pro. Source: https://form.jotform.com/262743846222055 (field mapping pending #40 sign-off).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "job",
+  "job_device",
+  "customer_name",
+  "site_address",
+  "column_break_header",
+  "item_code",
+  "item_name",
+  "serial_no",
+  "technician",
+  "company",
+  "form_version",
+  "deployment_identification_section",
+  "site_name",
+  "planned_installation_date",
+  "pid_robot",
+  "commercial_actions",
+  "intended_customer_use_section",
+  "intended_use",
+  "primary_functions_required_section",
+  "step_deliver_items",
+  "step_guide_customers",
+  "step_display_advertising_content",
+  "step_play_audio_announcements",
+  "step_collect_or_carry_materials",
+  "step_provide_concierge_support",
+  "site_environment_qualification_section",
+  "site_indoors",
+  "floors_dry",
+  "humid_area",
+  "site_environment_comments",
+  "passage_and_navigation_measurements_section",
+  "two_way_traffic",
+  "narrowest_passage_cm",
+  "kitchen_entrance_cm",
+  "max_dish_size_cm",
+  "two_way_corridor_cm",
+  "slope_degrees",
+  "stairs_on_route",
+  "floor_and_navigation_hazards_section",
+  "hazard_type",
+  "surface_conditions_around_sensor_height_section",
+  "step_black_surfaces",
+  "step_polished_surfaces",
+  "step_transparent_surfaces",
+  "step_mirrored_surfaces",
+  "step_no_relevant_surface_issues",
+  "corrective_actions_required_section",
+  "step_remove_obstructions",
+  "step_mark_hazard_area",
+  "step_apply_floor_surface_treatment",
+  "step_install_warning_signage",
+  "step_adjust_route",
+  "step_no_action_needed",
+  "corrective_notes",
+  "route_definition_and_mapping_section",
+  "route_map_files",
+  "charging_location_readiness_section",
+  "team_charges_robot",
+  "aware_charger_ac",
+  "advertising_content_readiness_section",
+  "promo_screen",
+  "content_types_section",
+  "step_mp4_video",
+  "step_jpeg_image",
+  "step_png_image",
+  "step_gif_image",
+  "advertising_files",
+  "customer_it_pudu_cloud_readiness_section",
+  "step_store_created_in_pudu_cloud_customer",
+  "step_restricted_user_role_and_permissions",
+  "pudu_cloud_user",
+  "physical_delivery_and_access_section",
+  "shipping_date",
+  "shipping_cost",
+  "delivery_notes",
+  "operating_days_section",
+  "open_monday",
+  "open_tuesday",
+  "open_wednesday",
+  "open_thursday",
+  "open_friday",
+  "open_saturday",
+  "open_sunday",
+  "customer_operating_hours_section",
+  "opening_time",
+  "closing_time",
+  "documents_shared_before_installation_section",
+  "step_site_floor_plan",
+  "step_access_delivery_instructions",
+  "step_safety_hazard_documentation",
+  "step_deployment_manual",
+  "step_operating_guide",
+  "step_product_introduction",
+  "mandatory_site_photos_section",
+  "operating_area_photos",
+  "route_photos",
+  "special_installation_requirements_section",
+  "step_none",
+  "step_after_hours_installation",
+  "step_weekend_installation",
+  "step_additional_labor_required",
+  "step_lift_or_equipment_needed",
+  "step_temporary_area_closure",
+  "installation_constraints",
+  "can_proceed",
+  "unresolved_hazards_warnings_section",
+  "step_aisle_width_below_65_cm",
+  "step_turning_radius_below_threshold",
+  "step_obstacle_on_route",
+  "step_charging_area_not_ready",
+  "step_network_issue_unresolved",
+  "step_access_delivery_issue",
+  "risk_notes",
+  "pre_installation_decision_section",
+  "final_decision",
+  "decision_remarks",
+  "employee_certification_section",
+  "employee_signature",
+  "snapshot_section",
+  "submission_snapshot",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "DO-BPI-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DO-BPI-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job",
+   "options": "DeployOps Job",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "job_device",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Job machine row",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Machine",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Machine name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Serial number",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "description": "Version of this checklist's questions when the form was started.",
+   "fieldname": "form_version",
+   "fieldtype": "Int",
+   "label": "Form version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "deployment_identification_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment identification"
+  },
+  {
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "label": "Site / branch name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "planned_installation_date",
+   "fieldtype": "Date",
+   "label": "Planned installation date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pid_robot",
+   "fieldtype": "Data",
+   "label": "PID robot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "commercial_actions",
+   "fieldtype": "Table",
+   "label": "Commercial actions",
+   "options": "DeployOps Checklist Action"
+  },
+  {
+   "fieldname": "intended_customer_use_section",
+   "fieldtype": "Section Break",
+   "label": "Intended customer use"
+  },
+  {
+   "fieldname": "intended_use",
+   "fieldtype": "Select",
+   "label": "Intended use case",
+   "options": "\nFood & beverage delivery\nHospitality room service\nRetail customer service\nReception / greeter\nAdvertising / promotional screen\nEvent / expo support\nEducation / campus support",
+   "reqd": 1
+  },
+  {
+   "fieldname": "primary_functions_required_section",
+   "fieldtype": "Section Break",
+   "label": "Primary functions required"
+  },
+  {
+   "fieldname": "step_deliver_items",
+   "fieldtype": "Check",
+   "label": "Deliver items"
+  },
+  {
+   "fieldname": "step_guide_customers",
+   "fieldtype": "Check",
+   "label": "Guide customers"
+  },
+  {
+   "fieldname": "step_display_advertising_content",
+   "fieldtype": "Check",
+   "label": "Display advertising content"
+  },
+  {
+   "fieldname": "step_play_audio_announcements",
+   "fieldtype": "Check",
+   "label": "Play audio announcements"
+  },
+  {
+   "fieldname": "step_collect_or_carry_materials",
+   "fieldtype": "Check",
+   "label": "Collect or carry materials"
+  },
+  {
+   "fieldname": "step_provide_concierge_support",
+   "fieldtype": "Check",
+   "label": "Provide concierge support"
+  },
+  {
+   "fieldname": "site_environment_qualification_section",
+   "fieldtype": "Section Break",
+   "label": "Site environment qualification"
+  },
+  {
+   "fieldname": "site_indoors",
+   "fieldtype": "Select",
+   "label": "Is the site indoors?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "floors_dry",
+   "fieldtype": "Select",
+   "label": "Are the floors dry?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "humid_area",
+   "fieldtype": "Select",
+   "label": "Is there a humid or wet area near the operation area?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site_environment_comments",
+   "fieldtype": "Small Text",
+   "label": "Site environment comments"
+  },
+  {
+   "fieldname": "passage_and_navigation_measurements_section",
+   "fieldtype": "Section Break",
+   "label": "Passage and navigation measurements"
+  },
+  {
+   "fieldname": "two_way_traffic",
+   "fieldtype": "Select",
+   "label": "Is two-way traffic planned on the main route?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "description": "Minimum 65 cm.",
+   "fieldname": "narrowest_passage_cm",
+   "fieldtype": "Int",
+   "label": "Narrowest passage width (cm)",
+   "reqd": 1
+  },
+  {
+   "description": "Minimum 65 cm.",
+   "fieldname": "kitchen_entrance_cm",
+   "fieldtype": "Int",
+   "label": "Kitchen entrance width (cm)",
+   "reqd": 1
+  },
+  {
+   "description": "BellaBot Pro trays: 410 mm x 500 mm.",
+   "fieldname": "max_dish_size_cm",
+   "fieldtype": "Int",
+   "label": "Maximum size of dishes / plates (cm)"
+  },
+  {
+   "fieldname": "two_way_corridor_cm",
+   "fieldtype": "Int",
+   "label": "Two-way corridor width (cm)"
+  },
+  {
+   "description": "Maximum 5°.",
+   "fieldname": "slope_degrees",
+   "fieldtype": "Float",
+   "label": "Slope (degrees)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stairs_on_route",
+   "fieldtype": "Select",
+   "label": "Are stairs present on the route?",
+   "options": "\nNo\nYes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "floor_and_navigation_hazards_section",
+   "fieldtype": "Section Break",
+   "label": "Floor and navigation hazards"
+  },
+  {
+   "fieldname": "hazard_type",
+   "fieldtype": "Select",
+   "label": "Hazard type",
+   "options": "\nNone\nLoose cables\nReflective surfaces\nTransparent glass / doors\nUneven flooring\nThresholds / ramps\nLow obstacles",
+   "reqd": 1
+  },
+  {
+   "fieldname": "surface_conditions_around_sensor_height_section",
+   "fieldtype": "Section Break",
+   "label": "Surface conditions around sensor height"
+  },
+  {
+   "fieldname": "step_black_surfaces",
+   "fieldtype": "Check",
+   "label": "Black surfaces"
+  },
+  {
+   "fieldname": "step_polished_surfaces",
+   "fieldtype": "Check",
+   "label": "Polished surfaces"
+  },
+  {
+   "fieldname": "step_transparent_surfaces",
+   "fieldtype": "Check",
+   "label": "Transparent surfaces"
+  },
+  {
+   "fieldname": "step_mirrored_surfaces",
+   "fieldtype": "Check",
+   "label": "Mirrored surfaces"
+  },
+  {
+   "fieldname": "step_no_relevant_surface_issues",
+   "fieldtype": "Check",
+   "label": "No relevant surface issues"
+  },
+  {
+   "fieldname": "corrective_actions_required_section",
+   "fieldtype": "Section Break",
+   "label": "Corrective actions required"
+  },
+  {
+   "fieldname": "step_remove_obstructions",
+   "fieldtype": "Check",
+   "label": "Remove obstructions"
+  },
+  {
+   "fieldname": "step_mark_hazard_area",
+   "fieldtype": "Check",
+   "label": "Mark hazard area"
+  },
+  {
+   "fieldname": "step_apply_floor_surface_treatment",
+   "fieldtype": "Check",
+   "label": "Apply floor / surface treatment"
+  },
+  {
+   "fieldname": "step_install_warning_signage",
+   "fieldtype": "Check",
+   "label": "Install warning signage"
+  },
+  {
+   "fieldname": "step_adjust_route",
+   "fieldtype": "Check",
+   "label": "Adjust route"
+  },
+  {
+   "fieldname": "step_no_action_needed",
+   "fieldtype": "Check",
+   "label": "No action needed"
+  },
+  {
+   "fieldname": "corrective_notes",
+   "fieldtype": "Small Text",
+   "label": "Corrective notes for unresolved hazards"
+  },
+  {
+   "fieldname": "route_definition_and_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Route definition and mapping"
+  },
+  {
+   "fieldname": "route_map_files",
+   "fieldtype": "Table",
+   "label": "Map / table numbers",
+   "options": "DeployOps Checklist File"
+  },
+  {
+   "fieldname": "charging_location_readiness_section",
+   "fieldtype": "Section Break",
+   "label": "Charging location readiness"
+  },
+  {
+   "fieldname": "team_charges_robot",
+   "fieldtype": "Select",
+   "label": "Will the customer's team charge the robot?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "aware_charger_ac",
+   "fieldtype": "Select",
+   "label": "Is the customer aware the charger uses AC power?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "advertising_content_readiness_section",
+   "fieldtype": "Section Break",
+   "label": "Advertising content readiness"
+  },
+  {
+   "fieldname": "promo_screen",
+   "fieldtype": "Select",
+   "label": "Will the promotional screen be used, and was the client contacted about the multimedia content?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "description": "MP4 video, JPEG / PNG / GIF image.",
+   "fieldname": "content_types_section",
+   "fieldtype": "Section Break",
+   "label": "Content types ready for upload"
+  },
+  {
+   "depends_on": "eval:doc.promo_screen=='Yes'",
+   "fieldname": "step_mp4_video",
+   "fieldtype": "Check",
+   "label": "MP4 video"
+  },
+  {
+   "depends_on": "eval:doc.promo_screen=='Yes'",
+   "fieldname": "step_jpeg_image",
+   "fieldtype": "Check",
+   "label": "JPEG image"
+  },
+  {
+   "depends_on": "eval:doc.promo_screen=='Yes'",
+   "fieldname": "step_png_image",
+   "fieldtype": "Check",
+   "label": "PNG image"
+  },
+  {
+   "depends_on": "eval:doc.promo_screen=='Yes'",
+   "fieldname": "step_gif_image",
+   "fieldtype": "Check",
+   "label": "GIF image"
+  },
+  {
+   "depends_on": "eval:doc.promo_screen=='Yes'",
+   "fieldname": "advertising_files",
+   "fieldtype": "Table",
+   "label": "Advertising files",
+   "options": "DeployOps Checklist File"
+  },
+  {
+   "description": "https://csu.pudutech.com/login. Never type passwords, OTPs, PINs or pairing codes in this checklist.",
+   "fieldname": "customer_it_pudu_cloud_readiness_section",
+   "fieldtype": "Section Break",
+   "label": "Customer IT / PUDU Cloud readiness"
+  },
+  {
+   "fieldname": "step_store_created_in_pudu_cloud_customer",
+   "fieldtype": "Check",
+   "label": "Store created in PUDU Cloud (Customer Center - Store Management - Add Store)."
+  },
+  {
+   "fieldname": "step_restricted_user_role_and_permissions",
+   "fieldtype": "Check",
+   "label": "Restricted user role and permissions configured."
+  },
+  {
+   "description": "User name only, never the password.",
+   "fieldname": "pudu_cloud_user",
+   "fieldtype": "Data",
+   "label": "PUDU Cloud user"
+  },
+  {
+   "fieldname": "physical_delivery_and_access_section",
+   "fieldtype": "Section Break",
+   "label": "Physical delivery and access"
+  },
+  {
+   "fieldname": "shipping_date",
+   "fieldtype": "Date",
+   "label": "Scheduled shipping date"
+  },
+  {
+   "fieldname": "shipping_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated shipping cost",
+   "options": "Company:company:default_currency"
+  },
+  {
+   "fieldname": "delivery_notes",
+   "fieldtype": "Small Text",
+   "label": "Delivery and access notes"
+  },
+  {
+   "fieldname": "operating_days_section",
+   "fieldtype": "Section Break",
+   "label": "Customer operating days"
+  },
+  {
+   "fieldname": "open_monday",
+   "fieldtype": "Check",
+   "label": "Monday"
+  },
+  {
+   "fieldname": "open_tuesday",
+   "fieldtype": "Check",
+   "label": "Tuesday"
+  },
+  {
+   "fieldname": "open_wednesday",
+   "fieldtype": "Check",
+   "label": "Wednesday"
+  },
+  {
+   "fieldname": "open_thursday",
+   "fieldtype": "Check",
+   "label": "Thursday"
+  },
+  {
+   "fieldname": "open_friday",
+   "fieldtype": "Check",
+   "label": "Friday"
+  },
+  {
+   "fieldname": "open_saturday",
+   "fieldtype": "Check",
+   "label": "Saturday"
+  },
+  {
+   "fieldname": "open_sunday",
+   "fieldtype": "Check",
+   "label": "Sunday"
+  },
+  {
+   "fieldname": "customer_operating_hours_section",
+   "fieldtype": "Section Break",
+   "label": "Customer operating hours"
+  },
+  {
+   "fieldname": "opening_time",
+   "fieldtype": "Time",
+   "label": "Daily opening time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "closing_time",
+   "fieldtype": "Time",
+   "label": "Daily closing time",
+   "reqd": 1
+  },
+  {
+   "description": "Deployment manual, operating guide, product introduction.",
+   "fieldname": "documents_shared_before_installation_section",
+   "fieldtype": "Section Break",
+   "label": "Documents shared before installation"
+  },
+  {
+   "fieldname": "step_site_floor_plan",
+   "fieldtype": "Check",
+   "label": "Site floor plan"
+  },
+  {
+   "fieldname": "step_access_delivery_instructions",
+   "fieldtype": "Check",
+   "label": "Access / delivery instructions"
+  },
+  {
+   "fieldname": "step_safety_hazard_documentation",
+   "fieldtype": "Check",
+   "label": "Safety / hazard documentation"
+  },
+  {
+   "fieldname": "step_deployment_manual",
+   "fieldtype": "Check",
+   "label": "Deployment manual"
+  },
+  {
+   "fieldname": "step_operating_guide",
+   "fieldtype": "Check",
+   "label": "Operating guide"
+  },
+  {
+   "fieldname": "step_product_introduction",
+   "fieldtype": "Check",
+   "label": "Product introduction"
+  },
+  {
+   "fieldname": "mandatory_site_photos_section",
+   "fieldtype": "Section Break",
+   "label": "Mandatory site photos"
+  },
+  {
+   "fieldname": "operating_area_photos",
+   "fieldtype": "Table",
+   "label": "Primary operating area",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "route_photos",
+   "fieldtype": "Table",
+   "label": "Route and obstacle areas",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "special_installation_requirements_section",
+   "fieldtype": "Section Break",
+   "label": "Special installation requirements"
+  },
+  {
+   "fieldname": "step_none",
+   "fieldtype": "Check",
+   "label": "None"
+  },
+  {
+   "fieldname": "step_after_hours_installation",
+   "fieldtype": "Check",
+   "label": "After-hours installation"
+  },
+  {
+   "fieldname": "step_weekend_installation",
+   "fieldtype": "Check",
+   "label": "Weekend installation"
+  },
+  {
+   "fieldname": "step_additional_labor_required",
+   "fieldtype": "Check",
+   "label": "Additional labor required"
+  },
+  {
+   "fieldname": "step_lift_or_equipment_needed",
+   "fieldtype": "Check",
+   "label": "Lift or equipment needed"
+  },
+  {
+   "fieldname": "step_temporary_area_closure",
+   "fieldtype": "Check",
+   "label": "Temporary area closure"
+  },
+  {
+   "fieldname": "installation_constraints",
+   "fieldtype": "Small Text",
+   "label": "Installation constraints or site notes"
+  },
+  {
+   "fieldname": "can_proceed",
+   "fieldtype": "Select",
+   "label": "Can the installation proceed with these requirements?",
+   "options": "\nYes\nNo\nNeeds review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "unresolved_hazards_warnings_section",
+   "fieldtype": "Section Break",
+   "label": "Unresolved hazards / warnings"
+  },
+  {
+   "fieldname": "step_aisle_width_below_65_cm",
+   "fieldtype": "Check",
+   "label": "Aisle width below 65 cm"
+  },
+  {
+   "fieldname": "step_turning_radius_below_threshold",
+   "fieldtype": "Check",
+   "label": "Turning radius below threshold"
+  },
+  {
+   "fieldname": "step_obstacle_on_route",
+   "fieldtype": "Check",
+   "label": "Obstacle on route"
+  },
+  {
+   "fieldname": "step_charging_area_not_ready",
+   "fieldtype": "Check",
+   "label": "Charging area not ready"
+  },
+  {
+   "fieldname": "step_network_issue_unresolved",
+   "fieldtype": "Check",
+   "label": "Network issue unresolved"
+  },
+  {
+   "fieldname": "step_access_delivery_issue",
+   "fieldtype": "Check",
+   "label": "Access / delivery issue"
+  },
+  {
+   "fieldname": "risk_notes",
+   "fieldtype": "Small Text",
+   "label": "Additional risk notes"
+  },
+  {
+   "fieldname": "pre_installation_decision_section",
+   "fieldtype": "Section Break",
+   "label": "Pre-installation decision"
+  },
+  {
+   "fieldname": "final_decision",
+   "fieldtype": "Select",
+   "label": "Final decision",
+   "options": "\nGO\nGO WITH CONDITIONS\nNO GO",
+   "reqd": 1
+  },
+  {
+   "fieldname": "decision_remarks",
+   "fieldtype": "Small Text",
+   "label": "Decision remarks"
+  },
+  {
+   "fieldname": "employee_certification_section",
+   "fieldtype": "Section Break",
+   "label": "Employee certification"
+  },
+  {
+   "fieldname": "employee_signature",
+   "fieldtype": "Signature",
+   "label": "Employee signature",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Submitted snapshot"
+  },
+  {
+   "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
+   "fieldname": "submission_snapshot",
+   "fieldtype": "JSON",
+   "label": "Submission snapshot",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "DeployOps BellaBot Pre-installation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "list",
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 11:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps BellaBot Pre-installation",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Technician",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Administrator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}
