@@ -1,0 +1,776 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-20 10:30:00.000000",
+ "description": "BellaBot Pro on-site installation and commissioning (Massarie deployment standard). Source: https://form.jotform.com/262743396548066 (field mapping pending #40 sign-off).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "job",
+  "job_device",
+  "customer_name",
+  "site_address",
+  "column_break_header",
+  "item_code",
+  "item_name",
+  "serial_no",
+  "technician",
+  "company",
+  "form_version",
+  "deployment_identification_section",
+  "site_name",
+  "installed_on",
+  "deployment_type",
+  "arrival_and_physical_condition_section",
+  "visible_damage",
+  "damage_note",
+  "damage_corrective_action",
+  "arrival_photos",
+  "power_network_and_cloud_section",
+  "step_main_power_check_charging_docking_status",
+  "step_network_connectivity_wi_fi",
+  "step_pudu_link_app_installed_and_configured",
+  "setup_notes",
+  "mapping_and_positioning_section",
+  "map_name",
+  "localization_section",
+  "step_initial_localization",
+  "step_re_localization_confirmed",
+  "step_tag_marker_alignment_checked",
+  "map_notes",
+  "modes_section",
+  "step_delivery",
+  "step_cruise",
+  "step_recycle",
+  "step_birthday",
+  "step_guide_escorting",
+  "step_shop_assistant",
+  "step_advertising",
+  "mode_notes",
+  "functional_testing_by_mode_section",
+  "delivery_status",
+  "cruise_status",
+  "recycle_status",
+  "birthday_status",
+  "test_notes",
+  "safety_section",
+  "step_obstacle_detection",
+  "step_emergency_stop",
+  "step_human_interaction_safety",
+  "step_low_speed_stop_behavior",
+  "step_audible_visual_warning_response",
+  "safety_result",
+  "safety_failure_details",
+  "advertising_section",
+  "step_video_display",
+  "step_image_slideshow",
+  "step_promotional_banners",
+  "audio_section",
+  "step_greeting_announcements",
+  "step_promotional_announcements",
+  "step_alert_tones",
+  "validation_notes",
+  "customer_training_section",
+  "training_date",
+  "training_start",
+  "training_end",
+  "training_topics_section",
+  "step_basic_operation",
+  "step_charging",
+  "step_safety_procedures",
+  "step_cleaning_and_maintenance",
+  "step_touch_screen_interface_usage",
+  "step_route_delivery_management",
+  "step_emergency_stop_and_recovery",
+  "step_pudu_link_app_installed_and_configured_on",
+  "step_call_function_pager_via_the_pudu_link_app",
+  "step_touch_sensors_and_voice_interaction",
+  "trainees",
+  "reminders_section",
+  "step_keep_the_robot_and_charging_contacts_clean",
+  "step_inspect_wheels_brushes_and_sensors",
+  "advisories_section",
+  "step_daily_cleaning_guidance",
+  "step_weekly_inspection_checklist",
+  "step_battery_care_guidance",
+  "step_safe_operating_area_guidance",
+  "step_service_contact_information",
+  "installation_evidence_section",
+  "installation_photos",
+  "other_evidence",
+  "customer_handover_and_acceptance_section",
+  "handover_confirmed",
+  "accepted_on",
+  "customer_signature",
+  "customer_remarks",
+  "sign_off_section",
+  "step_i_confirm_the_installation_and",
+  "step_i_confirm_any_outstanding_issues_have_been",
+  "step_i_confirm_the_site_is_ready_for_handover",
+  "technician_signature",
+  "signed_off_on",
+  "snapshot_section",
+  "submission_snapshot",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "DO-BIN-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DO-BIN-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job",
+   "options": "DeployOps Job",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "job_device",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Job machine row",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Machine",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Machine name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Serial number",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "description": "Version of this checklist's questions when the form was started.",
+   "fieldname": "form_version",
+   "fieldtype": "Int",
+   "label": "Form version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "deployment_identification_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment identification"
+  },
+  {
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "label": "Site name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "installed_on",
+   "fieldtype": "Datetime",
+   "label": "Installation date and time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deployment_type",
+   "fieldtype": "Select",
+   "label": "Deployment type",
+   "options": "\nNew installation\nRelocation\nExtension\nReplacement\nPilot\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "arrival_and_physical_condition_section",
+   "fieldtype": "Section Break",
+   "label": "Arrival and physical condition"
+  },
+  {
+   "fieldname": "visible_damage",
+   "fieldtype": "Select",
+   "label": "Visible damage observed",
+   "options": "\nNo damage\nMinor cosmetic damage\nModerate damage\nSevere damage",
+   "reqd": 1
+  },
+  {
+   "fieldname": "damage_note",
+   "fieldtype": "Small Text",
+   "label": "Note about damage"
+  },
+  {
+   "fieldname": "damage_corrective_action",
+   "fieldtype": "Small Text",
+   "label": "Corrective action if applicable"
+  },
+  {
+   "fieldname": "arrival_photos",
+   "fieldtype": "Table",
+   "label": "Arrival photos / evidence",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "description": "Never type passwords, OTPs, PINs or pairing codes in this checklist.",
+   "fieldname": "power_network_and_cloud_section",
+   "fieldtype": "Section Break",
+   "label": "Power, network and cloud"
+  },
+  {
+   "fieldname": "step_main_power_check_charging_docking_status",
+   "fieldtype": "Check",
+   "label": "Main power check - charging / docking status",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_network_connectivity_wi_fi",
+   "fieldtype": "Check",
+   "label": "Network connectivity - Wi-Fi",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_pudu_link_app_installed_and_configured",
+   "fieldtype": "Check",
+   "label": "PUDU Link app installed and configured",
+   "reqd": 1
+  },
+  {
+   "fieldname": "setup_notes",
+   "fieldtype": "Small Text",
+   "label": "Power, network and PUDU Link setup notes"
+  },
+  {
+   "description": "Deployment manual.",
+   "fieldname": "mapping_and_positioning_section",
+   "fieldtype": "Section Break",
+   "label": "Mapping and positioning"
+  },
+  {
+   "fieldname": "map_name",
+   "fieldtype": "Data",
+   "label": "Map name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "localization_section",
+   "fieldtype": "Section Break",
+   "label": "Localization / positioning checks"
+  },
+  {
+   "fieldname": "step_initial_localization",
+   "fieldtype": "Check",
+   "label": "Initial localization"
+  },
+  {
+   "fieldname": "step_re_localization_confirmed",
+   "fieldtype": "Check",
+   "label": "Re-localization confirmed"
+  },
+  {
+   "fieldname": "step_tag_marker_alignment_checked",
+   "fieldtype": "Check",
+   "label": "Tag / marker alignment checked"
+  },
+  {
+   "fieldname": "map_notes",
+   "fieldtype": "Small Text",
+   "label": "Map notes"
+  },
+  {
+   "description": "Operating guide.",
+   "fieldname": "modes_section",
+   "fieldtype": "Section Break",
+   "label": "Enabled modes"
+  },
+  {
+   "fieldname": "step_delivery",
+   "fieldtype": "Check",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "step_cruise",
+   "fieldtype": "Check",
+   "label": "Cruise"
+  },
+  {
+   "fieldname": "step_recycle",
+   "fieldtype": "Check",
+   "label": "Recycle"
+  },
+  {
+   "fieldname": "step_birthday",
+   "fieldtype": "Check",
+   "label": "Birthday"
+  },
+  {
+   "fieldname": "step_guide_escorting",
+   "fieldtype": "Check",
+   "label": "Guide / escorting"
+  },
+  {
+   "fieldname": "step_shop_assistant",
+   "fieldtype": "Check",
+   "label": "Shop assistant"
+  },
+  {
+   "fieldname": "step_advertising",
+   "fieldtype": "Check",
+   "label": "Advertising"
+  },
+  {
+   "fieldname": "mode_notes",
+   "fieldtype": "Small Text",
+   "label": "Mode notes"
+  },
+  {
+   "fieldname": "functional_testing_by_mode_section",
+   "fieldtype": "Section Break",
+   "label": "Functional testing by mode"
+  },
+  {
+   "fieldname": "delivery_status",
+   "fieldtype": "Select",
+   "label": "Delivery",
+   "options": "\nPass\nFail\nNot Tested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cruise_status",
+   "fieldtype": "Select",
+   "label": "Cruise",
+   "options": "\nPass\nFail\nNot Tested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recycle_status",
+   "fieldtype": "Select",
+   "label": "Recycle",
+   "options": "\nPass\nFail\nNot Tested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "birthday_status",
+   "fieldtype": "Select",
+   "label": "Birthday",
+   "options": "\nPass\nFail\nNot Tested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "test_notes",
+   "fieldtype": "Small Text",
+   "label": "Test notes"
+  },
+  {
+   "fieldname": "safety_section",
+   "fieldtype": "Section Break",
+   "label": "Safety tests"
+  },
+  {
+   "fieldname": "step_obstacle_detection",
+   "fieldtype": "Check",
+   "label": "Obstacle detection"
+  },
+  {
+   "fieldname": "step_emergency_stop",
+   "fieldtype": "Check",
+   "label": "Emergency stop"
+  },
+  {
+   "fieldname": "step_human_interaction_safety",
+   "fieldtype": "Check",
+   "label": "Human interaction safety"
+  },
+  {
+   "fieldname": "step_low_speed_stop_behavior",
+   "fieldtype": "Check",
+   "label": "Low-speed stop behavior"
+  },
+  {
+   "fieldname": "step_audible_visual_warning_response",
+   "fieldtype": "Check",
+   "label": "Audible / visual warning response"
+  },
+  {
+   "fieldname": "safety_result",
+   "fieldtype": "Select",
+   "label": "Safety test overall result",
+   "options": "\nPASS\nFAIL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "safety_failure_details",
+   "fieldtype": "Small Text",
+   "label": "Safety failure details"
+  },
+  {
+   "fieldname": "advertising_section",
+   "fieldtype": "Section Break",
+   "label": "Advertising feature validation"
+  },
+  {
+   "fieldname": "step_video_display",
+   "fieldtype": "Check",
+   "label": "Video display"
+  },
+  {
+   "fieldname": "step_image_slideshow",
+   "fieldtype": "Check",
+   "label": "Image slideshow"
+  },
+  {
+   "fieldname": "step_promotional_banners",
+   "fieldtype": "Check",
+   "label": "Promotional banners"
+  },
+  {
+   "fieldname": "audio_section",
+   "fieldtype": "Section Break",
+   "label": "Audio announcement validation"
+  },
+  {
+   "fieldname": "step_greeting_announcements",
+   "fieldtype": "Check",
+   "label": "Greeting announcements"
+  },
+  {
+   "fieldname": "step_promotional_announcements",
+   "fieldtype": "Check",
+   "label": "Promotional announcements"
+  },
+  {
+   "fieldname": "step_alert_tones",
+   "fieldtype": "Check",
+   "label": "Alert tones"
+  },
+  {
+   "fieldname": "validation_notes",
+   "fieldtype": "Small Text",
+   "label": "Validation notes / failures"
+  },
+  {
+   "fieldname": "customer_training_section",
+   "fieldtype": "Section Break",
+   "label": "Customer training"
+  },
+  {
+   "fieldname": "training_date",
+   "fieldtype": "Date",
+   "label": "Training date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "training_start",
+   "fieldtype": "Time",
+   "label": "Training start time"
+  },
+  {
+   "fieldname": "training_end",
+   "fieldtype": "Time",
+   "label": "Training end time"
+  },
+  {
+   "fieldname": "training_topics_section",
+   "fieldtype": "Section Break",
+   "label": "Training topics covered"
+  },
+  {
+   "fieldname": "step_basic_operation",
+   "fieldtype": "Check",
+   "label": "Basic operation"
+  },
+  {
+   "fieldname": "step_charging",
+   "fieldtype": "Check",
+   "label": "Charging"
+  },
+  {
+   "fieldname": "step_safety_procedures",
+   "fieldtype": "Check",
+   "label": "Safety procedures"
+  },
+  {
+   "fieldname": "step_cleaning_and_maintenance",
+   "fieldtype": "Check",
+   "label": "Cleaning and maintenance"
+  },
+  {
+   "fieldname": "step_touch_screen_interface_usage",
+   "fieldtype": "Check",
+   "label": "Touch screen / interface usage"
+  },
+  {
+   "fieldname": "step_route_delivery_management",
+   "fieldtype": "Check",
+   "label": "Route / delivery management"
+  },
+  {
+   "fieldname": "step_emergency_stop_and_recovery",
+   "fieldtype": "Check",
+   "label": "Emergency stop and recovery"
+  },
+  {
+   "fieldname": "step_pudu_link_app_installed_and_configured_on",
+   "fieldtype": "Check",
+   "label": "PUDU Link app installed and configured on the customer's devices"
+  },
+  {
+   "fieldname": "step_call_function_pager_via_the_pudu_link_app",
+   "fieldtype": "Check",
+   "label": "Call function (pager) via the PUDU Link app"
+  },
+  {
+   "fieldname": "step_touch_sensors_and_voice_interaction",
+   "fieldtype": "Check",
+   "label": "Touch sensors and voice interaction"
+  },
+  {
+   "fieldname": "trainees",
+   "fieldtype": "Table",
+   "label": "Trainees attending",
+   "options": "DeployOps Checklist Trainee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reminders_section",
+   "fieldtype": "Section Break",
+   "label": "Maintenance reminders acknowledged"
+  },
+  {
+   "fieldname": "step_keep_the_robot_and_charging_contacts_clean",
+   "fieldtype": "Check",
+   "label": "Keep the robot and charging contacts clean"
+  },
+  {
+   "fieldname": "step_inspect_wheels_brushes_and_sensors",
+   "fieldtype": "Check",
+   "label": "Inspect wheels, brushes and sensors regularly"
+  },
+  {
+   "fieldname": "advisories_section",
+   "fieldtype": "Section Break",
+   "label": "Customer advisories provided"
+  },
+  {
+   "fieldname": "step_daily_cleaning_guidance",
+   "fieldtype": "Check",
+   "label": "Daily cleaning guidance"
+  },
+  {
+   "fieldname": "step_weekly_inspection_checklist",
+   "fieldtype": "Check",
+   "label": "Weekly inspection checklist"
+  },
+  {
+   "fieldname": "step_battery_care_guidance",
+   "fieldtype": "Check",
+   "label": "Battery care guidance"
+  },
+  {
+   "fieldname": "step_safe_operating_area_guidance",
+   "fieldtype": "Check",
+   "label": "Safe operating area guidance"
+  },
+  {
+   "fieldname": "step_service_contact_information",
+   "fieldtype": "Check",
+   "label": "Service contact information"
+  },
+  {
+   "fieldname": "installation_evidence_section",
+   "fieldtype": "Section Break",
+   "label": "Installation evidence"
+  },
+  {
+   "fieldname": "installation_photos",
+   "fieldtype": "Table",
+   "label": "Photos",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "other_evidence",
+   "fieldtype": "Table",
+   "label": "Other installation evidence",
+   "options": "DeployOps Checklist File"
+  },
+  {
+   "fieldname": "customer_handover_and_acceptance_section",
+   "fieldtype": "Section Break",
+   "label": "Customer handover and acceptance"
+  },
+  {
+   "fieldname": "handover_confirmed",
+   "fieldtype": "Select",
+   "label": "Handover confirmed",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "accepted_on",
+   "fieldtype": "Datetime",
+   "label": "Acceptance date and time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_signature",
+   "fieldtype": "Signature",
+   "label": "Customer signature",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Customer remarks"
+  },
+  {
+   "fieldname": "sign_off_section",
+   "fieldtype": "Section Break",
+   "label": "Technician sign-off"
+  },
+  {
+   "fieldname": "step_i_confirm_the_installation_and",
+   "fieldtype": "Check",
+   "label": "I confirm the installation and commissioning tasks assigned to me have been completed"
+  },
+  {
+   "fieldname": "step_i_confirm_any_outstanding_issues_have_been",
+   "fieldtype": "Check",
+   "label": "I confirm any outstanding issues have been documented and communicated"
+  },
+  {
+   "fieldname": "step_i_confirm_the_site_is_ready_for_handover",
+   "fieldtype": "Check",
+   "label": "I confirm the site is ready for handover"
+  },
+  {
+   "fieldname": "technician_signature",
+   "fieldtype": "Signature",
+   "label": "Technician signature",
+   "reqd": 1
+  },
+  {
+   "fieldname": "signed_off_on",
+   "fieldtype": "Datetime",
+   "label": "Signed on",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Submitted snapshot"
+  },
+  {
+   "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
+   "fieldname": "submission_snapshot",
+   "fieldtype": "JSON",
+   "label": "Submission snapshot",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "DeployOps BellaBot Installation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "list",
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 10:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps BellaBot Installation",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Technician",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Administrator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

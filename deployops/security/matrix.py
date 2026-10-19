@@ -7,6 +7,7 @@ Letters: r read, c create, w write, s submit, x cancel, d delete, p print, e exp
 a approve/return. "a" is a workflow transition and is enforced in #19, not by DocPerm.
 """
 
+from deployops.checklists.cards import FORM_DOCTYPES as CHECKLIST_FORMS
 from deployops.roles import ADMINISTRATOR, DESK_ACCESS, MANAGER, SUPERVISOR, TECHNICIAN
 
 PTYPES = {
@@ -25,13 +26,10 @@ PTYPES = {
 DOCTYPE_MATRIX = {
 	"DeployOps Job": {TECHNICIAN: "rw", SUPERVISOR: "rcwap", MANAGER: "rcwxape", ADMINISTRATOR: "rcwxpe"},
 	"DeployOps Job Device": {TECHNICIAN: "rw", SUPERVISOR: "rcw", MANAGER: "rcwx", ADMINISTRATOR: "rcwx"},
-	"DeployOps Checklist Response": {
-		TECHNICIAN: "rcwsp",
-		SUPERVISOR: "rap",
-		MANAGER: "rxape",
-		ADMINISTRATOR: "rpe",
+	**{
+		doctype: {TECHNICIAN: "rcwsp", SUPERVISOR: "rap", MANAGER: "rxape", ADMINISTRATOR: "rpe"}
+		for doctype in CHECKLIST_FORMS
 	},
-	"DeployOps Checklist Template": {TECHNICIAN: "r", SUPERVISOR: "r", MANAGER: "r", ADMINISTRATOR: "rcw"},
 	"DeployOps Equipment Category": {TECHNICIAN: "", SUPERVISOR: "r", MANAGER: "r", ADMINISTRATOR: "rcwd"},
 	"DeployOps Equipment Access Profile": {
 		TECHNICIAN: "",

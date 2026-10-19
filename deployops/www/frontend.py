@@ -1,22 +1,18 @@
-from urllib.parse import urlencode
-
 import frappe
 from frappe import _
-from frappe.utils import get_system_timezone
 
 no_cache = 1
 
 
 def get_context():
-	if frappe.session.user == "Guest":
-		frappe.local.flags.redirect_location = "/login?" + urlencode({"redirect-to": frappe.request.path})
-		# 302, not Frappe's default 301: browsers cache 301s and would keep sending "/" to /login.
-		raise frappe.Redirect(302)
+	"""Serve the React app shell.
 
-	csrf_token = frappe.sessions.get_csrf_token()
+	Guests get the shell too, so the app can show its own login screen. The shell carries no
+	business data: everything comes from API calls, which refuse guests (deny by default).
+	"""
 	context = frappe._dict()
-	context.boot = get_boot()
-	context.boot.csrf_token = csrf_token
+	context.csrf_token = frappe.sessions.get_csrf_token() if frappe.session.user != "Guest" else ""
+	context.is_guest = frappe.session.user == "Guest"
 	return context
 
 
@@ -24,15 +20,4 @@ def get_context():
 def get_context_for_dev():
 	if not frappe.conf.developer_mode:
 		frappe.throw(_("This method is only meant for developer mode"))
-	return get_boot()
-
-
-def get_boot():
-	return frappe._dict(
-		{
-			"frappe_version": frappe.__version__,
-			"site_name": frappe.local.site,
-			"read_only_mode": frappe.flags.read_only,
-			"system_timezone": get_system_timezone(),
-		}
-	)
+	return {"site_name": frappe.local.site}
