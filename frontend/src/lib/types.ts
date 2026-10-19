@@ -38,6 +38,8 @@ export type Machine = {
 	item_name: string | null;
 	serial_no: string | null;
 	status: string;
+	delivery_note: string | null;
+	issue: string | null;
 	actions: Action[];
 	checklist: FormRef | null;
 	can_start_checklist: boolean;

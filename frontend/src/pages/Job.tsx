@@ -121,6 +121,12 @@ function MachineRow({ job, machine, onChange }: { job: string; machine: Machine;
 				<Status status={machine.status} />
 			</div>
 
+			{machine.issue && (
+				<div className="mt-3">
+					<Banner kind="warning">{machine.issue}. A supervisor decides what happens to this machine.</Banner>
+				</div>
+			)}
+
 			{form ? (
 				<Link
 					to={formPath(form.doctype, form.name)}

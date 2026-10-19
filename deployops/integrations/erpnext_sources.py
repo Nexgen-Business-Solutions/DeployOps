@@ -115,6 +115,21 @@ def get_row_serials(row) -> list[str]:
 	return get_serial_nos(row.get("serial_no") or "")
 
 
+def delivery_orders(delivery_note: str) -> set[str]:
+	"""Sales orders a Delivery Note delivers against."""
+	return set(
+		frappe.get_all(
+			"Delivery Note Item",
+			filters={
+				"parent": delivery_note,
+				"parenttype": DELIVERY_NOTE,
+				"against_sales_order": ["is", "set"],
+			},
+			pluck="against_sales_order",
+		)
+	)
+
+
 def get_contact(doc) -> dict | None:
 	name = doc.get("contact_person")
 	customer = get_customer(doc)

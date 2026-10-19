@@ -310,10 +310,17 @@ has_permission = {
 	**{doctype: "deployops.security.job_permissions.form_has_permission" for doctype in CHECKLIST_FORMS},
 }
 
-# ERPNext deliveries close sale reservations (#14). Read-only on the Delivery Note itself.
+# ERPNext deliveries close sale reservations (#14) and hand machines over to installation jobs
+# (#16). Read-only on the Delivery Note itself.
 doc_events = {
 	"Delivery Note": {
-		"on_submit": "deployops.equipment.allocations.on_delivery_note_submit",
-		"on_cancel": "deployops.equipment.allocations.on_delivery_note_cancel",
+		"on_submit": [
+			"deployops.equipment.allocations.on_delivery_note_submit",
+			"deployops.integrations.delivery_handoff.on_delivery_note_submit",
+		],
+		"on_cancel": [
+			"deployops.equipment.allocations.on_delivery_note_cancel",
+			"deployops.integrations.delivery_handoff.on_delivery_note_cancel",
+		],
 	},
 }
