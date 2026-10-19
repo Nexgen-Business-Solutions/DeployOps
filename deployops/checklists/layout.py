@@ -40,6 +40,7 @@ def _field(controller, df) -> dict:
 		"label": _(df.label or ""),
 		"description": _(df.description) if df.description else None,
 		"reqd": bool(df.reqd or df.mandatory_depends_on),
+		"read_only": bool(df.read_only),
 		"show": _condition(df.depends_on),
 	}
 	if df.fieldtype == "Select":

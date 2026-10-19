@@ -80,6 +80,7 @@ export type Field = {
 	label: string;
 	description: string | null;
 	reqd: boolean;
+	read_only?: boolean;
 	show: Condition;
 	options?: string[];
 	text?: string;

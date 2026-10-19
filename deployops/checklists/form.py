@@ -105,6 +105,13 @@ class ChecklistForm(Document):
 				"form_version": self.FORM_VERSION,
 			}
 		)
+		# Fields such as "Device" that show the machine's own Item data (fetch_from item_code.*).
+		for df in self.meta.fields:
+			if (df.fetch_from or "").startswith("item_code."):
+				self.set(
+					df.fieldname,
+					frappe.db.get_value("Item", device.item_code, df.fetch_from.split(".", 1)[1]),
+				)
 		for field, (column, labels) in self.FIXED_ROWS.items():
 			self.set(field, [{column: label} for label in labels])
 

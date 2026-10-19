@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-10-20 10:30:00.000000",
+ "creation": "2026-10-20 11:30:00.000000",
  "description": "Please complete the following checklist one week before the installation date. Source: https://form.jotform.com/253063954693264 (field mapping pending #40 sign-off).",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -383,11 +383,12 @@
    "label": "Machine details"
   },
   {
+   "description": "From the machine on this job.",
+   "fetch_from": "item_code.item_name",
    "fieldname": "device_model",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Device",
-   "options": "\nSelf Pay 460\nSelf Pay 460 with coins drawer\nSelf Pay 1060\nSelf Pay 1060 with coins drawer\nVisual Pay 27 counter top installation\nVisual Pay 27 wall mounted\nVisual Pay 27 with stand\nVisual Pay 27 with 460\nVisual Pay 22 counter top installation\nVisual Pay 22 wall mounted\nVisual Pay 22 with stand",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "software_version",
@@ -488,7 +489,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 10:30:00.000000",
+ "modified": "2026-10-20 11:30:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Cashmatic Pre-installation",

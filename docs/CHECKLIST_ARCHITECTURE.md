@@ -76,6 +76,7 @@ All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each Doc
 These differ from the Jotforms, either to keep a single source of truth or to fix source problems:
 
 - Customer, machine, serial number, technician and address come from the job, not typed in again.
+- Cashmatic Pre-installation: the Jotform "Device" dropdown (Self Pay 460, Visual Pay 27 wall mounted, …) is now read-only and filled from the machine's Item. The mounting and option part of those choices (wall mounted, with stand, coins drawer) is not captured separately yet; "Special installation request" covers mounting.
 - Cashmatic Installation: "Type of network" and "IP" appeared three and two times; they are now once each. Unlabelled step groups were given the headings "Preparing the machine" and "Customer training". The typo "Codition" is fixed.
 - POS brand and API connector are shown and required only when POS integration = Yes. The Jotform has no logic; its label says "If Yes".
 - BellaBot Pre-installation: "Content types" is shown only when the promotional screen is used. "Scheduled shipping date" is a date and "Estimated shipping cost" is a currency; both were numbers in the Jotform.

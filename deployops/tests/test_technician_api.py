@@ -114,6 +114,19 @@ class TestFormScreen(TechnicianApiTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			self.view(user=self.other_tech)
 
+	def test_device_comes_from_the_machine_and_is_read_only(self):
+		doctype = "DeployOps Cashmatic Pre-installation"
+		name = self.start(self.working_job("Pre-installation", serial="JOB-CR-2"))
+		self.assertEqual(frappe.db.get_value(doctype, name, "device_model"), "_Test CR-460 name")
+		self.as_tech(api.save_form, doctype, name, {"device_model": "Visual Pay 22 with stand"})
+		self.assertEqual(frappe.db.get_value(doctype, name, "device_model"), "_Test CR-460 name")
+		fields = {
+			f["fieldname"]: f
+			for s in self.as_tech(api.form_view, doctype, name)["sections"]
+			for f in s["fields"]
+		}
+		self.assertTrue(fields["device_model"]["read_only"])
+
 	def test_maintenance_tasks_are_a_fixed_grid(self):
 		job = self.working_job("Maintenance", serial="JOB-CR-2")
 		name = self.start(job)
