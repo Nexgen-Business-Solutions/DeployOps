@@ -509,6 +509,7 @@ deployops/                       ← repository root (apps/deployops)
 | [`docs/ERPNEXT_SOURCES.md`](docs/ERPNEXT_SOURCES.md) | Usable ERPNext sources, lookup snapshot, source API and its access rules |
 | [`docs/JOBS.md`](docs/JOBS.md) | Job data model, creation from a source, rules, permissions, tests, UAT steps |
 | [`docs/ALLOCATIONS.md`](docs/ALLOCATIONS.md) | Equipment allocation (rental and sale), collision protection, movement log, serial history |
+| [`docs/DELIVERY_HANDOFF.md`](docs/DELIVERY_HANDOFF.md) | Delivery Note handoff to installation jobs (#16): partial deliveries, returns, cancellations |
 | [`docs/CHECKLIST_ARCHITECTURE.md`](docs/CHECKLIST_ARCHITECTURE.md) | Checklist architecture (#20): one DocType per checklist, rules, mapping notes |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding assistants |
 

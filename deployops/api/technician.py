@@ -91,6 +91,8 @@ def _machine(doc, row, device_actions) -> dict:
 		"item_name": row.item_name,
 		"serial_no": row.serial_no,
 		"status": row.device_status,
+		"delivery_note": row.delivery_note,
+		"issue": row.source_issue,
 		"actions": device_actions.get(row.name, []),
 		"checklist": {"doctype": form[0], "name": form[1], "submitted": form[2] == 1} if form else None,
 		"can_start_checklist": not form

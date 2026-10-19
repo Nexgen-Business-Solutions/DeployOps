@@ -48,6 +48,8 @@ class DeployOpsJob(Document):
 		for row in self.devices:
 			# Rows added during validate miss Frappe's field defaults.
 			row.device_status = row.device_status or "Pending"
+			if self.source_doctype == erpnext_sources.DELIVERY_NOTE and not row.delivery_note:
+				row.delivery_note = self.source_name
 
 		self.validate_devices(snapshot)
 		self.validate_equipment_access()
@@ -97,7 +99,7 @@ class DeployOpsJob(Document):
 			for row in frappe.get_all(
 				"DeployOps Job Device",
 				filters={"parent": self.name, "parenttype": "DeployOps Job"},
-				fields=["name", "item_code", "serial_no", "device_status"],
+				fields=["name", "item_code", "serial_no", "device_status", "delivery_note", "source_issue"],
 			)
 		}
 		current = {row.name: row for row in self.devices if row.name}
@@ -117,6 +119,11 @@ class DeployOpsJob(Document):
 				continue
 			if row.device_status != before.device_status:
 				frappe.throw(_("Machine status can only be changed through the job workflow."))
+			if not self.flags.delivery_handoff and (
+				(row.delivery_note or None) != (before.delivery_note or None)
+				or (row.source_issue or None) != (before.source_issue or None)
+			):
+				frappe.throw(_("Row #{0}: the delivery details are set by the system.").format(row.idx))
 			changed = (row.item_code, row.serial_no or None) != (before.item_code, before.serial_no or None)
 			if changed and (
 				saved_status == "Pending Review" or before.device_status in ("Completed", "Cancelled")
@@ -141,13 +148,30 @@ class DeployOpsJob(Document):
 			frappe.throw(_("The status log can only be written by the job workflow."))
 
 	def validate_devices(self, snapshot: dict):
-		source_items = {line["item_code"] for line in snapshot["lines"]}
+		lines = list(snapshot["lines"])
+		for note in self.later_deliveries():
+			lines += erpnext_sources.get_equipment_lines(frappe.get_doc(erpnext_sources.DELIVERY_NOTE, note))
+		source_items = {line["item_code"] for line in lines}
 		source_serials = {}
-		for line in snapshot["lines"]:
+		for line in lines:
 			source_serials.setdefault(line["item_code"], set()).update(line["serial_nos"])
+
+		# Rows already saved were checked when they were added; their delivery may since have been
+		# cancelled or returned (flagged by delivery_handoff), which must not block later saves.
+		saved = {}
+		if not self.is_new():
+			saved = {
+				r.name: (r.item_code, r.serial_no or None)
+				for r in frappe.get_all(
+					"DeployOps Job Device",
+					filters={"parent": self.name, "parenttype": "DeployOps Job"},
+					fields=["name", "item_code", "serial_no"],
+				)
+			}
 
 		seen = set()
 		for row in self.devices:
+			unchanged = saved.get(row.name) == (row.item_code, row.serial_no or None)
 			if not frappe.db.get_value("Item", row.item_code, "has_serial_no"):
 				frappe.throw(
 					_("Row #{0}: Item {1} is not serial-numbered equipment.").format(row.idx, row.item_code)
@@ -185,17 +209,47 @@ class DeployOpsJob(Document):
 					)
 
 			listed = source_serials.get(row.item_code)
-			if listed and row.serial_no not in listed:
+			if listed and row.serial_no not in listed and not unchanged:
 				frappe.throw(
 					_("Row #{0}: Serial No {1} is not on {2} {3}.").format(
 						row.idx, row.serial_no, _(self.source_doctype), self.source_name
 					)
 				)
 
+	def later_deliveries(self) -> list[str]:
+		"""Other Delivery Notes whose machines were added to this job (#16): they must be submitted
+		deliveries of the same sales order(s) to the same customer."""
+		if self.source_doctype != erpnext_sources.DELIVERY_NOTE:
+			return []
+		notes = {row.delivery_note for row in self.devices if row.delivery_note} - {self.source_name}
+		saved = set()
+		if not self.is_new():
+			saved = set(
+				frappe.get_all(
+					"DeployOps Job Device",
+					filters={"parent": self.name, "parenttype": "DeployOps Job"},
+					pluck="delivery_note",
+				)
+			)
+		orders = erpnext_sources.delivery_orders(self.source_name)
+		for note in notes - saved:  # deliveries already on the job were checked when added
+			doc = frappe.db.get_value(
+				erpnext_sources.DELIVERY_NOTE, note, ["docstatus", "is_return", "customer"], as_dict=True
+			)
+			if (
+				not doc
+				or doc.docstatus != 1
+				or doc.is_return
+				or doc.customer != self.customer
+				or not orders & erpnext_sources.delivery_orders(note)
+			):
+				frappe.throw(_("Delivery Note {0} is not a delivery of this job's order.").format(note))
+		return sorted(notes)
+
 	def validate_equipment_access(self):
 		user = frappe.session.user
-		if is_unrestricted(user):
-			return
+		if self.flags.delivery_handoff or is_unrestricted(user):
+			return  # the system adding delivered machines; the technician is still checked below
 
 		allowed = get_allowed_items(user)
 		for row in self.devices:
