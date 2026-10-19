@@ -21,7 +21,8 @@ type Props = {
 };
 
 /** One field of a checklist form, chosen by its Frappe field type. */
-export function FieldInput({ field, value, error, disabled, doctype, docname, onChange }: Props) {
+export function FieldInput({ field, value, error, disabled: locked, doctype, docname, onChange }: Props) {
+	const disabled = locked || Boolean(field.read_only);
 	if (field.fieldtype === "HTML") {
 		return (
 			<p className="flex gap-2.5 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-muted">
