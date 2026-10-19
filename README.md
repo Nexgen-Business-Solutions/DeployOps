@@ -75,7 +75,7 @@ DeployOps centralises the technical lifecycle of equipment such as **Cashmatic**
 │                        DeployOps                              │
 │                                                               │
 │  Jobs & per-device lines      Equipment access profiles       │
-│  Serial allocation history    Versioned native checklists     │
+│  Serial allocation history    Native checklist DocTypes       │
 │  Workflow & approvals         Evidence, signatures, reports   │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -138,7 +138,7 @@ Maintenance Visit (and Maintenance Schedule where present)
 ┌──────────────────────────────┐   ┌───────────────────────────────┐
 │   React frontend  ( / )      │   │   Frappe Desk  ( /desk )      │
 │ React 19 · TypeScript · Vite │   │ DocType forms · list views    │
-│ frappe-react-sdk             │   │ print formats · admin/config  │
+│ Tailwind 4 · React Router    │   │ print formats · admin/config  │
 └──────────────┬───────────────┘   └───────────────┬───────────────┘
                │  /api (session + CSRF)            │
 ┌──────────────▼───────────────────────────────────▼───────────────┐
@@ -165,8 +165,8 @@ These are **candidates**. Final schemas are decided in #18 and #20 before they a
 | DeployOps Job Device | One Item / Serial No per line, with its own installation status | #16, #18 |
 | Equipment Category & Access Profile | Categories and models a user is authorised for | #10–#12 |
 | Equipment Allocation / Event | Reserved, deployed, returned and swapped history, and conflict prevention | #14, #15 |
-| Checklist Template / Item | Versioned checklist definition with typed fields and rules | #20 |
-| Checklist Response / Result | Answers, evidence, signatures, actor and timestamp, linked to template version, job and device | #21 |
+| Five checklist DocTypes | One native, submittable DocType per checklist (Cashmatic and BellaBot pre-installation and installation, Cashmatic maintenance), linked to the job and machine | #20, #41 |
+| Checklist child tables | Photos, files, opening hours, maintenance tasks, trainees, actions | #21, #41 |
 
 ### ERPNext v16 facts the design relies on
 Verified in [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md).
@@ -183,12 +183,14 @@ The operational UI is a React single-page app in [`frontend/`](frontend/). It wa
 
 | Item | Value |
 |---|---|
-| Stack | React 19, TypeScript 6, Vite 8, `frappe-react-sdk`, oxlint |
+| Stack | React 19, TypeScript 6, Vite 8, Tailwind 4, React Router 7, oxlint, Vitest |
 | Source | `frontend/src/` |
 | Served at | `/` on the site, e.g. `http://deployops.local:8004/` |
 | Desk | `/desk` (`/app` redirects there) |
 | Build output | `deployops/public/frontend/` and `deployops/www/frontend.html` (generated, git-ignored) |
-| Page controller | `deployops/www/frontend.py` (login check, CSRF token, boot data) |
+| Page controller | `deployops/www/frontend.py` (CSRF token only; no data) |
+| Technician API | `deployops/api/technician.py` |
+| Design | [`docs/FRONTEND.md`](docs/FRONTEND.md) |
 
 ### URL routing
 Set in `deployops/hooks.py`:
@@ -204,7 +206,7 @@ Set in `deployops/hooks.py`:
 If another Frappe website page has to stay reachable, add an exact rule for it **above** the catch-all. Otherwise React serves it.
 
 ### Authentication
-- `frontend.py` redirects guests to `/login?redirect-to=<requested path>`. The React page is never served to a user who isn't logged in.
+- Guests get the empty app shell, which shows the DeployOps login screen. The shell holds no data; every API refuses guests.
 - Every request to `/api` runs with the user's session and CSRF token, so DocType permissions, permission hooks and equipment/job restrictions apply exactly as in Desk.
 
 ### Commands
@@ -213,6 +215,8 @@ If another Frappe website page has to stay reachable, add an exact rule for it *
 yarn install                 # installs root and frontend/ dependencies (postinstall)
 yarn dev                     # Vite dev server on :8080 with hot reload
 yarn build                   # production build into deployops/public/frontend
+cd frontend && yarn test     # Vitest unit tests
+cd frontend && yarn typecheck && yarn lint
 ```
 - **Dev server:** `bench start` must be running. Open `http://deployops.local:8080`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
 - **Production build:** `bench build` (or `bench build --app deployops`) also runs `yarn build` for this app, because the root `package.json` has a `build` script.
@@ -505,6 +509,7 @@ deployops/                       ← repository root (apps/deployops)
 | [`docs/ERPNEXT_SOURCES.md`](docs/ERPNEXT_SOURCES.md) | Usable ERPNext sources, lookup snapshot, source API and its access rules |
 | [`docs/JOBS.md`](docs/JOBS.md) | Job data model, creation from a source, rules, permissions, tests, UAT steps |
 | [`docs/ALLOCATIONS.md`](docs/ALLOCATIONS.md) | Equipment allocation (rental and sale), collision protection, movement log, serial history |
+| [`docs/CHECKLIST_ARCHITECTURE.md`](docs/CHECKLIST_ARCHITECTURE.md) | Checklist architecture (#20): one DocType per checklist, rules, mapping notes |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding assistants |
 
 Where these documents disagree, work stops until the product owner decides.

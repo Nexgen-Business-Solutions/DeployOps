@@ -61,10 +61,21 @@ class TestSecurityNegative(IntegrationTestCase):
 			target=self.client.get, args=(get_url(path),), kwargs={"query_string": params or {}}
 		)
 
-	def test_guest_is_redirected_to_login(self):
+	def test_guest_gets_only_the_app_shell(self):
+		# The React app shows its own login screen; the shell holds no data and no session token.
 		response = self.request("/")
-		self.assertEqual(response.status_code, 302)
-		self.assertTrue(response.location.startswith("/login"))
+		self.assertEqual(response.status_code, 200)
+		body = response.data.decode()
+		self.assertIn('id="root"', body)
+		for leak in (TEST_CUSTOMER, "@deployops.test"):
+			self.assertNotIn(leak, body)
+		self.assertIn("window.csrf_token = '';", body)  # guests get no session token
+		for method in ("me", "home", "my_jobs"):
+			with self.subTest(method=method):
+				params = {"card": "cashmatic-onsite"} if method == "my_jobs" else None
+				self.assertEqual(
+					self.request(f"/api/method/deployops.api.technician.{method}", params).status_code, 403
+				)
 
 	def test_guest_cannot_read_erpnext_records(self):
 		for doctype in ERPNEXT_DENIED:

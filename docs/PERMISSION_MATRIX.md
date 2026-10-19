@@ -28,8 +28,7 @@ The roles ship with the app. They are created automatically on `install-app` and
 |---|---|---|---|---|
 | DeployOps Job (#18) | R W (assigned) | R C W A P | R C W X A P E | R C W X P E |
 | DeployOps Job Device (#16, #18) | R W (assigned) | R C W | R C W X | R C W X |
-| DeployOps Checklist Response (#21) | R C W S P (own jobs) | R A P | R X A P E | R P E |
-| DeployOps Checklist Template (#20) | R | R | R | R C W |
+| The five checklist forms (#41): Cashmatic Pre-installation, Cashmatic Installation, BellaBot Pre-installation, BellaBot Installation, Cashmatic Maintenance | R C W S P (own jobs) | R A P | R X A P E | R P E |
 | DeployOps Equipment Category (#11) | — | R | R | R C W D |
 | DeployOps Equipment Access Profile (#11) | — | R | R | R C W D |
 | DeployOps Equipment Allocation (#14) | R (own jobs) | R C W | R C W X E | R E |
@@ -37,7 +36,7 @@ The roles ship with the app. They are created automatically on `install-app` and
 | React frontend (`/`) | R | R | R | R |
 
 **Rules:**
-- **No delete on operational records** (Job, Checklist Response, Allocation). Mistakes are cancelled, so the audit trail stays complete.
+- **No delete on operational records** (Job, checklist forms, Allocation). Mistakes are cancelled, so the audit trail stays complete.
 - **Admin configures but doesn't approve.** Approval is an operational decision (Supervisor, Manager).
 - **Only Manager and Admin can export.**
 - **Guests get nothing.** `/` redirects them to `/login`, and no DeployOps API method is open to guests.
@@ -98,7 +97,7 @@ Roles decide *what* a user may do. Equipment access profiles decide *which equip
 
 | Test file | What it proves |
 |---|---|
-| `deployops/tests/test_matrix_unit.py` (unit, no database) | The matrix is well formed: every row covers all 4 roles with valid letters only; no delete on Job, Checklist Response or Allocation; only Manager and Admin export; Admin never approves; only Technician lacks Desk; the Item exception covers exactly Desk roles and its four rights |
+| `deployops/tests/test_matrix_unit.py` (unit, no database) | The matrix is well formed: every row covers all 4 roles with valid letters only; no delete on Job, the checklist forms or Allocation; only Manager and Admin export; Admin never approves; only Technician lacks Desk; the Item exception covers exactly Desk roles and its four rights |
 | `deployops/tests/test_permission_matrix.py` | Roles exist with the right Desk access; names are generic; roles can be assigned; Technician users are Website Users; every DeployOps DocType is in the matrix and its permissions match it exactly; ERPNext records are denied except the accepted defaults; the workspace is visible only to Desk roles |
 | `deployops/tests/test_security_negative.py` | Over HTTP: guests are redirected from `/` and get 403 on ERPNext APIs; DeployOps DocType APIs return 200 or 403 exactly as the matrix says, and 403 for guests; each role gets 403 listing ERPNext records (except the Item default), opening a record by URL (`/api/resource/...`, `frappe.client.get`) and printing it (`/printview`); no DeployOps method is open to guests |
 | `deployops/tests/test_equipment_access.py` | Categories reject non-serial Items and duplicate rows; one profile per user; no profile, a disabled category or a disabled profile grants nothing; a profile grants only its categories; multiple and overlapping categories; Item Groups include sub-groups and only serial-numbered Items; revocation is immediate; Supervisor and Manager are restricted; Admin sees all serial-numbered equipment |

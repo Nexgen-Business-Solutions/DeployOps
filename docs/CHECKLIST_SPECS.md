@@ -124,6 +124,6 @@ Use existing ERPNext Maintenance Visit/Schedule rather than an independently inv
 ## 7. Outstanding questions
 - Source builder exports or sample completed PDFs for the other four forms.
 - Exact conditional rules and mandatory settings on all five Jotforms.
-- Reusable checklist template design vs dedicated Frappe native DocTypes (#20).
+- ~~Reusable checklist template design vs dedicated Frappe native DocTypes (#20).~~ Decided 2026-10-20: one native DocType per checklist. The field lists read from the live Jotforms and the differences from them are in [CHECKLIST_ARCHITECTURE.md](CHECKLIST_ARCHITECTURE.md) §5.
 - What evidence is mandatory for each risk-critical step.
 - Signature and approval behavior, override rights and customer-facing report format.

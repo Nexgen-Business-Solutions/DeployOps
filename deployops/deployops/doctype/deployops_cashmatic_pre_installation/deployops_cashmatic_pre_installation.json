@@ -1,0 +1,535 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-20 10:30:00.000000",
+ "description": "Please complete the following checklist one week before the installation date. Source: https://form.jotform.com/253063954693264 (field mapping pending #40 sign-off).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "job",
+  "job_device",
+  "customer_name",
+  "site_address",
+  "column_break_header",
+  "item_code",
+  "item_name",
+  "serial_no",
+  "technician",
+  "company",
+  "form_version",
+  "shared_documents_prior_to_the_visit_section",
+  "step_forward_the_user_manual_to_the_technician",
+  "step_send_the_user_manual_self_pay_460_to_the",
+  "step_send_the_web_panel_interface_to_the_client",
+  "step_send_the_explanation_of_my_cashmatic_app",
+  "employee_checklist_section",
+  "step_ensure_the_machine_is_labeled_with",
+  "step_confirm_with_the_client_that_the",
+  "step_confirm_with_the_client_that_the_2",
+  "step_make_sure_the_client_has_a_tablet_or_pc_on",
+  "step_inform_the_client_by_email_of_the_required",
+  "step_set_the_device_configuration_following_the",
+  "step_activate_the_device_following_the",
+  "step_create_3_users_admin_manager_staff_f2",
+  "step_ensure_the_software_and_firmware_versions",
+  "step_prepare_the_machine_for_delivery_wrapped",
+  "step_prepare_all_accessories_electric_and",
+  "step_include_remarks_for_the_technician_if_the",
+  "machine_configuration_steps_section",
+  "step_read_the_cashmatic_device_installation",
+  "step_set_the_maximum_level_according_to_the",
+  "step_set_the_float_level_cash_funds_according",
+  "step_set_the_accepted_denominations_based_on",
+  "step_program_a_mail_server_to_send_email",
+  "step_set_the_printed_notifications_and_enable",
+  "step_set_the_general_device_settings_name",
+  "machine_activation_steps_section",
+  "step_activate_the_machine_following_the",
+  "step_open_the_reserved_area_on_cashmatic_eu_my",
+  "step_create_a_new_account_for_the_customer_in",
+  "step_click_registry_data_all_companies_new_and",
+  "step_after_creating_the_company_click_the_3",
+  "step_log_in_to_the_device_web_panel_with_the",
+  "step_press_device_management_in_the_side_menu",
+  "step_insert_the_pairing_code_from_the_reserved",
+  "step_confirm_in_the_reserved_area_to_finish_you",
+  "machine_details_section",
+  "device_model",
+  "software_version",
+  "firmware_version",
+  "activation_date",
+  "proof_of_machine_preparation_section",
+  "preparation_photos",
+  "customer_working_hours_section",
+  "working_hours",
+  "special_installation_request_section",
+  "special_installation_request",
+  "employee_section",
+  "additional_remarks",
+  "employee_signature",
+  "snapshot_section",
+  "submission_snapshot",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "DO-CPI-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DO-CPI-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job",
+   "options": "DeployOps Job",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "job_device",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Job machine row",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Machine",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Machine name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Serial number",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "description": "Version of this checklist's questions when the form was started.",
+   "fieldname": "form_version",
+   "fieldtype": "Int",
+   "label": "Form version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Manuals: Web interface, User manual Self Pay 460, My Cashmatic App.",
+   "fieldname": "shared_documents_prior_to_the_visit_section",
+   "fieldtype": "Section Break",
+   "label": "Shared documents prior to the visit"
+  },
+  {
+   "fieldname": "step_forward_the_user_manual_to_the_technician",
+   "fieldtype": "Check",
+   "label": "Forward the User Manual to the technician and ensure it is reviewed prior to the visit.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_send_the_user_manual_self_pay_460_to_the",
+   "fieldtype": "Check",
+   "label": "Send the User Manual Self Pay 460 to the client.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_send_the_web_panel_interface_to_the_client",
+   "fieldtype": "Check",
+   "label": "Send the Web panel interface to the client.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_send_the_explanation_of_my_cashmatic_app",
+   "fieldtype": "Check",
+   "label": "Send the explanation of My Cashmatic App to the client.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_checklist_section",
+   "fieldtype": "Section Break",
+   "label": "Employee checklist"
+  },
+  {
+   "fieldname": "step_ensure_the_machine_is_labeled_with",
+   "fieldtype": "Check",
+   "label": "Ensure the machine is labeled with Massarie Logo and QR code.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_confirm_with_the_client_that_the",
+   "fieldtype": "Check",
+   "label": "Confirm with the client that the installation area of the machine is cleared and clean.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_confirm_with_the_client_that_the_2",
+   "fieldtype": "Check",
+   "label": "Confirm with the client that the installation area has access to an electrical plug.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_make_sure_the_client_has_a_tablet_or_pc_on",
+   "fieldtype": "Check",
+   "label": "Make sure the client has a tablet or PC on site with Chrome to run My Cashmatic App (web).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_inform_the_client_by_email_of_the_required",
+   "fieldtype": "Check",
+   "label": "Inform the client by email of the required First Refill (cash float level) to have on hand on the installation date.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_device_configuration_following_the",
+   "fieldtype": "Check",
+   "label": "Set the device configuration following the instructions in the CDIG.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_activate_the_device_following_the",
+   "fieldtype": "Check",
+   "label": "Activate the device following the instructions in the CDIG.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_create_3_users_admin_manager_staff_f2",
+   "fieldtype": "Check",
+   "label": "Create 3 users (Admin, Manager, Staff). (F2)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_ensure_the_software_and_firmware_versions",
+   "fieldtype": "Check",
+   "label": "Ensure the software and firmware versions are the latest.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_prepare_the_machine_for_delivery_wrapped",
+   "fieldtype": "Check",
+   "label": "Prepare the machine for delivery (wrapped and protected).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_prepare_all_accessories_electric_and",
+   "fieldtype": "Check",
+   "label": "Prepare all accessories (electric and network cables, machine and cashbox keys, counter top installation).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_include_remarks_for_the_technician_if_the",
+   "fieldtype": "Check",
+   "label": "Include remarks for the technician if the client requests a special installation (attach example photos).",
+   "reqd": 1
+  },
+  {
+   "description": "Cashmatic Device Installation Guide (CDIG) pages 5-8. F1 = client device configuration.",
+   "fieldname": "machine_configuration_steps_section",
+   "fieldtype": "Section Break",
+   "label": "Machine configuration steps"
+  },
+  {
+   "fieldname": "step_read_the_cashmatic_device_installation",
+   "fieldtype": "Check",
+   "label": "Read the CASHMATIC DEVICE INSTALLATION GUIDE (CDIG) pages 5-6.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_maximum_level_according_to_the",
+   "fieldtype": "Check",
+   "label": "Set the MAXIMUM LEVEL according to the ideal setup and the client's preference. (F1)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_float_level_cash_funds_according",
+   "fieldtype": "Check",
+   "label": "Set the FLOAT LEVEL (cash funds) according to the ideal setup and the client's preference. (F1)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_accepted_denominations_based_on",
+   "fieldtype": "Check",
+   "label": "Set the ACCEPTED DENOMINATIONS based on the client's preference.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_program_a_mail_server_to_send_email",
+   "fieldtype": "Check",
+   "label": "Program a mail server to send email notifications (CDIG page 8).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_printed_notifications_and_enable",
+   "fieldtype": "Check",
+   "label": "Set the PRINTED NOTIFICATIONS and enable the notifications the client wants.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_set_the_general_device_settings_name",
+   "fieldtype": "Check",
+   "label": "Set the GENERAL DEVICE SETTINGS (name, language...).",
+   "reqd": 1
+  },
+  {
+   "description": "CDIG page 12. Never type passwords, OTPs, PINs or pairing codes in this checklist.",
+   "fieldname": "machine_activation_steps_section",
+   "fieldtype": "Section Break",
+   "label": "Machine activation steps"
+  },
+  {
+   "fieldname": "step_activate_the_machine_following_the",
+   "fieldtype": "Check",
+   "label": "Activate the machine following the instructions in CDIG page 12.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_open_the_reserved_area_on_cashmatic_eu_my",
+   "fieldtype": "Check",
+   "label": "Open the reserved area on cashmatic.eu/my-cashmatic.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_create_a_new_account_for_the_customer_in",
+   "fieldtype": "Check",
+   "label": "Create a new account for the customer in the Reserved Area and log in with the OTP from the client.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_click_registry_data_all_companies_new_and",
+   "fieldtype": "Check",
+   "label": "Click REGISTRY DATA - All companies - NEW and create the customer's activity.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_after_creating_the_company_click_the_3",
+   "fieldtype": "Check",
+   "label": "After creating the company, click the 3 dots and select PAIR DEVICE to generate a code.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_log_in_to_the_device_web_panel_with_the",
+   "fieldtype": "Check",
+   "label": "Log in to the device web panel with the technician account (not the one you just created).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_press_device_management_in_the_side_menu",
+   "fieldtype": "Check",
+   "label": "Press DEVICE MANAGEMENT in the side menu.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_insert_the_pairing_code_from_the_reserved",
+   "fieldtype": "Check",
+   "label": "Insert the pairing code from the Reserved Area and click INSTALL.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_confirm_in_the_reserved_area_to_finish_you",
+   "fieldtype": "Check",
+   "label": "Confirm in the Reserved Area to finish (you should receive a notification once the code is added).",
+   "reqd": 1
+  },
+  {
+   "fieldname": "machine_details_section",
+   "fieldtype": "Section Break",
+   "label": "Machine details"
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Select",
+   "label": "Device",
+   "options": "\nSelf Pay 460\nSelf Pay 460 with coins drawer\nSelf Pay 1060\nSelf Pay 1060 with coins drawer\nVisual Pay 27 counter top installation\nVisual Pay 27 wall mounted\nVisual Pay 27 with stand\nVisual Pay 27 with 460\nVisual Pay 22 counter top installation\nVisual Pay 22 wall mounted\nVisual Pay 22 with stand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "software_version",
+   "fieldtype": "Data",
+   "label": "Software version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "firmware_version",
+   "fieldtype": "Data",
+   "label": "Firmware version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "activation_date",
+   "fieldtype": "Datetime",
+   "label": "Activation date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "proof_of_machine_preparation_section",
+   "fieldtype": "Section Break",
+   "label": "Proof of machine preparation"
+  },
+  {
+   "fieldname": "preparation_photos",
+   "fieldtype": "Table",
+   "label": "Photos (after setup, ready for delivery)",
+   "options": "DeployOps Checklist Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_working_hours_section",
+   "fieldtype": "Section Break",
+   "label": "Customer working hours"
+  },
+  {
+   "fieldname": "working_hours",
+   "fieldtype": "Table",
+   "label": "Working hours",
+   "options": "DeployOps Checklist Opening Hours",
+   "reqd": 1
+  },
+  {
+   "fieldname": "special_installation_request_section",
+   "fieldtype": "Section Break",
+   "label": "Special installation request"
+  },
+  {
+   "description": "Wall mounted / Fixed on counter top / Embedded under counter",
+   "fieldname": "special_installation_request",
+   "fieldtype": "Small Text",
+   "label": "Special installation request",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_section",
+   "fieldtype": "Section Break",
+   "label": "Employee"
+  },
+  {
+   "fieldname": "additional_remarks",
+   "fieldtype": "Small Text",
+   "label": "Additional remarks",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_signature",
+   "fieldtype": "Signature",
+   "label": "Employee signature",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Submitted snapshot"
+  },
+  {
+   "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
+   "fieldname": "submission_snapshot",
+   "fieldtype": "JSON",
+   "label": "Submission snapshot",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "DeployOps Cashmatic Pre-installation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "list",
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 10:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Cashmatic Pre-installation",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Technician",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Administrator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}
