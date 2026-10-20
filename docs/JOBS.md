@@ -58,9 +58,9 @@ From the approved matrix ([PERMISSION_MATRIX.md](PERMISSION_MATRIX.md)): Technic
 
 | Role | Sees |
 |---|---|
-| Technician | Only jobs **assigned to them** |
-| Supervisor, Manager | Jobs whose machines are **all** within their equipment profile. A job without machines: when its equipment category is theirs, or when it has no category |
-| DeployOps Administrator (and System Manager) | Every job |
+| Technician | Jobs **assigned to them** whose machines are also within their **current** equipment profile (revoking a category hides the job, even while it stays assigned) |
+| Supervisor, Manager | Jobs whose machines are **all** within their equipment profile. A job without machines: only when its equipment category is theirs. A job with no machines and no category is unclassified and only administrators see it (deny by default) |
+| DeployOps Administrator (and the Administrator user) | Every job. The System Manager role grants nothing extra here |
 | Anyone else | No job |
 
   Judged from the **saved** job (assignee and machines), so editing a job in memory cannot grant or lose access. Revoking a category hides its jobs immediately. Teams or regions ("management scope") are not defined yet; scoping is by equipment only.

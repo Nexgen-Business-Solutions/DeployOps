@@ -2,7 +2,7 @@
 
 - Technician: allocations of machines on jobs assigned to them.
 - Supervisor / Manager: allocations of equipment in their profile.
-- DeployOps Administrator / System Manager / Administrator: all.
+- DeployOps Administrator / Administrator: all.
 """
 
 import frappe
