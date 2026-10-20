@@ -2,15 +2,16 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import proxyOptions from './proxyOptions.ts';
+import devProxy from './proxyOptions.ts';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command, mode }) => ({
 	plugins: [react(), tailwindcss()],
 	server: {
 		port: 8080,
 		host: '0.0.0.0',
-		proxy: proxyOptions,
+		// Only the dev server needs the bench proxy; builds and tests must not read site config.
+		proxy: command === 'serve' && mode !== 'test' ? devProxy() : undefined,
 	},
 	resolve: {
 		alias: {
@@ -22,4 +23,4 @@ export default defineConfig({
 		emptyOutDir: true,
 		target: 'es2020',
 	},
-});
+}));
