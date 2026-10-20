@@ -57,6 +57,8 @@ function errorMessage(body: FrappeBody | null, status: number): string {
 		}
 	}
 	if (body?.exception) return plainText(body.exception.split(":").slice(1).join(":") || body.exception);
+	// Some Frappe endpoints answer a refusal with a plain message (e.g. update_password: 410).
+	if (typeof body?.message === "string" && body.message) return plainText(body.message);
 	if (status === 403) return "You are not allowed to do that.";
 	if (status === 404) return "Not found.";
 	return "Something went wrong. Please try again.";

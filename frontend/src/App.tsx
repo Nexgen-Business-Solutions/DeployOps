@@ -5,8 +5,10 @@ import { Banner } from "./components/ui";
 import { logout } from "./lib/api";
 import { SessionContext } from "./lib/session";
 import type { Me } from "./lib/types";
+import { APP_BASE } from "./lib/paths";
 import { useApi } from "./lib/useApi";
 import CardJobs from "./pages/CardJobs";
+import ChangePassword from "./pages/ChangePassword";
 import Form from "./pages/Form";
 import Home from "./pages/Home";
 import Job from "./pages/Job";
@@ -25,7 +27,7 @@ export default function App() {
         try {
             await logout();
         } finally {
-            window.location.assign("/");
+            window.location.assign(APP_BASE);
         }
     }
 
@@ -50,12 +52,13 @@ export default function App() {
 
     return (
         <SessionContext.Provider value={me}>
-            <BrowserRouter>
+            <BrowserRouter basename={APP_BASE}>
                 <Routes>
                     <Route path="/" element={<Home onLogout={signOut} />} />
                     <Route path="/c/:card" element={<CardJobs />} />
                     <Route path="/job/:job" element={<Job />} />
                     <Route path="/form/:doctype/:name" element={<Form />} />
+                    <Route path="/password" element={<ChangePassword />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </BrowserRouter>

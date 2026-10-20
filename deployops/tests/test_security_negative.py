@@ -62,14 +62,17 @@ class TestSecurityNegative(IntegrationTestCase):
 		)
 
 	def test_guest_gets_only_the_app_shell(self):
-		# The React app shows its own login screen; the shell holds no data and no session token.
-		response = self.request("/")
-		self.assertEqual(response.status_code, 200)
-		body = response.data.decode()
-		self.assertIn('id="root"', body)
-		for leak in (TEST_CUSTOMER, "@deployops.test"):
-			self.assertNotIn(leak, body)
-		self.assertIn("window.csrf_token = '';", body)  # guests get no session token
+		# The React app (under /deployops) shows its own login screen; the shell holds no data and
+		# no session token, also on a deep link.
+		for path in ("/deployops", "/deployops/job/JOB-0001"):
+			with self.subTest(path=path):
+				response = self.request(path)
+				self.assertEqual(response.status_code, 200)
+				body = response.data.decode()
+				self.assertIn('id="root"', body)
+				for leak in (TEST_CUSTOMER, "@deployops.test"):
+					self.assertNotIn(leak, body)
+				self.assertIn("window.csrf_token = '';", body)  # guests get no session token
 		for method in ("me", "home", "my_jobs"):
 			with self.subTest(method=method):
 				params = {"card": "cashmatic-onsite"} if method == "my_jobs" else None

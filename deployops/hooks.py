@@ -67,7 +67,8 @@ required_apps = ["erpnext"]
 # ----------
 
 # application home page (will override Website Settings)
-home_page = "frontend"
+# Not set: the site root stays with the site, so other apps can have their own URLs.
+# home_page = "frontend"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -280,14 +281,20 @@ before_tests = "deployops.tests.bootstrap.before_tests"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-# The React frontend is served at "/". Frappe's own website pages are listed first so the
-# catch-all does not swallow them (exact routes always win over the <path:> converter).
+# The React frontend is served only under /deployops (www/deployops.py); every other URL is left to
+# Frappe and the other apps on the site. /deployops itself is the www page, its sub-paths are the
+# client-side routes.
 website_route_rules = [
-	{"from_route": "/login", "to_route": "login"},
-	{"from_route": "/update-password", "to_route": "update-password"},
-	{"from_route": "/printview", "to_route": "printview"},
-	{"from_route": "/message", "to_route": "message"},
-	{"from_route": "/<path:app_path>", "to_route": "frontend"},
+	{"from_route": "/deployops/<path:app_path>", "to_route": "deployops"},
+]
+
+# Earlier URLs of the app (it used to own the site root) move to /deployops. 302, not 301: browsers
+# cache a 301 forever, and another app may later need these URLs.
+website_redirects = [
+	{"source": "/", "target": "/deployops", "redirect_http_status": 302, "forward_query_parameters": True},
+	{"source": r"/c/(.+)", "target": r"/deployops/c/\1", "redirect_http_status": 302},
+	{"source": r"/job/(.+)", "target": r"/deployops/job/\1", "redirect_http_status": 302},
+	{"source": r"/form/(.+)", "target": r"/deployops/form/\1", "redirect_http_status": 302},
 ]
 
 # The five checklist forms (#41), one DocType each; see deployops/checklists/cards.py.

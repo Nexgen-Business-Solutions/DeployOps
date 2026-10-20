@@ -15,7 +15,7 @@
 It replaces external Jotform checklists with **native Frappe DocTypes** linked directly to existing ERPNext records: Customer, Item, Serial No, Sales Order, Delivery Note, Subscription, Maintenance Schedule and Maintenance Visit. Technicians work from verified customer, product and serial data instead of retyping it. Every checklist, photo, signature and decision is traceable to the physical device and the business document it came from.
 
 DeployOps has two user interfaces on the same site:
-- a **React frontend** served at `/`, for day-to-day operational work;
+- a **React frontend** served at `/deployops`, for day-to-day operational work;
 - **Frappe Desk** at `/desk`, for administration and configuration.
 
 Both read and write the same DocTypes through Frappe's server-side permissions.
@@ -187,8 +187,8 @@ The operational UI is a React single-page app in [`frontend/`](frontend/). It wa
 | Source | `frontend/src/` |
 | Served at | `/` on the site, e.g. `http://deployops.local:8004/` |
 | Desk | `/desk` (`/app` redirects there) |
-| Build output | `deployops/public/frontend/` and `deployops/www/frontend.html` (generated, git-ignored) |
-| Page controller | `deployops/www/frontend.py` (CSRF token only; no data) |
+| Build output | `deployops/public/frontend/` and `deployops/www/deployops.html` (generated, git-ignored) |
+| Page controller | `deployops/www/deployops.py` (CSRF token only; no data) |
 | Technician API | `deployops/api/technician.py` |
 | Design | [`docs/FRONTEND.md`](docs/FRONTEND.md) |
 
@@ -197,13 +197,11 @@ Set in `deployops/hooks.py`:
 
 | URL | Served by |
 |---|---|
-| `/` | React (`home_page = "frontend"`) |
-| `/<anything>` | React (catch-all `website_route_rules`) |
-| `/login`, `/update-password`, `/printview`, `/message` | Frappe (explicit rules listed before the catch-all) |
-| `/desk/...`, `/app/...` | Frappe Desk |
-| `/api/...`, `/assets/...`, `/files/...`, `/private/...` | Frappe (never routed to React) |
+| `/deployops` | React (the `www/deployops` page) |
+| `/deployops/<anything>` | React (`website_route_rules`); client-side routes such as `/deployops/job/<name>` |
+| Everything else (`/`, `/login`, `/desk/...`, `/api/...`, other apps' pages) | Frappe and the other apps on the site; DeployOps never claims them |
 
-If another Frappe website page has to stay reachable, add an exact rule for it **above** the catch-all. Otherwise React serves it.
+DeployOps does not set `home_page` and has no catch-all route, so other apps can have their own URLs on the same site.
 
 ### Authentication
 - Guests get the empty app shell, which shows the DeployOps login screen. The shell holds no data; every API refuses guests.
@@ -218,7 +216,7 @@ yarn build                   # production build into deployops/public/frontend
 cd frontend && yarn test     # Vitest unit tests
 cd frontend && yarn typecheck && yarn lint
 ```
-- **Dev server:** `bench start` must be running. Open `http://deployops.local:8080`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
+- **Dev server:** `bench start` must be running. Open `http://deployops.local:8080/deployops`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
 - **Production build:** `bench build` (or `bench build --app deployops`) also runs `yarn build` for this app, because the root `package.json` has a `build` script.
 
 ### Frontend rules
@@ -396,9 +394,9 @@ cd apps/deployops && yarn dev                 # React dev server on :8080 (needs
 
 | URL | What |
 |---|---|
-| `http://deployops.local:8004/` | Built React frontend, served by Frappe |
+| `http://deployops.local:8004/deployops` | Built React frontend, served by Frappe |
 | `http://deployops.local:8004/desk` | Frappe Desk |
-| `http://deployops.local:8080/` | React dev server with hot reload |
+| `http://deployops.local:8080/deployops` | React dev server with hot reload |
 
 ### Schema and data rules
 - DocTypes are defined as JSON in this app. **Do not** create them with Customize Form or through the UI.
@@ -527,8 +525,7 @@ Where these documents disagree, work stops until the product owner decides.
 | Missing assets or stale UI | `bench build --app deployops` then `bench --site <site> clear-cache` |
 | Schema changes not applied | `bench --site <site> migrate` |
 | PDF printing fails | Install wkhtmltopdf 0.12.6 (patched Qt) or switch the Print Format to the Chrome generator |
-| `/` shows a blank page or 404 | The frontend was never built: `bench build --app deployops` (or `yarn build`) |
-| A Frappe page (e.g. `/me`) opens the React app | Add an exact rule for it above the catch-all in `website_route_rules`, then `bench --site <site> clear-cache` |
+| `/deployops` shows a blank page or 404 | The frontend was never built: `bench build --app deployops` (or `yarn build`) |
 | Route changes in `hooks.py` have no effect | `bench --site <site> clear-cache`. Route rules are cached |
 | `yarn dev` API calls fail | `bench start` must be running; the proxy reads `webserver_port` from `sites/common_site_config.json` |
 
