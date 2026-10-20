@@ -62,7 +62,7 @@ export function UserMenu({ onLogout }: { onLogout: () => void }) {
 								Open Desk
 							</Item>
 						)}
-						<Item href="/update-password" icon={<KeyRound className="size-4" />}>
+						<Item to="/password" icon={<KeyRound className="size-4" />} onClick={close}>
 							Change password
 						</Item>
 					</div>

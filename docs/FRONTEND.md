@@ -1,6 +1,6 @@
 # DeployOps Frontend (Technician app)
 
-The React app at `/` is where technicians do field work: pick a checklist, open a job, work on each machine and fill in its checklist. Supervisor and Manager screens come later. Until then they use Desk.
+The React app at `/deployops` is where technicians do field work: pick a checklist, open a job, work on each machine and fill in its checklist. Supervisor and Manager screens come later. Until then they use Desk.
 
 ## Agreed design
 | Decision | Choice |
@@ -14,12 +14,14 @@ The React app at `/` is where technicians do field work: pick a checklist, open 
 | Forms | One long page split into numbered sections, with a progress bar under the top bar and a sticky Submit button |
 
 ## Screens
+All routes are under `/deployops` (the router's base); DeployOps leaves every other URL to Frappe and the other apps.
+
 | Route | Screen |
 |---|---|
-| `/` | Sign in for guests; otherwise Home: greeting, open job count, the five checklists with counts |
-| `/c/{card}` | My open jobs for that checklist |
-| `/job/{name}` | Job: planned date, site (maps link), contact (call link), source, job actions; machines with Start / Continue checklist and machine actions |
-| `/form/{doctype}/{name}` | The checklist form; read only once submitted |
+| `/deployops` | Sign in for guests; otherwise Home: greeting, open job count, the five checklists with counts |
+| `/deployops/c/{card}` | My open jobs for that checklist |
+| `/deployops/job/{name}` | Job: planned date, site (maps link), contact (call link), source, job actions; machines with Start / Continue checklist and machine actions |
+| `/deployops/form/{doctype}/{name}` | The checklist form; read only once submitted |
 
 ## Cards
 | Card | Job type | Product line | DocType |
@@ -71,7 +73,7 @@ The app renders whatever the DocType defines, so changing a field in the DocType
 
 ## Security
 - The server decides everything: visibility, actions, editing and validation. The UI only hides buttons the server would refuse anyway.
-- `www/frontend.py` serves guests an empty shell with no data; every technician API refuses guests.
+- `www/deployops.py` serves guests an empty shell with no data; every technician API refuses guests.
 - Uploaded files must be private and attached to the same form. File access follows the form's permission, so it follows job visibility.
 - Text that looks like a password, PIN, OTP or pairing code is refused.
 - Nothing is stored in local storage.
@@ -79,8 +81,8 @@ The app renders whatever the DocType defines, so changing a field in the DocType
 ## Development
 ```bash
 cd apps/deployops/frontend
-yarn dev          # :8080, proxies /api to bench
+yarn dev          # http://<site>:8080/deployops, proxies /api to bench
 yarn typecheck && yarn lint && yarn test
-yarn build        # writes deployops/public/frontend and www/frontend.html
+yarn build        # writes deployops/public/frontend and www/deployops.html
 bench --site deployops.local clear-cache
 ```
