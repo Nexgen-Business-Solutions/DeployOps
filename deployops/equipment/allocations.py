@@ -291,8 +291,13 @@ def active_rental_serials(subscription: str) -> list[dict]:
 # Serial history
 
 
-def get_serial_history(serial_no: str) -> list[dict]:
-	"""Everything that happened to one machine, oldest first: stock moves, allocations, jobs."""
+def get_serial_history(serial_no: str, user: str | None = None) -> list[dict]:
+	"""Everything that happened to one machine, oldest first: stock moves, allocations, jobs.
+
+	Allocations and jobs are listed only when the user may read them (#12 visibility), so the
+	history never shows another customer's job or allocation to someone outside it.
+	"""
+	user = user or frappe.session.user
 	rows = []
 
 	entry = frappe.qb.DocType("Serial and Batch Entry")
@@ -326,6 +331,8 @@ def get_serial_history(serial_no: str) -> list[dict]:
 
 	for name in frappe.get_all(ALLOCATION, filters={"serial_no": serial_no}, pluck="name"):
 		allocation = frappe.get_doc(ALLOCATION, name)
+		if not frappe.has_permission(ALLOCATION, "read", allocation, user=user):
+			continue
 		for event in allocation.events:
 			rows.append(
 				{
@@ -349,6 +356,8 @@ def get_serial_history(serial_no: str) -> list[dict]:
 		.where(device.parenttype == "DeployOps Job")
 		.run(as_dict=True)
 	):
+		if not frappe.has_permission("DeployOps Job", "read", row.name, user=user):
+			continue
 		rows.append(
 			{
 				"when": row.creation,

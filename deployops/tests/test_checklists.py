@@ -8,7 +8,7 @@ from deployops.api import checklists as checklist_api
 from deployops.api import jobs as job_api
 from deployops.checklists.cards import CARDS, FORM_DOCTYPES
 from deployops.checklists.form import HEADER_FIELDS, condition_met
-from deployops.roles import MANAGER
+from deployops.roles import ADMINISTRATOR, MANAGER
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_job import JOB, JobTestCase, make_job
 from deployops.tests.utils import make_role_user
@@ -428,6 +428,24 @@ class TestAccess(ChecklistTestCase):
 		):
 			with self.subTest(user=user):
 				self.assertEqual(bool(frappe.has_permission("File", "read", file, user=user)), allowed)
+
+	def test_form_lists_follow_job_visibility_for_every_role(self):
+		from deployops.security.job_permissions import form_query_conditions
+
+		name = self.start(self.working_job())
+		admin = make_role_user(ADMINISTRATOR)
+		for user, visible in (
+			(self.technician, True),
+			(self.supervisor, True),
+			(self.manager, True),
+			(admin, True),
+		):
+			with self.subTest(user=user), set_user(user):
+				self.assertEqual(name in frappe.get_list(CASH_INSTALL, pluck="name"), visible)
+		frappe.db.set_value(JOB, frappe.db.get_value(CASH_INSTALL, name, "job"), "assigned_technician", None)
+		with set_user(self.technician):
+			self.assertNotIn(name, frappe.get_list(CASH_INSTALL, pluck="name"))
+		self.assertEqual(form_query_conditions(self.technician), "1 = 0")  # no DocType: fail closed
 
 	def test_manager_can_cancel_a_submitted_form(self):
 		name = self.start(self.working_job())
