@@ -280,6 +280,16 @@ class TestSerialHistory(AllocationTestCase):
 		self.assertIn("Rental: Deployed", [row["event"] for row in history])
 		self.assertIn(job, [row["reference_name"] for row in history])
 
+	def test_a_returned_rental_machine_does_not_block_cancelling_its_job(self):
+		allocation, _installation = self.deploy_rental()
+		job = make_job(
+			"Subscription", self.subscription, job_type="Maintenance", assigned_technician=self.technician
+		).name
+		with set_user(self.supervisor):
+			allocation_api.return_machine(allocation, "Good")  # the machine comes back mid-maintenance
+		with set_user(self.manager):
+			self.assertEqual(job_api.job_action(job, "cancel", "Rental ended early"), "Cancelled")
+
 	def test_history_respects_equipment_access(self):
 		profile = frappe.get_doc("DeployOps Equipment Access Profile", self.supervisor)
 		profile.categories = profile.categories[:1]

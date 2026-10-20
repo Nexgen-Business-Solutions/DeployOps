@@ -429,6 +429,38 @@ class TestAccess(ChecklistTestCase):
 			with self.subTest(user=user):
 				self.assertEqual(bool(frappe.has_permission("File", "read", file, user=user)), allowed)
 
+	def test_a_machine_with_a_checklist_cannot_change_serial(self):
+		bundle = fx.make_bundle(self.cash, ["JOB-CR-1", "JOB-CR-2"])
+		note = fx.make_delivery_note(
+			self.customer, [{"item_code": self.cash, "qty": 2, "serial_and_batch_bundle": bundle}]
+		)
+		job = make_job(
+			"Delivery Note",
+			note.name,
+			devices=[{"item_code": self.cash, "serial_no": "JOB-CR-1"}],
+			assigned_technician=self.technician,
+		).name
+		with set_user(self.supervisor):
+			job_api.job_action(job, "start")
+		with set_user(self.technician):
+			job_api.job_action(job, "arrive")
+		name = self.start(job)
+		with set_user(self.supervisor), self.assertRaisesRegex(frappe.ValidationError, "has a checklist"):
+			doc = frappe.get_doc(JOB, job)
+			doc.devices[0].serial_no = "JOB-CR-2"
+			doc.save()
+		self.assertEqual(frappe.db.get_value(CASH_INSTALL, name, "serial_no"), "JOB-CR-1")
+
+	def test_a_cancelled_job_stops_checklist_edits(self):
+		job = self.working_job()
+		name = self.start(job)
+		with set_user(self.manager):
+			job_api.job_action(job, "cancel", "Customer withdrew")
+		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
+			doc = frappe.get_doc(CASH_INSTALL, name)
+			doc.remarks = "added after cancellation"
+			doc.save()
+
 	def test_manager_can_cancel_a_submitted_form(self):
 		name = self.start(self.working_job())
 		with set_user(self.technician):

@@ -5,6 +5,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from deployops.api.sources import visible_lines
+from deployops.checklists.cards import form_for_device
 from deployops.equipment import allocations
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
@@ -13,8 +14,23 @@ from deployops.security.equipment_access import get_allowed_items, get_category_
 PRE_INSTALLATION = "Pre-installation"
 INSTALLATION = "Installation"
 MAINTENANCE = "Maintenance"
+JOB = "DeployOps Job"
+DEVICE = "DeployOps Job Device"
 SERIAL_REQUIRED = (INSTALLATION, MAINTENANCE)
 CLOSED_STATUSES = ("Completed", "Cancelled")
+# Fixed once the job exists: the source and the customer, contact and site copied from it.
+SOURCE_FIELDS = (
+	"company",
+	"source_doctype",
+	"source_name",
+	"customer",
+	"customer_name",
+	"contact",
+	"contact_display",
+	"address",
+	"address_display",
+)
+LOG_FIELDS = ("timestamp", "user", "action", "from_status", "to_status", "device", "reason")
 
 
 class DeployOpsJob(Document):
@@ -35,15 +51,24 @@ class DeployOpsJob(Document):
 					),
 					frappe.PermissionError,
 				)
+			# A new job starts clean: Draft, no history, every machine Pending (only the workflow
+			# writes statuses and the log).
 			self.status = "Draft"
+			self.previous_status = None
+			self.set("status_log", [])
 			self.set_source_details(snapshot)
 			if not self.devices:
 				for device in devices_from_source(source, snapshot):
 					self.append("devices", device)
+			for row in self.devices:
+				row.device_status = "Pending"
+				row.source_issue = None
 		else:
 			self.validate_not_closed()
 			self.validate_status_unchanged()
+			self.validate_fixed_fields()
 			self.validate_workflow_fields_unchanged()
+			self.validate_log_unchanged()
 
 		for row in self.devices:
 			# Rows added during validate miss Frappe's field defaults.
@@ -88,6 +113,52 @@ class DeployOpsJob(Document):
 		if self.has_value_changed("status") or self.has_value_changed("previous_status"):
 			frappe.throw(_("The job status can only be changed through the job workflow."))
 
+	def validate_fixed_fields(self):
+		for field in SOURCE_FIELDS:
+			if self.has_value_changed(field):
+				frappe.throw(
+					_("{0} comes from the source and cannot be changed after the job is created.").format(
+						_(self.meta.get_label(field))
+					)
+				)
+		if self.has_value_changed("job_type") and frappe.db.get_value(JOB, self.name, "status") != "Draft":
+			frappe.throw(_("The job type can only be changed while the job is Draft."))
+
+	def validate_log_unchanged(self):
+		"""Existing status-log entries never change; only the workflow appends new ones."""
+		saved = {
+			row.name: row
+			for row in frappe.get_all(
+				"DeployOps Job Status Log",
+				filters={"parent": self.name, "parenttype": JOB},
+				fields=["name", *LOG_FIELDS],
+			)
+		}
+		current = {row.name: row for row in self.status_log if row.name in saved}
+		if set(current) != set(saved):
+			frappe.throw(_("The status log can only be written by the job workflow."))
+		for name, before in saved.items():
+			row = current[name]
+			if any(str(row.get(f) or "") != str(before.get(f) or "") for f in LOG_FIELDS):
+				frappe.throw(_("Status log entries cannot be changed."))
+		added = [row for row in self.status_log if row.name not in saved]
+		if added and not self.flags.allow_status_change:
+			frappe.throw(_("The status log can only be written by the job workflow."))
+
+	def changed_rows(self) -> list:
+		"""Machine rows that are new, or whose Item or serial differs from the saved job."""
+		saved = {}
+		if not self.is_new():
+			saved = {
+				r.name: (r.item_code, r.serial_no or None)
+				for r in frappe.get_all(
+					DEVICE,
+					filters={"parent": self.name, "parenttype": JOB},
+					fields=["name", "item_code", "serial_no"],
+				)
+			}
+		return [row for row in self.devices if saved.get(row.name) != (row.item_code, row.serial_no or None)]
+
 	def validate_workflow_fields_unchanged(self):
 		"""Machine statuses and the status log are only written by the workflow."""
 		if self.flags.allow_status_change:
@@ -125,6 +196,12 @@ class DeployOpsJob(Document):
 			):
 				frappe.throw(_("Row #{0}: the delivery details are set by the system.").format(row.idx))
 			changed = (row.item_code, row.serial_no or None) != (before.item_code, before.serial_no or None)
+			if changed and form_for_device(self.name, row.name):
+				frappe.throw(
+					_(
+						"Row #{0}: this machine has a checklist; a manager must cancel it before the machine can be changed."
+					).format(row.idx)
+				)
 			if changed and (
 				saved_status == "Pending Review" or before.device_status in ("Completed", "Cancelled")
 			):
@@ -137,16 +214,6 @@ class DeployOpsJob(Document):
 					)
 				)
 
-		saved_log = frappe.get_all(
-			"DeployOps Job Status Log",
-			filters={"parent": self.name, "parenttype": "DeployOps Job"},
-			pluck="name",
-		)
-		if sorted(row.name for row in self.status_log if row.name) != sorted(saved_log) or any(
-			not row.name for row in self.status_log
-		):
-			frappe.throw(_("The status log can only be written by the job workflow."))
-
 	def validate_devices(self, snapshot: dict):
 		lines = list(snapshot["lines"])
 		for note in self.later_deliveries():
@@ -156,22 +223,14 @@ class DeployOpsJob(Document):
 		for line in lines:
 			source_serials.setdefault(line["item_code"], set()).update(line["serial_nos"])
 
-		# Rows already saved were checked when they were added; their delivery may since have been
-		# cancelled or returned (flagged by delivery_handoff), which must not block later saves.
-		saved = {}
-		if not self.is_new():
-			saved = {
-				r.name: (r.item_code, r.serial_no or None)
-				for r in frappe.get_all(
-					"DeployOps Job Device",
-					filters={"parent": self.name, "parenttype": "DeployOps Job"},
-					fields=["name", "item_code", "serial_no"],
-				)
-			}
+		# Rows already saved were checked when they were added; since then their delivery may have
+		# been cancelled or returned, or their rental machine returned, which must not block later
+		# saves (e.g. a Manager cancelling the job).
+		changed = {id(row) for row in self.changed_rows()}
 
 		seen = set()
 		for row in self.devices:
-			unchanged = saved.get(row.name) == (row.item_code, row.serial_no or None)
+			unchanged = id(row) not in changed
 			if not frappe.db.get_value("Item", row.item_code, "has_serial_no"):
 				frappe.throw(
 					_("Row #{0}: Item {1} is not serial-numbered equipment.").format(row.idx, row.item_code)
@@ -199,7 +258,7 @@ class DeployOpsJob(Document):
 
 			erpnext_sources.validate_serial(row.serial_no, row.item_code, self.company)
 
-			if self.source_doctype == erpnext_sources.SUBSCRIPTION:
+			if self.source_doctype == erpnext_sources.SUBSCRIPTION and not unchanged:
 				allocated = {r.serial_no for r in allocations.active_rental_serials(self.source_name)}
 				if row.serial_no not in allocated:
 					frappe.throw(
@@ -213,6 +272,27 @@ class DeployOpsJob(Document):
 				frappe.throw(
 					_("Row #{0}: Serial No {1} is not on {2} {3}.").format(
 						row.idx, row.serial_no, _(self.source_doctype), self.source_name
+					)
+				)
+
+		if self.source_doctype != erpnext_sources.SUBSCRIPTION and changed:
+			self.validate_quantities(lines)
+
+	def validate_quantities(self, lines: list[dict]):
+		"""No more machines of an Item than the source covers (ordered units, or listed serials)."""
+		allowed: dict[str, int] = {}
+		for line in lines:
+			units = max(int(line.get("qty") or 1), len(line["serial_nos"]))
+			allowed[line["item_code"]] = allowed.get(line["item_code"], 0) + units
+		counts: dict[str, int] = {}
+		for row in self.devices:
+			if row.device_status != "Cancelled":
+				counts[row.item_code] = counts.get(row.item_code, 0) + 1
+		for item_code, count in counts.items():
+			if count > allowed.get(item_code, 0):
+				frappe.throw(
+					_("{0} {1} covers {2} unit(s) of {3}; this job lists {4}.").format(
+						_(self.source_doctype), self.source_name, allowed.get(item_code, 0), item_code, count
 					)
 				)
 
@@ -273,7 +353,10 @@ class DeployOpsJob(Document):
 				)
 
 	def validate_no_double_booking(self):
-		serials = [row.serial_no for row in self.devices if row.serial_no]
+		# A cancelled machine no longer holds its serial, here or on another job.
+		serials = [
+			row.serial_no for row in self.devices if row.serial_no and row.device_status != "Cancelled"
+		]
 		if not serials:
 			return
 
@@ -286,6 +369,7 @@ class DeployOpsJob(Document):
 			.select(device.serial_no, job.name)
 			.where(device.parenttype == "DeployOps Job")
 			.where(device.serial_no.isin(serials))
+			.where(device.device_status != "Cancelled")
 			.where(job.name != (self.name or ""))
 			.where(job.job_type == self.job_type)
 			.where(job.status.notin(CLOSED_STATUSES))
@@ -303,6 +387,14 @@ class DeployOpsJob(Document):
 		user = self.assigned_technician
 		if not user:
 			return
+		if (
+			not self.is_new()
+			and not self.has_value_changed("assigned_technician")
+			and not self.changed_rows()
+		):
+			# Checked when assigned and when machines change. Revoking the technician's access later
+			# hides the job from them (#12) but must not stop a Manager from cancelling or reassigning.
+			return
 
 		if not frappe.db.get_value("User", user, "enabled"):
 			frappe.throw(_("Assigned technician {0} is not an active user.").format(user))
@@ -311,7 +403,7 @@ class DeployOpsJob(Document):
 
 		allowed = get_allowed_items(user)
 		for row in self.devices:
-			if row.item_code not in allowed:
+			if row.device_status != "Cancelled" and row.item_code not in allowed:
 				frappe.throw(
 					_("Assigned technician {0} is not authorised for equipment {1}.").format(
 						user, row.item_code
