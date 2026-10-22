@@ -498,6 +498,7 @@ deployops/                       ← repository root (apps/deployops)
 
 | Document | Purpose |
 |---|---|
+| [`docs/CASHMATIC_PREINSTALLATION_QUICKSTART.md`](docs/CASHMATIC_PREINSTALLATION_QUICKSTART.md) | Short setup-to-completion guide for Cashmatic pre-installation |
 | [`ROADMAP.md`](ROADMAP.md) | Mission, governance, phases and sequencing rules |
 | [`docs/FUNCTIONAL_SPEC.md`](docs/FUNCTIONAL_SPEC.md) | Business journeys, actors, workflow, UAT scenarios |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Data ownership, candidate objects, permissions, lifecycle |
