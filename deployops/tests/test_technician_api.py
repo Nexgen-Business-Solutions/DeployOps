@@ -127,6 +127,17 @@ class TestFormScreen(TechnicianApiTestCase):
 		}
 		self.assertTrue(fields["device_model"]["read_only"])
 
+	def test_a_draft_header_shows_the_jobs_current_serial(self):
+		doctype = "DeployOps Cashmatic Pre-installation"
+		job = self.working_job("Pre-installation")  # undelivered order: no serial yet
+		name = self.start(job)
+		self.assertIsNone(self.as_tech(api.form_view, doctype, name)["header"]["serial_no"])
+		with set_user(self.technician):
+			job_doc = frappe.get_doc("DeployOps Job", job)
+			job_doc.devices[0].serial_no = "JOB-CR-2"
+			job_doc.save()
+		self.assertEqual(self.as_tech(api.form_view, doctype, name)["header"]["serial_no"], "JOB-CR-2")
+
 	def test_maintenance_tasks_are_a_fixed_grid(self):
 		job = self.working_job("Maintenance", serial="JOB-CR-2")
 		name = self.start(job)

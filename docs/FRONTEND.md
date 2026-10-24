@@ -69,6 +69,14 @@ The app renders whatever the DocType defines, so changing a field in the DocType
 | Other Table | Repeating cards with Add and remove |
 | HTML | Grey note |
 
+**Reference documents (#42).** The manuals an administrator lists in **DeployOps Reference Files** show up in two places:
+- a **"Documents for this checklist"** block at the top of the form, listing each document once with the sections that use it;
+- a card under each section that needs one.
+
+Each card has a first-page preview and the page count. **Read** opens a full-screen, page-by-page viewer, with a download button and arrow keys and Escape on a keyboard. Images open as they are.
+
+Rendering uses **pdf.js** (`pdfjs-dist`, its *legacy* build, because the modern build needs JavaScript that today's phones lack). It's loaded only when a checklist has documents, and the worker is a separate file of about 1.3 MB. The files stay private: only DeployOps users can open them.
+
 `depends_on` / `mandatory_depends_on` (`eval:doc.<field>=='<value>'`) show and require fields live. The app checks the same rules as the server before submit (`frontend/src/lib/form.ts`), marks problems in place and scrolls to the first one.
 
 ## Security

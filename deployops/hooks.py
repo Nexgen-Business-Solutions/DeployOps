@@ -99,7 +99,7 @@ required_apps = ["erpnext"]
 # Roles must exist before DocTypes and the workspace that reference them are synced.
 before_install = "deployops.install.create_roles"
 before_migrate = "deployops.install.create_roles"
-# after_install = "deployops.install.after_install"
+after_install = "deployops.install.install_reference_files"
 
 # Uninstallation
 # ------------
