@@ -20,6 +20,7 @@ BUNDLED_REFERENCES = (
 		"Cashmatic Device Installation Guide (CDIG)",
 		"machine_activation_steps_section",
 	),
+	("parts-manual.pdf", "Self Pay 460 parts (user manual)", "machine_activation_steps_section"),
 	("device-configuration.pdf", "F1 client device configuration", "machine_configuration_steps_section"),
 	("user-setup.pdf", "F2 user access configuration", "employee_checklist_section"),
 	("logo.png", "Massarie logo (machine labeling)", "employee_checklist_section"),

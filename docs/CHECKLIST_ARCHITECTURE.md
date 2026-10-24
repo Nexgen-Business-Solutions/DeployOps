@@ -88,7 +88,7 @@ Photos and files are private and attached to the form, so access to them follows
 
 ### Not built (noted for a later decision)
 - **Step exceptions** ("incomplete reasons" in #21): a technician marks a required step N/A or Blocked with a reason, instead of ticking it. Proposed: one shared table per form (step, status, reason, who, when). A step counts as answered if ticked or excepted, and Blocked steps are flagged for review. Held back by the owner on 2026-10-20.
-- **Machine completion:** a machine can be marked Done on the job without a submitted checklist. Not part of #21's scope.
+- **Machine completion:** a machine that has a checklist for the job's type can only be completed once that checklist is submitted (and it needs its Serial No). A machine with no checklist for its product line completes without one.
 
 ## 5. Mapping notes (pending #40 sign-off)
 

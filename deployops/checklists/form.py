@@ -151,9 +151,9 @@ class ChecklistForm(Document):
 
 	def follow_job_serial(self):
 		"""While a draft, the serial follows the machine's row on the job (#22: a pre-installation may
-		start before the machine is picked). Submitted forms keep theirs."""
+		start before the machine is picked), up to and including its submit. Submitted forms keep theirs."""
 		before = self.get_doc_before_save()
-		if self.docstatus != 0 or not before:
+		if not before or before.docstatus != 0:
 			return
 		row_serial = frappe.db.get_value("DeployOps Job Device", self.job_device, "serial_no") or None
 		if row_serial != (before.serial_no or None):

@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -13,10 +14,16 @@ from deployops.tests.test_job import JOB, JobTestCase, make_job
 from deployops.tests.test_security_negative import login_sid
 from deployops.tests.utils import make_role_user
 
+# These tests cover job and machine states, so their machines have no checklist; the rule that a
+# machine with a checklist completes only once it is submitted is tested in test_checklists.py.
+NO_CHECKLISTS = patch("deployops.workflow.job_workflow.card_for", return_value=None)
+
 
 class WorkflowTestCase(JobTestCase):
 	def setUp(self):
 		super().setUp()
+		NO_CHECKLISTS.start()
+		self.addCleanup(NO_CHECKLISTS.stop)
 		self.manager = make_role_user(MANAGER)
 		self.admin = make_role_user(ADMINISTRATOR)
 		frappe.get_doc(
@@ -415,7 +422,8 @@ class TestWorkflowOverHttp(IntegrationTestCase):
 		kwargs = {"data": payload} if http_method == "POST" else {"query_string": payload}
 		return make_request(target=target, args=(url,), kwargs=kwargs)
 
-	def test_workflow_over_http(self):
+	@NO_CHECKLISTS
+	def test_workflow_over_http(self, _card_for):
 		job = {"job": self.job}
 		# state-changing methods refuse GET
 		self.assertNotEqual(

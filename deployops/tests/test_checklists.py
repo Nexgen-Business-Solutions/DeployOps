@@ -361,6 +361,25 @@ class TestFilling(ChecklistTestCase):
 			doc.submit()
 		self.assertEqual(frappe.db.get_value(preparation, name, "serial_no"), "JOB-CR-2")
 
+	def test_a_machine_completes_only_once_its_checklist_is_submitted(self):
+		job, row = frappe.db.get_value(CASH_INSTALL, self.name, ["job", "job_device"])
+		with set_user(self.technician):
+			job_api.device_action(job, row, "start")
+			with self.assertRaisesRegex(frappe.ValidationError, "Submit the checklist"):
+				job_api.device_action(job, row, "complete")  # a draft is not enough
+			doc = self.complete(self.doc())
+			doc.save()
+			doc.submit()
+			self.assertEqual(job_api.device_action(job, row, "complete"), "Completed")
+
+	def test_a_machine_without_a_checklist_completes_without_one(self):
+		frappe.db.set_value(CATEGORY, "_Test Robot", "product_line", None)
+		job = self.working_job(item=self.robot, serial="JOB-BB-1")
+		row = frappe.get_doc(JOB, job).devices[0].name
+		with set_user(self.technician):
+			job_api.device_action(job, row, "start")
+			self.assertEqual(job_api.device_action(job, row, "complete"), "Completed")
+
 	def test_secrets_foreign_files_and_bad_signatures_are_refused(self):
 		other = self.attach("DeployOps Job", frappe.db.get_value(CASH_INSTALL, self.name, "job"))[0]
 		cases = {

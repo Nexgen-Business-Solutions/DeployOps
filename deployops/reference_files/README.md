@@ -9,6 +9,7 @@ do not create empty PDFs or images.
 | `web-interface.pdf` | Web panel interface |
 | `my-cashmatic-app.pdf` | My Cashmatic App explanation |
 | `device-installation-guide.pdf` | CDIG |
+| `parts-manual.pdf` | Self Pay 460 user manual with the parts ("For more clarification about SP460 parts") |
 | `device-configuration.pdf` | F1 configuration reference |
 | `user-setup.pdf` | F2 user setup reference |
 | `logo.png` | Company logo / labeling image |
@@ -28,5 +29,9 @@ field name, e.g. `machine_activation_steps_section`; empty = top of the
 checklist). Migrations never overwrite the list. Files added to this folder after
 installation must be uploaded in the settings.
 
-Technicians see the files as links in their checklist and open them in a new
-tab. The files stay private: only users with a DeployOps role can open them.
+Technicians see each file as a card with a first-page preview under its section,
+and open it in the app's page-by-page viewer (see docs/FRONTEND.md). The files
+stay private: only users with a DeployOps role can open them.
+
+The mapping of each file to the original Jotform is in
+docs/CASHMATIC_PREINSTALLATION_MAPPING.md §3.

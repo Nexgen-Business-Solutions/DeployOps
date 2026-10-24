@@ -32,6 +32,7 @@ These walk a real job from its ERPNext source to approval through the public API
 | **Workflow:** paths, who may do what, reasons, block/unblock, return for correction, cancel, locks | `test_job_workflow.py` | 21–23 | ✅ |
 | **No-go / blocked jobs** | `test_job_workflow.py` (`test_submit_needs_every_machine_done_and_none_blocked`), `TestTwoMachines` | 22 | 🟡 Blocking is manual (Block Machine). Whether a **NO GO** or **FAIL** answer should block automatically is a product-owner decision (open) |
 | **Checklists:** five forms, required answers, conditions, versions and snapshots, serial before submit, locking, cancel by Manager | `test_checklists.py`, `test_technician_api.py` | 28–33 | 🟡 Field mapping awaits product-owner sign-off (#40) |
+| **Cashmatic pre-installation (#22):** every source step, machine details, proof photo, working hours, special request, signature, serial before completion, two machines, no credentials | `test_cashmatic_preinstallation.py` | 29, [UAT U1–U17](CASHMATIC_PREINSTALLATION_UAT.md) | 🟡 Mapping differences await sign-off ([mapping §4](CASHMATIC_PREINSTALLATION_MAPPING.md)) |
 | **Digital signatures:** drawn signature plus a server-recorded signer, time and capturing user; signer name required | `test_checklists.py` (`test_signatures_*`, `test_a_signature_needs_the_signer_name`) | 29, 32 | ✅ |
 | **Evidence files:** private, attached to the form, visible only with the job; foreign or public files refused | `test_checklists.py`, `test_job_visibility.py`, `TestPermissionsAcrossTheFlow` | 20, 29 | ✅ |
 | **Reference manuals (PDF) in checklists:** private, readable by DeployOps roles only, shown per section | `test_reference_files.py`, `src/lib/pdf.test.ts` | — | ✅ (in-app viewer checked by hand, see §4) |
@@ -42,12 +43,11 @@ These walk a real job from its ERPNext source to approval through the public API
 
 ## 3. Known gaps to close before a production release
 1. **Printable reports (#27)** don't exist yet, so "PDF" in #44 can't be tested.
-2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine, and whether completion needs a submitted checklist, are open product-owner decisions.
+2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine is an open product-owner decision. (A machine with a checklist already completes only once it's submitted.)
 3. **Return for Correction:** which machines reopen is undefined (open with the product owner).
 4. **Field mapping sign-off (#40)** for all five checklists.
 5. **Maintenance Schedule** as a whole flow (#17).
-6. **Job audit integrity fixes** (`task/39-job-audit-integrity`) are pushed but not merged; until they are, status-log rows can be rewritten and serials changed under a submitted checklist.
-7. **Browser end-to-end tests** run by hand only. Adding them to CI needs a new dev dependency (e.g. Playwright); that's not agreed.
+6. **Browser end-to-end tests** run by hand only. Adding them to CI needs a new dev dependency (e.g. Playwright); that's not agreed.
 
 ## 4. Manual browser run (each release)
 On `deployops.local`, as tech@test.local on a phone-sized window, then on a desktop:
