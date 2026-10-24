@@ -20,6 +20,8 @@
 6. Complete typed field mapping table and obtain product-owner sign-off before coding each checklist; this document is intentionally **not** a claim that every original Jotform field/condition is verified.
 
 ## 1. Cashmatic Pre-installation — detailed PDF-derived inventory
+**Field mapping against the original Jotform:** [CASHMATIC_PREINSTALLATION_MAPPING.md](CASHMATIC_PREINSTALLATION_MAPPING.md) (#40, awaiting product-owner sign-off). It supersedes the proposals below where they differ.
+
 **Source:** Completed pre-visit PDF, pages 1-5. Document says to complete checklist **one week before installation**. Device example Self Pay 460; activation and software/firmware information was recorded before installation. The PDF displays checklist text, sample fields and audit trail, but **not** definitive builder-only mandatory/conditional rules.
 
 ### A. Shared documents before visit (PDF p.1)
