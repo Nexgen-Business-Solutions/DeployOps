@@ -32,3 +32,5 @@ For a fresh ERPNext + DeployOps installation. This guide covers a **sold Cashmat
 **If the technician cannot find the job:** check the enabled user and role, equipment category/product line, enabled access profile, assigned technician and job state. A job must be **In Preparation** before its checklist can start.
 
 **End point:** approved preparation with a serial-linked checklist. Delivery Note and on-site installation are later, separate steps. Checklist submission, machine completion and job approval are separate actions in the current implementation.
+
+**Acceptance:** the hand-run scenarios are in [CASHMATIC_PREINSTALLATION_UAT.md](CASHMATIC_PREINSTALLATION_UAT.md); the field mapping against the original Jotform, with the open decisions, is in [CASHMATIC_PREINSTALLATION_MAPPING.md](CASHMATIC_PREINSTALLATION_MAPPING.md).
