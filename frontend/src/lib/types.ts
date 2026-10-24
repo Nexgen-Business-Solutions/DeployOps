@@ -118,4 +118,8 @@ export type FormView = {
 	sections: Section[];
 	values: Values;
 	signatures: Record<string, { signer_name: string | null; signed_on: string | null }>;
+	references: Reference[];
 };
+
+/** A manual or guide shown in a checklist section (or at the top when section is null). */
+export type Reference = { title: string; url: string; section: string | null };

@@ -29,6 +29,7 @@ The roles ship with the app. They are created automatically on `install-app` and
 | DeployOps Job (#18) | R W (assigned) | R C W A P | R C W X A P E | R C W X P E |
 | DeployOps Job Device (#16, #18) | R W (assigned) | R C W | R C W X | R C W X |
 | The five checklist forms (#41): Cashmatic Pre-installation, Cashmatic Installation, BellaBot Pre-installation, BellaBot Installation, Cashmatic Maintenance | R C W S P (own jobs) | R A P | R X A P E | R P E |
+| DeployOps Reference Files (#42) | R | R | R | R W |
 | DeployOps Equipment Category (#11) | — | R | R | R C W D |
 | DeployOps Equipment Access Profile (#11) | — | R | R | R C W D |
 | DeployOps Equipment Allocation (#14) | R (own jobs) | R C W | R C W X E | R E |

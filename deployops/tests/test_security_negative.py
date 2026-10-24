@@ -62,14 +62,17 @@ class TestSecurityNegative(IntegrationTestCase):
 		)
 
 	def test_guest_gets_only_the_app_shell(self):
-		# The React app shows its own login screen; the shell holds no data and no session token.
-		response = self.request("/")
-		self.assertEqual(response.status_code, 200)
-		body = response.data.decode()
-		self.assertIn('id="root"', body)
-		for leak in (TEST_CUSTOMER, "@deployops.test"):
-			self.assertNotIn(leak, body)
-		self.assertIn("window.csrf_token = '';", body)  # guests get no session token
+		# The React app (under /deployops) shows its own login screen; the shell holds no data and
+		# no session token, also on a deep link.
+		for path in ("/deployops", "/deployops/job/JOB-0001"):
+			with self.subTest(path=path):
+				response = self.request(path)
+				self.assertEqual(response.status_code, 200)
+				body = response.data.decode()
+				self.assertIn('id="root"', body)
+				for leak in (TEST_CUSTOMER, "@deployops.test"):
+					self.assertNotIn(leak, body)
+				self.assertIn("window.csrf_token = '';", body)  # guests get no session token
 		for method in ("me", "home", "my_jobs"):
 			with self.subTest(method=method):
 				params = {"card": "cashmatic-onsite"} if method == "my_jobs" else None
@@ -86,15 +89,19 @@ class TestSecurityNegative(IntegrationTestCase):
 		existing = [
 			dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt) and not frappe.get_meta(dt).istable
 		]
+
+		def url(doctype):  # a Single DocType has no list: read its one document
+			return f"/api/resource/{doctype}" + (f"/{doctype}" if frappe.get_meta(doctype).issingle else "")
+
 		for role, sid in self.sids.items():
 			for doctype in existing:
 				with self.subTest(role=role, doctype=doctype):
-					response = self.request(f"/api/resource/{doctype}", {"sid": sid})
+					response = self.request(url(doctype), {"sid": sid})
 					self.assertEqual(response.status_code, 200 if allowed(doctype, role, "read") else 403)
 
 		for doctype in existing:
 			with self.subTest(guest=True, doctype=doctype):
-				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
+				self.assertEqual(self.request(url(doctype)).status_code, 403)
 
 	def test_guest_cannot_call_source_lookups(self):
 		for method, params in (

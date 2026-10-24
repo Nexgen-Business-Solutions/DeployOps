@@ -13,6 +13,7 @@ from deployops.api.sources import require_deployops_role
 from deployops.checklists import layout
 from deployops.checklists.cards import CARDS, CARDS_BY_ID, card_for, form_for_device, items_by_product_line
 from deployops.checklists.form import HEADER_FIELDS
+from deployops.deployops.doctype.deployops_reference_files.deployops_reference_files import references_for
 from deployops.roles import ALIASES, ALL_ROLES
 from deployops.workflow import job_workflow
 
@@ -151,7 +152,15 @@ def form_view(doctype: str, name: str) -> dict:
 		"intro": doc.INTRO,
 		"form_version": doc.form_version,
 		"job": doc.job,
-		"header": {field: layout.as_text(doc.get(field)) for field in HEADER_FIELDS},
+		"header": {
+			**{field: layout.as_text(doc.get(field)) for field in HEADER_FIELDS},
+			# A draft follows the job's serial (#22); show it even before the next save picks it up.
+			**(
+				{"serial_no": frappe.db.get_value("DeployOps Job Device", doc.job_device, "serial_no")}
+				if doc.docstatus == 0
+				else {}
+			),
+		},
 		"technician_name": frappe.db.get_value("User", doc.technician, "full_name")
 		if doc.technician
 		else None,
@@ -161,6 +170,7 @@ def form_view(doctype: str, name: str) -> dict:
 		else None,
 		"submitted_on": layout.as_text(doc.modified) if doc.docstatus == 1 else None,
 		"can_edit": doc.docstatus == 0 and frappe.has_permission(doctype, "write", doc),
+		"references": references_for(doctype),
 		**_form_content(doc),
 	}
 

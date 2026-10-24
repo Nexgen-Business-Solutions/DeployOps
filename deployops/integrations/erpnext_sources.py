@@ -10,6 +10,8 @@ from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
 from frappe import _
 from frappe.contacts.doctype.address.address import render_address
 
+from deployops.security.company_access import allowed_companies
+
 SALES_ORDER = "Sales Order"
 DELIVERY_NOTE = "Delivery Note"
 SUBSCRIPTION = "Subscription"
@@ -31,6 +33,13 @@ def validate_source(doctype: str, name: str, company: str | None = None):
 	reason = state_problem(doc)
 	if reason:
 		frappe.throw(_("{0} {1} cannot be used: {2}").format(_(doctype), name, reason))
+
+	companies = allowed_companies(doctype)
+	if companies is not None and doc.company not in companies:
+		frappe.throw(
+			_("You are not allowed to use sources of company {0}.").format(doc.company),
+			frappe.PermissionError,
+		)
 
 	if company and doc.company != company:
 		frappe.throw(

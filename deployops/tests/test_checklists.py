@@ -8,7 +8,7 @@ from deployops.api import checklists as checklist_api
 from deployops.api import jobs as job_api
 from deployops.checklists.cards import CARDS, FORM_DOCTYPES
 from deployops.checklists.form import HEADER_FIELDS, condition_met
-from deployops.roles import MANAGER
+from deployops.roles import ADMINISTRATOR, MANAGER
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_job import JOB, JobTestCase, make_job
 from deployops.tests.utils import make_role_user
@@ -336,6 +336,31 @@ class TestFilling(ChecklistTestCase):
 			doc.submission_snapshot = '{"sections": []}'
 			doc.save()
 
+	def test_a_draft_follows_the_machines_serial_and_needs_one_to_submit(self):
+		"""#22: the serial is assigned before preparation completes; a draft picks it up from the job."""
+		preparation = "DeployOps Cashmatic Pre-installation"
+		job = self.working_job("Pre-installation")  # an undelivered order: no serial picked yet
+		name = self.start(job)
+		with set_user(self.technician):
+			doc = self.complete(frappe.get_doc(preparation, name))
+			doc.save()
+			self.assertIsNone(doc.serial_no)
+			self.assertIn(
+				"Serial number: assign the machine's serial number on the job first.", doc.missing()
+			)
+			with self.assertRaises(frappe.ValidationError):
+				doc.submit()
+
+		with set_user(self.technician):  # the technician picks the machine during preparation
+			job_doc = frappe.get_doc(JOB, job)
+			job_doc.devices[0].serial_no = "JOB-CR-2"
+			job_doc.save()
+			doc = frappe.get_doc(preparation, name)
+			doc.save()
+			self.assertEqual((doc.serial_no, doc.missing()), ("JOB-CR-2", []))
+			doc.submit()
+		self.assertEqual(frappe.db.get_value(preparation, name, "serial_no"), "JOB-CR-2")
+
 	def test_secrets_foreign_files_and_bad_signatures_are_refused(self):
 		other = self.attach("DeployOps Job", frappe.db.get_value(CASH_INSTALL, self.name, "job"))[0]
 		cases = {
@@ -370,8 +395,13 @@ class TestEveryForm(ChecklistTestCase):
 		self.assertEqual(set(jobs), set(FORM_DOCTYPES))
 		for doctype, (job_type, item, serial) in jobs.items():
 			with self.subTest(doctype=doctype):
-				name = self.start(self.working_job(job_type, item, serial))
+				job = self.working_job(job_type, item, serial)
+				name = self.start(job)
 				with set_user(self.technician):
+					if job_type == "Pre-installation":  # an undelivered order: pick the machine first (#22)
+						job_doc = frappe.get_doc(JOB, job)
+						job_doc.devices[0].serial_no = serial
+						job_doc.save()
 					doc = frappe.get_doc(doctype, name)
 					self.assertTrue(doc.missing())
 					self.complete(doc).save()
@@ -460,6 +490,24 @@ class TestAccess(ChecklistTestCase):
 			doc = frappe.get_doc(CASH_INSTALL, name)
 			doc.remarks = "added after cancellation"
 			doc.save()
+
+	def test_form_lists_follow_job_visibility_for_every_role(self):
+		from deployops.security.job_permissions import form_query_conditions
+
+		name = self.start(self.working_job())
+		admin = make_role_user(ADMINISTRATOR)
+		for user, visible in (
+			(self.technician, True),
+			(self.supervisor, True),
+			(self.manager, True),
+			(admin, True),
+		):
+			with self.subTest(user=user), set_user(user):
+				self.assertEqual(name in frappe.get_list(CASH_INSTALL, pluck="name"), visible)
+		frappe.db.set_value(JOB, frappe.db.get_value(CASH_INSTALL, name, "job"), "assigned_technician", None)
+		with set_user(self.technician):
+			self.assertNotIn(name, frappe.get_list(CASH_INSTALL, pluck="name"))
+		self.assertEqual(form_query_conditions(self.technician), "1 = 0")  # no DocType: fail closed
 
 	def test_manager_can_cancel_a_submitted_form(self):
 		name = self.start(self.working_job())

@@ -290,6 +290,33 @@ class TestSerialHistory(AllocationTestCase):
 		with set_user(self.manager):
 			self.assertEqual(job_api.job_action(job, "cancel", "Rental ended early"), "Cancelled")
 
+	def test_history_shows_only_jobs_and_allocations_the_caller_can_see(self):
+		fx.make_bundle(self.robot, ["JOB-BB-1"])
+		_name, job = self.deploy_rental()
+		other = "_hist-tech@deployops.test"
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": other,
+				"first_name": "Other",
+				"send_welcome_email": 0,
+				"roles": [{"role": "DeployOps Technician"}],
+			}
+		).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "DeployOps Equipment Access Profile",
+				"user": other,
+				"categories": [{"category": "_Test Robots"}],
+			}
+		).insert(ignore_permissions=True)
+		with set_user(other):
+			history = allocation_api.serial_history("JOB-BB-1")
+		self.assertEqual({row["source"] for row in history}, {"ERPNext"})  # authorised for the model only
+		self.assertNotIn(self.customer, " ".join(str(row["detail"]) for row in history))
+		with set_user(self.technician):  # assigned to the job: sees it
+			self.assertIn(job, [row["reference_name"] for row in allocation_api.serial_history("JOB-BB-1")])
+
 	def test_history_respects_equipment_access(self):
 		profile = frappe.get_doc("DeployOps Equipment Access Profile", self.supervisor)
 		profile.categories = profile.categories[:1]

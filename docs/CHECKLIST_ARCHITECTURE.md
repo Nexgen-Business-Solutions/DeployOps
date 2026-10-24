@@ -43,6 +43,7 @@ Shared child tables:
 All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each DocType's controller only declares its own constants.
 
 - **Starting a form:** the job must be in a working state and the machine must not be cancelled. The form must be the right one for the machine, and each machine row gets one live form.
+- **Serial (#22):** a form can be started before the machine's serial is picked (pre-installation). While it's a draft, its serial follows the machine's row on the job; it **cannot be submitted without one**, and once submitted it's frozen. The serial still can't be edited on the form itself.
 - **Drafts save with gaps**, so the app can autosave. **Submit** checks everything:
   - Required fields, including Check boxes, which must be ticked.
   - Fields that are required only under a condition (`mandatory_depends_on`).
@@ -78,6 +79,9 @@ All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each Doc
 - A signature without a signer name cannot be submitted.
 - The snapshot includes the record, and the app shows "Signed by … · time" under each signature.
 - BellaBot Installation got a **Customer name** field for its customer signature, which had none.
+
+### Reference files (#42)
+The manuals the Jotforms embedded (CDIG, user manuals, F1/F2 references) are uploaded by an administrator to **DeployOps Reference Files**: one row per place they appear, with a title, the file, the checklist and optionally the section (its field name; empty = top). The app shows them as links under that section's heading. They stay private; any DeployOps role can open them, nobody else. Bundled files in `deployops/reference_files/` are seeded once on install (see its README).
 
 ### Evidence files (#21)
 Photos and files are private and attached to the form, so access to them follows the form, and the form follows the job. Tested: the assigned technician and a Supervisor in scope can open a file; another technician and Guest cannot.
