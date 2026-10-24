@@ -19,8 +19,9 @@ Record each result as Pass / Fail with the date, the tester and, for a Fail, wha
 | U9 | Customer working hours | Fill Monday–Saturday with times, tick Closed on Sunday; then clear Monday's closing time and Submit | Seven fixed days. A day needs open and close times or Closed; Monday is marked | `test_seven_fixed_days_each_open_and_close_or_closed` |
 | U10 | Special installation request | Type e.g. "Wall mounted, left of the counter" | Saved; required to submit | `test_machine_details_…_are_required` |
 | U11 | No credentials | Type `password: test123` in Additional remarks; then `OTP = 123456` in the special request | Both refused with "do not enter passwords, PINs, OTPs or pairing codes" | `test_no_credentials_or_activation_codes_in_text` |
-| U12 | Signature | Sign as the employee, fill the remarks, Submit | Submitted; the form is locked with "Submitted on … by …". In Desk, the signature record shows the technician's name, time and user | `test_submit_locks_the_form_with_signer_and_snapshot` |
+| U12 | Signature | Sign as the employee, fill the remarks, Submit | Submitted; the form is locked with "Submitted on … by …". In Desk, the signature record shows the technician's name, time and user. A supervisor can no longer change this machine's serial on the job | `test_submit_locks_the_form_with_signer_snapshot_and_serial` |
 | U13 | Serial before preparation completes | Machine 2 (no serial): Start, Start checklist, fill everything, Submit; then try **Complete Machine** | The app warns the machine has no serial; Submit and Complete are both refused. Supervisor picks a serial in Desk; the draft shows it on reload; Submit and Complete now work | `test_serial_is_assigned_before_preparation_completes` |
+| U13b | Checklist before completion | Machine 1: Start Machine, then **Complete Machine** before submitting its checklist | Refused: "Submit the checklist of machine … before completing it". After the checklist is submitted, Complete works | `test_a_machine_completes_only_once_its_checklist_is_submitted` |
 | U14 | Two machines, separate outcomes | Look at the job after U12 and before U13's serial | Machine 1 submitted, machine 2 still open: each has its own checklist | `test_two_machines_on_one_order_get_their_own_checklists` |
 | U15 | Who can see it | Open the checklist URL as another technician (not on the job) and as a guest | Refused for both; the supervisor and manager in scope can open it | `test_only_people_on_the_job_can_read_the_form` |
 | U16 | Approval | Complete both machines, Submit for Review; as supervisor, Approve | Job Completed; both checklists locked with their snapshots | `test_release_scenarios.py::TestSale` |
@@ -28,5 +29,4 @@ Record each result as Pass / Fail with the date, the tester and, for a Fail, wha
 
 ## Not covered yet (open)
 - Field mapping differences awaiting product-owner decisions: [CASHMATIC_PREINSTALLATION_MAPPING.md §4](CASHMATIC_PREINSTALLATION_MAPPING.md).
-- Changing a machine's serial on the job after its checklist is submitted is refused only once `task/39-job-audit-integrity` is merged.
 - No printable report of the submitted checklist yet (#27).

@@ -26,11 +26,11 @@ For a fresh ERPNext + DeployOps installation. This guide covers a **sold Cashmat
 
 15. **Open the assigned work.** Technician signs in at **`/deployops`**, selects **Cashmatic Pre-installation**, opens the job and confirms customer, site, Item and serial.
 16. **Perform the checklist.** Choose **Start Machine**, then **Start checklist**. Follow the displayed documentation, customer readiness, configuration, activation and packing/accessory steps. Record software/firmware versions, activation date, working hours and special installation notes. Upload at least one preparation photo; complete required answers and capture the employee signature when applicable. Never record credentials or pairing codes.
-17. **Submit the work.** Choose **Submit checklist** and resolve any highlighted missing answers. Return to the job, choose **Complete Machine** for each finished device, then **Submit for Review**. If something prevents preparation, use **Block Machine** or **Block** with a reason; the supervisor resolves and unblocks it.
+17. **Submit the work.** Choose **Submit checklist** and resolve any highlighted missing answers. Return to the job, choose **Complete Machine** for each finished device (refused until its checklist is submitted), then **Submit for Review**. If something prevents preparation, use **Block Machine** or **Block** with a reason; the supervisor resolves and unblocks it.
 18. **Review and approve.** Supervisor or Manager checks the submitted checklist and evidence, then chooses **Approve**. The job becomes **Completed**. **Return for Correction** requires a reason; submitted checklists remain locked, so answer changes require the Manager's checklist cancellation/replacement process.
 
 **If the technician cannot find the job:** check the enabled user and role, equipment category/product line, enabled access profile, assigned technician and job state. A job must be **In Preparation** before its checklist can start.
 
-**End point:** approved preparation with a serial-linked checklist. Delivery Note and on-site installation are later, separate steps. Checklist submission, machine completion and job approval are separate actions in the current implementation.
+**End point:** approved preparation with a serial-linked checklist. Delivery Note and on-site installation are later, separate steps. Checklist submission, machine completion and job approval are separate actions, in that order.
 
 **Acceptance:** the hand-run scenarios are in [CASHMATIC_PREINSTALLATION_UAT.md](CASHMATIC_PREINSTALLATION_UAT.md); the field mapping against the original Jotform, with the open decisions, is in [CASHMATIC_PREINSTALLATION_MAPPING.md](CASHMATIC_PREINSTALLATION_MAPPING.md).

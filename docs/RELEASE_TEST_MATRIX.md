@@ -43,12 +43,11 @@ These walk a real job from its ERPNext source to approval through the public API
 
 ## 3. Known gaps to close before a production release
 1. **Printable reports (#27)** don't exist yet, so "PDF" in #44 can't be tested.
-2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine, and whether completion needs a submitted checklist, are open product-owner decisions.
+2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine is an open product-owner decision. (A machine with a checklist already completes only once it's submitted.)
 3. **Return for Correction:** which machines reopen is undefined (open with the product owner).
 4. **Field mapping sign-off (#40)** for all five checklists.
 5. **Maintenance Schedule** as a whole flow (#17).
-6. **Job audit integrity fixes** (`task/39-job-audit-integrity`) are pushed but not merged; until they are, status-log rows can be rewritten and serials changed under a submitted checklist.
-7. **Browser end-to-end tests** run by hand only. Adding them to CI needs a new dev dependency (e.g. Playwright); that's not agreed.
+6. **Browser end-to-end tests** run by hand only. Adding them to CI needs a new dev dependency (e.g. Playwright); that's not agreed.
 
 ## 4. Manual browser run (each release)
 On `deployops.local`, as tech@test.local on a phone-sized window, then on a desktop:

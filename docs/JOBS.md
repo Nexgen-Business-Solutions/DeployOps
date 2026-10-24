@@ -108,7 +108,7 @@ Approvers and cancellers come from the permission matrix (letters "a" and "x"). 
 | Action | From | To | Who |
 |---|---|---|---|
 | Start Machine | Pending | In Progress | assigned Technician |
-| Complete Machine | In Progress | Completed (needs a Serial No) | assigned Technician |
+| Complete Machine | In Progress | Completed (needs a Serial No, and its checklist submitted when the machine has one) | assigned Technician |
 | Block Machine | Pending, In Progress | Blocked (**reason**) | assigned Technician, Supervisor, Manager |
 | Unblock Machine | Blocked | In Progress | Supervisor, Manager |
 | Cancel Machine | Pending, In Progress, Blocked | Cancelled (**reason**) | Supervisor, Manager |

@@ -228,7 +228,7 @@ class TestEvidenceAndSecrets(PreinstallationTestCase):
 
 
 class TestSubmittedRecord(PreinstallationTestCase):
-	def test_submit_locks_the_form_with_signer_and_snapshot(self):
+	def test_submit_locks_the_form_with_signer_snapshot_and_serial(self):
 		doc = self.completed()
 		with set_user(self.technician):
 			doc.submit()
@@ -244,6 +244,10 @@ class TestSubmittedRecord(PreinstallationTestCase):
 		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
 			doc.additional_remarks = "changed after submit"
 			doc.save()
+		with set_user(self.technician), self.assertRaisesRegex(frappe.ValidationError, "has a checklist"):
+			job = frappe.get_doc(JOB, self.job)
+			job.devices[0].serial_no = "JOB-CR-2"  # the serial is frozen under a submitted checklist
+			job.save()
 
 	def test_only_people_on_the_job_can_read_the_form(self):
 		other = "_preinstall-tech@deployops.test"
