@@ -129,11 +129,25 @@ class ChecklistForm(Document):
 	def validate(self):
 		if self.docstatus == 0:
 			self.flags.ignore_mandatory = True  # drafts save with gaps; before_submit checks them
+		self.validate_job_open()
 		self.follow_job_serial()
 		self.validate_header()
 		self.validate_fixed_rows()
 		self.validate_values()
 		self.record_signatures()
+
+	def validate_job_open(self):
+		"""Answers can only change while the job and its machine are still being worked on."""
+		if self.is_new():
+			return  # before_insert checks the job and machine when the form is started
+		status = frappe.db.get_value(JOB, self.job, "status")
+		if status in ("Completed", "Cancelled"):
+			frappe.throw(
+				_("Job {0} is {1}; its checklists can no longer be changed.").format(self.job, _(status))
+			)
+		machine = frappe.db.get_value("DeployOps Job Device", self.job_device, "device_status")
+		if machine == "Cancelled":
+			frappe.throw(_("This machine was cancelled on the job; its checklist can no longer be changed."))
 
 	def follow_job_serial(self):
 		"""While a draft, the serial follows the machine's row on the job (#22: a pre-installation may
