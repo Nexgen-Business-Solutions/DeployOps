@@ -19,7 +19,7 @@ For a fresh ERPNext + DeployOps installation. This guide covers a **sold Cashmat
 10. **Create the customer and site.** Create Customer, linked Contact and shipping Address. Select the correct contact/site on the order before creating the job.
 11. **Confirm the sale.** Create and **submit a Sales Order** with the machine Item, quantity, rate and delivery date. A Draft, On Hold or Closed order cannot start this flow. Each unit ordered becomes a device row.
 12. **Create the preparation job.** In Desk, open **DeployOps Job → New**. Set Company, **Job Type = Pre-installation**, **Source Type = Sales Order**, and select the submitted order. Review the filled customer/site and device rows.
-13. **Assign and schedule.** Set **Assigned Technician** and **Planned Date**. Select an available matching **Serial No** on each device row and save. Selecting a serial reserves it for the sale. Assign serials before starting checklists: the current technician screen does not offer a serial picker, and checklist headers capture the job's serial at creation.
+13. **Assign and schedule.** Set **Assigned Technician** and **Planned Date**. Select an available matching **Serial No** on each device row and save. Selecting a serial reserves it for the sale. The serial can also be picked later during preparation (the technician screen has no serial picker, so use Desk): a draft checklist follows the job's serial, and a checklist **cannot be submitted until the machine has a serial**. Once submitted, its serial is frozen.
 14. **Start preparation.** As Supervisor or Manager, choose **Actions → Start**. The job becomes **In Preparation**. Plan preparation about one week before installation, as the checklist instructs.
 
 ## Technician checks and supervisor approval

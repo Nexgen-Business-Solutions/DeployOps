@@ -129,16 +129,30 @@ class ChecklistForm(Document):
 	def validate(self):
 		if self.docstatus == 0:
 			self.flags.ignore_mandatory = True  # drafts save with gaps; before_submit checks them
+		self.follow_job_serial()
 		self.validate_header()
 		self.validate_fixed_rows()
 		self.validate_values()
 		self.record_signatures()
+
+	def follow_job_serial(self):
+		"""While a draft, the serial follows the machine's row on the job (#22: a pre-installation may
+		start before the machine is picked). Submitted forms keep theirs."""
+		before = self.get_doc_before_save()
+		if self.docstatus != 0 or not before:
+			return
+		row_serial = frappe.db.get_value("DeployOps Job Device", self.job_device, "serial_no") or None
+		if row_serial != (before.serial_no or None):
+			self.serial_no = row_serial
+			self.flags.serial_from_job = True
 
 	def validate_header(self):
 		before = self.get_doc_before_save()
 		if not before:
 			return
 		for field in HEADER_FIELDS:
+			if field == "serial_no" and self.flags.serial_from_job:
+				continue
 			if self.get(field) != before.get(field):
 				frappe.throw(
 					_("{0} comes from the job and cannot be changed.").format(_(self.meta.get_label(field)))
@@ -252,6 +266,8 @@ class ChecklistForm(Document):
 	def missing(self) -> list[str]:
 		"""Every reason the form cannot be submitted yet, in form order."""
 		problems = []
+		if not self.serial_no:
+			problems.append(_("Serial number: assign the machine's serial number on the job first."))
 		any_of_fields = {field for fields in self.ANY_OF.values() for field in fields}
 		for df in self.meta.fields:
 			if df.fieldname in HEADER_FIELDS or df.fieldname == SIGNATURES or not self.is_visible(df):

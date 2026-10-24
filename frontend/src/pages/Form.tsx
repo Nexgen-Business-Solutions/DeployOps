@@ -89,6 +89,10 @@ export default function Form() {
 	async function trySubmit() {
 		if (!data) return;
 		setSubmitError(null);
+		if (!data.header.serial_no) {
+			window.scrollTo({ top: 0, behavior: "smooth" });
+			return; // the banner at the top explains: the serial is assigned on the job first (#22)
+		}
 		const found = findProblems(data.sections, values);
 		setProblems(found);
 		if (found.size) {
@@ -155,6 +159,11 @@ export default function Form() {
 								</Banner>
 							)}
 							{data.docstatus === 2 && <Banner kind="warning">This checklist was cancelled.</Banner>}
+							{editable && !data.header.serial_no && (
+								<Banner kind="warning">
+									No serial number yet. Pick the machine's serial on the job before submitting this checklist.
+								</Banner>
+							)}
 							{saveState === "offline" && <Banner kind="warning">You're offline. Changes are kept on this page and saved when you're back online.</Banner>}
 							{saveState === "error" && saveError && <Banner>{saveError}</Banner>}
 							{problems.size > 0 && (

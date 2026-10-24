@@ -43,6 +43,7 @@ Shared child tables:
 All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each DocType's controller only declares its own constants.
 
 - **Starting a form:** the job must be in a working state and the machine must not be cancelled. The form must be the right one for the machine, and each machine row gets one live form.
+- **Serial (#22):** a form can be started before the machine's serial is picked (pre-installation). While it's a draft, its serial follows the machine's row on the job; it **cannot be submitted without one**, and once submitted it's frozen. The serial still can't be edited on the form itself.
 - **Drafts save with gaps**, so the app can autosave. **Submit** checks everything:
   - Required fields, including Check boxes, which must be ticked.
   - Fields that are required only under a condition (`mandatory_depends_on`).

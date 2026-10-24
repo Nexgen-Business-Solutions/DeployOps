@@ -152,7 +152,15 @@ def form_view(doctype: str, name: str) -> dict:
 		"intro": doc.INTRO,
 		"form_version": doc.form_version,
 		"job": doc.job,
-		"header": {field: layout.as_text(doc.get(field)) for field in HEADER_FIELDS},
+		"header": {
+			**{field: layout.as_text(doc.get(field)) for field in HEADER_FIELDS},
+			# A draft follows the job's serial (#22); show it even before the next save picks it up.
+			**(
+				{"serial_no": frappe.db.get_value("DeployOps Job Device", doc.job_device, "serial_no")}
+				if doc.docstatus == 0
+				else {}
+			),
+		},
 		"technician_name": frappe.db.get_value("User", doc.technician, "full_name")
 		if doc.technician
 		else None,
