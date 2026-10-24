@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 
 from deployops.api.sources import require_deployops_role, search_sources, visible_lines
-from deployops.deployops.doctype.deployops_job.deployops_job import devices_from_source
+from deployops.deployops.doctype.deployops_job.deployops_job import devices_from_source, serial_choices
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
@@ -85,7 +85,8 @@ def serial_link_query(
 ):
 	"""Desk picker for Job Device.serial_no.
 
-	Serials listed on the source for that Item when it has any (e.g. a Delivery Note), otherwise
+	What the source allows (``serial_choices``): a delivery's serials, a subscription's allocated
+	machines, an order's delivered serials plus stock for its undelivered units. Other sources:
 	serials of the Item in the job's company — in stock only, except for Maintenance jobs.
 	"""
 	require_deployops_role()
@@ -96,16 +97,30 @@ def serial_link_query(
 	if not is_unrestricted(frappe.session.user) and item_code not in get_allowed_items():
 		return []
 
-	listed = []
+	# The source decides which serials fit (deployops_job.serial_choices); stock is only offered
+	# where the source leaves units open (an order's undelivered units) or does not decide.
+	choices, stock_units = None, 0
 	if filters.get("source_doctype") and filters.get("source_name"):
-		source = erpnext_sources.validate_source(filters["source_doctype"], filters["source_name"])
-		for line in erpnext_sources.get_equipment_lines(source):
-			if line["item_code"] == item_code:
-				listed.extend(line["serial_nos"])
+		erpnext_sources.validate_source(filters["source_doctype"], filters["source_name"])
+		choices, stock_units = serial_choices(
+			filters["source_doctype"], filters["source_name"], item_code, filters.get("delivery_note")
+		)
 
 	conditions = {"item_code": item_code, "name": ["like", f"%{txt or ''}%"]}
-	if listed:
-		conditions["name"] = ["in", [s for s in listed if (txt or "").lower() in s.lower()] or [""]]
+	if choices is not None:
+		names = [s for s in choices if (txt or "").lower() in s.lower()]
+		if stock_units:
+			names += frappe.get_all(
+				"Serial No",
+				filters={
+					**conditions,
+					"status": "Active",
+					"warehouse": ["is", "set"],
+					**({"company": filters["company"]} if filters.get("company") else {}),
+				},
+				pluck="name",
+			)
+		conditions["name"] = ["in", names or [""]]
 	else:
 		if filters.get("company"):
 			conditions["company"] = filters["company"]

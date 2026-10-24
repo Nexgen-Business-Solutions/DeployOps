@@ -221,6 +221,33 @@ class TestSourceApi(SourceTestCase):
 		self.assertEqual(found, [usable])
 		self.assertFalse(frappe.local.message_log)
 
+	def test_company_user_permissions_limit_sources(self):
+		from frappe.permissions import add_user_permission
+
+		fx.make_company(fx.OTHER_COMPANY)
+		home = fx.make_sales_order(self.customer, [self.cash]).name
+		other = fx.make_sales_order(self.customer, [self.cash], company=fx.OTHER_COMPANY).name
+
+		with set_user(self.technician):  # no company restriction: both companies
+			self.assertTrue(
+				{home, other} <= {r["name"] for r in api.search_sources("Sales Order", "_TestCust")}
+			)
+
+		add_user_permission("Company", fx.OTHER_COMPANY, self.technician, applicable_for="Sales Invoice")
+		with set_user(self.technician):  # restriction for another DocType only: still both
+			self.assertTrue(
+				{home, other} <= {r["name"] for r in api.search_sources("Sales Order", "_TestCust")}
+			)
+
+		add_user_permission("Company", fx.OTHER_COMPANY, self.technician)
+		with set_user(self.technician):
+			found = {r["name"] for r in api.search_sources("Sales Order", "_TestCust")}
+			self.assertIn(other, found)
+			self.assertNotIn(home, found)
+			self.assertEqual(api.get_source_summary("Sales Order", other)["name"], other)
+			with self.assertRaises(frappe.PermissionError):
+				api.get_source_summary("Sales Order", home)
+
 	def test_get_serial_respects_equipment(self):
 		fx.make_serial("SN-CASH", self.cash)
 		fx.make_serial("SN-ROBOT", self.robot)

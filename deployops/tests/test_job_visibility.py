@@ -119,7 +119,8 @@ class TestJobScope(IntegrationTestCase):
 			return set(frappe.get_list(JOB, pluck="name")) & self.all_jobs
 
 	def test_supervisor_and_manager_see_only_their_equipment(self):
-		expected = {self.cash_job, self.empty_job, self.empty_cash_job}
+		# A job with no machines and no category is unclassified: admins only (deny by default).
+		expected = {self.cash_job, self.empty_cash_job}
 		for role in (SUPERVISOR, MANAGER):
 			with self.subTest(role=role):
 				self.assertEqual(self.visible(role), expected)
@@ -143,7 +144,34 @@ class TestJobScope(IntegrationTestCase):
 		profile = frappe.get_doc("DeployOps Equipment Access Profile", self.users[SUPERVISOR])
 		profile.categories = []
 		profile.save(ignore_permissions=True)
-		self.assertEqual(self.visible(SUPERVISOR), {self.empty_job})
+		self.assertEqual(self.visible(SUPERVISOR), set())
+
+	def test_technician_loses_an_assigned_job_when_its_equipment_is_revoked(self):
+		profile = frappe.get_doc("DeployOps Equipment Access Profile", self.users[TECHNICIAN])
+		profile.categories = []
+		profile.save(ignore_permissions=True)
+		self.assertEqual(self.visible(TECHNICIAN), set())
+		with set_user(self.users[TECHNICIAN]):
+			self.assertFalse(frappe.has_permission(JOB, "read", self.cash_job))
+
+	def test_system_manager_role_does_not_widen_a_supervisor(self):
+		"""System Manager is not a DeployOps admin: with Supervisor it stays equipment-scoped."""
+		user = "_vis-sysman@deployops.test"
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": user,
+				"first_name": "Sys",
+				"send_welcome_email": 0,
+				"roles": [{"role": "System Manager"}, {"role": SUPERVISOR}],
+			}
+		).insert(ignore_permissions=True)
+		with set_user(user):
+			self.assertEqual(set(frappe.get_list(JOB, pluck="name")) & self.all_jobs, set())
+			self.assertFalse(frappe.has_permission(JOB, "read", self.cash_job))
+		frappe.get_doc("User", user).add_roles(ADMINISTRATOR)
+		with set_user(user):
+			self.assertEqual(set(frappe.get_list(JOB, pluck="name")) & self.all_jobs, self.all_jobs)
 
 	def test_user_without_deployops_role_sees_nothing(self):
 		outsider = "_vis-outsider@deployops.test"

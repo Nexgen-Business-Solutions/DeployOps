@@ -216,6 +216,33 @@ class DeployOpsJob(Document):
 					)
 				)
 
+		changed = any(saved.get(r.name) != (r.item_code, r.serial_no or None) for r in self.devices)
+		if self.source_doctype == erpnext_sources.SALES_ORDER and changed:
+			self.validate_order_serials()
+
+	def validate_order_serials(self):
+		"""Units an order has already delivered keep their delivered serials; only the rest of the
+		order may use machines from stock (#39)."""
+		delivered_by_item = erpnext_sources.get_delivered_serials(self.source_name)
+		for item_code in {row.item_code for row in self.devices}:
+			delivered = set(delivered_by_item.get(item_code, []))
+			if not delivered:
+				continue
+			_choices, stock_units = serial_choices(self.source_doctype, self.source_name, item_code)
+			others = [
+				row
+				for row in self.devices
+				if row.item_code == item_code
+				and row.device_status != "Cancelled"
+				and row.serial_no not in delivered
+			]
+			if len(others) > stock_units:
+				frappe.throw(
+					_(
+						"Sales Order {0} has delivered {1} unit(s) of {2} ({3}); delivered machines must use their delivered serials."
+					).format(self.source_name, len(delivered), item_code, ", ".join(sorted(delivered)))
+				)
+
 	def later_deliveries(self) -> list[str]:
 		"""Other Delivery Notes whose machines were added to this job (#16): they must be submitted
 		deliveries of the same sales order(s) to the same customer."""
@@ -317,6 +344,53 @@ class DeployOpsJob(Document):
 						user, row.item_code
 					)
 				)
+
+
+def serial_choices(
+	source_doctype: str, source_name: str, item_code: str, delivery_note: str | None = None
+) -> tuple[list[str] | None, int]:
+	"""Serials a machine of this Item may use on a job from this source, and how many units may
+	still come from stock. ``None`` means the source does not decide (maintenance sources).
+
+	- Delivery Note (or the row's own later delivery, #16): its serials only.
+	- Subscription: the machines allocated to it (#14).
+	- Sales Order: serials already delivered on the order, then any reserved for it; stock only
+	  for units not delivered yet.
+	"""
+	if delivery_note or source_doctype == erpnext_sources.DELIVERY_NOTE:
+		note = frappe.get_doc(erpnext_sources.DELIVERY_NOTE, delivery_note or source_name)
+		lines = erpnext_sources.get_equipment_lines(note)
+		return [s for line in lines if line["item_code"] == item_code for s in line["serial_nos"]], 0
+
+	if source_doctype == erpnext_sources.SUBSCRIPTION:
+		return [
+			r.serial_no for r in allocations.active_rental_serials(source_name) if r.item_code == item_code
+		], 0
+
+	if source_doctype == erpnext_sources.SALES_ORDER:
+		delivered = erpnext_sources.get_delivered_serials(source_name).get(item_code, [])
+		reserved = frappe.get_all(
+			"DeployOps Equipment Allocation",
+			filters={
+				"source_doctype": source_doctype,
+				"source_name": source_name,
+				"item_code": item_code,
+				"status": "Reserved",
+			},
+			pluck="serial_no",
+			order_by="creation",
+		)
+		ordered = sum(
+			int(qty or 0)
+			for qty in frappe.get_all(
+				"Sales Order Item",
+				filters={"parent": source_name, "parenttype": source_doctype, "item_code": item_code},
+				pluck="qty",
+			)
+		)
+		return delivered + [s for s in reserved if s not in delivered], max(0, ordered - len(delivered))
+
+	return None, 0
 
 
 def devices_from_source(source, snapshot: dict, user: str | None = None) -> list[dict]:

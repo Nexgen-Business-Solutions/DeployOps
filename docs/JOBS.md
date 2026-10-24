@@ -43,7 +43,7 @@ A **DeployOps Job** is one intervention (preparation, installation or maintenanc
 |---|---|
 | Usable source | #37 rules (e.g. no draft, closed or on-hold orders, no returns), checked **when the job is created**. Closing or completing the source in ERPNext later does not stop the job |
 | Equipment | Every device is a serial-numbered Item on the source (any serial-numbered Item for a Subscription) |
-| Serial No | Exists, belongs to the Item and company; if the source lists serials for that Item (e.g. a Delivery Note), it must be one of them; no duplicates within a job |
+| Serial No | Exists, belongs to the Item and company; no duplicates within a job. Which serials fit depends on the source: a **Delivery Note**'s own serials (a machine added from a later delivery uses that delivery's); a **Subscription**'s allocated machines; a **Sales Order**'s delivered serials, then any reserved for it, and machines from stock **only for units not delivered yet**. The serial picker offers exactly these |
 | Serial required | **Installation** and **Maintenance**: yes. **Pre-installation**: optional while preparing; a machine cannot be completed, nor the job submitted, without one |
 | No double booking | A serial can be on only **one open job of the same type** (open = not Completed or Cancelled) |
 | Creator's equipment | A source with none of the creator's equipment is refused; devices outside the creator's profile are refused. Admin is unrestricted |
@@ -58,9 +58,9 @@ From the approved matrix ([PERMISSION_MATRIX.md](PERMISSION_MATRIX.md)): Technic
 
 | Role | Sees |
 |---|---|
-| Technician | Only jobs **assigned to them** |
-| Supervisor, Manager | Jobs whose machines are **all** within their equipment profile. A job without machines: when its equipment category is theirs, or when it has no category |
-| DeployOps Administrator (and System Manager) | Every job |
+| Technician | Jobs **assigned to them** whose machines are also within their **current** equipment profile (revoking a category hides the job, even while it stays assigned) |
+| Supervisor, Manager | Jobs whose machines are **all** within their equipment profile. A job without machines: only when its equipment category is theirs. A job with no machines and no category is unclassified and only administrators see it (deny by default) |
+| DeployOps Administrator (and the Administrator user) | Every job. The System Manager role grants nothing extra here |
 | Anyone else | No job |
 
   Judged from the **saved** job (assignee and machines), so editing a job in memory cannot grant or lose access. Revoking a category hides its jobs immediately. Teams or regions ("management scope") are not defined yet; scoping is by equipment only.
@@ -124,6 +124,7 @@ Approvers and cancellers come from the permission matrix (letters "a" and "x"). 
 |---|---|
 | `deployops/tests/test_job.py` | Snapshot and devices from a Sales Order (units, no spares), Delivery Note (one row per serial), Subscription (none); unusable source and wrong company refused; `make_job` API; device rules (item not on source, non-serial item, serial not on the delivery, serial of another item, duplicate serial); serial required by job type; no double booking (other job type allowed, allowed again once completed); status locked; equipment category; assignee rules; Supervisor limited to own equipment and refused on a source with none of it; Technician cannot create, sees only assigned jobs, cannot reassign or replan but can fill serials; both pickers |
 | `deployops/tests/test_permission_matrix.py`, `test_security_negative.py` | Job DocPerms match the matrix; Job API allowed and refused per the matrix |
+| `deployops/tests/test_order_serials.py` | A delivered order offers and accepts only its delivered serials; undelivered units may use stock; an undelivered order still picks from stock; a machine from a later delivery offers that delivery's serials; a subscription offers its allocated machines, not stock |
 | `deployops/tests/test_job_workflow.py` | Installation, Pre-installation and Maintenance paths with the status log; closing the source later does not stop the job; start needs a technician; who may do what (Admin does not approve, Supervisor does not cancel, only the assigned Technician arrives and submits); actions must fit the state; reasons required; submit needs every machine done, none blocked, at least one completed; block and unblock back to the previous state; return for correction and resubmit; cancel and the lock on closed jobs; machines only updated while work is under way; status, machine status and log cannot be edited directly; an unassigned technician cannot act; available actions per user; a completed job cannot be cancelled; completed machines frozen; machines only removed in Draft; machine list frozen during review; over real HTTP: GET refused on state-changing methods, guest and other technician refused, 417 for a wrong state or missing reason, 403 for the wrong person, full path to Completed |
 | `deployops/tests/test_job_visibility.py` | Supervisor and Manager scoped by equipment (all machines; no-machine jobs by category); Admin sees all; Technician only assigned; document access matches the list; revocation is immediate; users without a DeployOps role see nothing; over HTTP: list, report view, get_list, link search, direct URL, `frappe.client.get`, form load, `get_value`, print and private attachments |
 

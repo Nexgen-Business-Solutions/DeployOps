@@ -194,7 +194,8 @@ after_install = "deployops.install.install_reference_files"
 # Testing
 # -------
 
-# before_tests = "deployops.install.before_tests"
+# Base records a fresh CI site lacks (no ERPNext setup wizard); created only if missing.
+before_tests = "deployops.tests.bootstrap.before_tests"
 
 # Extend DocType Class
 # ------------------------------

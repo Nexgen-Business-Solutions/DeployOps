@@ -18,6 +18,7 @@ frappe.ui.form.on("DeployOps Job", {
 					job_type: doc.job_type,
 					source_doctype: doc.source_doctype,
 					source_name: doc.source_name,
+					delivery_note: row.delivery_note,
 				},
 			};
 		});
