@@ -43,17 +43,23 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 
 	const text = typeof value === "string" ? value : value === null || value === undefined ? "" : String(value);
 	const inputClass = `field-input ${error ? "field-input-error" : ""}`;
+	// The heading names the control: a native input through <label for>, a composite one as a group.
+	const ids = { input: `in-${field.fieldname}`, label: `l-${field.fieldname}`, description: `d-${field.fieldname}`, error: `e-${field.fieldname}` };
+	const describedBy = [field.description && ids.description, error && ids.error].filter(Boolean).join(" ") || undefined;
+	const native = { id: ids.input, "aria-required": field.reqd ? true : undefined, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy };
+	let labelable = true;
 	let control;
 	switch (field.fieldtype) {
 		case "Select": {
 			const options = field.options ?? [];
 			const short = options.length <= 3 && options.every((o) => o.length <= 18);
+			labelable = !short && options.length > 8;
 			control = short ? (
 				<Segmented options={options} value={text || null} disabled={disabled} onChange={onChange} />
 			) : options.length <= 8 ? (
 				<RadioList options={options} value={text || null} disabled={disabled} onChange={onChange} />
 			) : (
-				<select className={inputClass} value={text} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
+				<select {...native} className={inputClass} value={text} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
 					<option value="">Select…</option>
 					{options.map((option) => (
 						<option key={option}>{option}</option>
@@ -67,6 +73,7 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 		case "Long Text":
 			control = (
 				<textarea
+					{...native}
 					className={`${inputClass} min-h-24 resize-y`}
 					value={text}
 					disabled={disabled}
@@ -80,6 +87,7 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 		case "Currency":
 			control = (
 				<input
+					{...native}
 					className={inputClass}
 					type="number"
 					inputMode={field.fieldtype === "Int" ? "numeric" : "decimal"}
@@ -91,11 +99,12 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 			);
 			break;
 		case "Date":
-			control = <input className={inputClass} type="date" value={text.slice(0, 10)} disabled={disabled} onChange={(e) => onChange(e.target.value || null)} />;
+			control = <input {...native} className={inputClass} type="date" value={text.slice(0, 10)} disabled={disabled} onChange={(e) => onChange(e.target.value || null)} />;
 			break;
 		case "Datetime":
 			control = (
 				<input
+					{...native}
 					className={inputClass}
 					type="datetime-local"
 					value={toInputDatetime(value)}
@@ -105,9 +114,10 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 			);
 			break;
 		case "Time":
-			control = <input className={inputClass} type="time" value={toInputTime(value)} disabled={disabled} onChange={(e) => onChange(e.target.value ? `${e.target.value}:00` : null)} />;
+			control = <input {...native} className={inputClass} type="time" value={toInputTime(value)} disabled={disabled} onChange={(e) => onChange(e.target.value ? `${e.target.value}:00` : null)} />;
 			break;
 		case "Signature":
+			labelable = false;
 			control = (
 				<>
 					<SignaturePad value={text || null} disabled={disabled} onChange={onChange} />
@@ -124,6 +134,7 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 			const rows = (value as Row[] | undefined) ?? [];
 			const table = field.table;
 			if (!table) return null;
+			labelable = false;
 			control =
 				table.kind === "photos" || table.kind === "files" ? (
 					<FilesField table={table} rows={rows} disabled={disabled} doctype={doctype} docname={docname} onChange={onChange} />
@@ -135,6 +146,7 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 		default:
 			control = (
 				<input
+					{...native}
 					className={inputClass}
 					type={field.options?.[0] === "Email" ? "email" : "text"}
 					value={text}
@@ -147,15 +159,33 @@ export function FieldInput({ field, value, error, disabled: locked, doctype, doc
 
 	return (
 		<div id={`f-${field.fieldname}`} className="scroll-mt-28">
-			<label className="mb-2 block">
-				<span className="text-[15px] font-medium">
+			<div className="mb-2">
+				<label id={ids.label} htmlFor={labelable ? ids.input : undefined} className="block text-[15px] font-medium">
 					{field.label}
-					{field.reqd && !disabled && <span className="ml-0.5 text-brand-500">*</span>}
-				</span>
-				{field.description && <span className="mt-0.5 block text-[13px] text-muted">{field.description}</span>}
-			</label>
-			{control}
-			{error && <p className="mt-1.5 text-[13px] text-red-600">{error}</p>}
+					{field.reqd && !disabled && (
+						<span className="ml-0.5 text-brand-500" aria-hidden>
+							*
+						</span>
+					)}
+				</label>
+				{field.description && (
+					<p id={ids.description} className="mt-0.5 text-[13px] text-muted">
+						{field.description}
+					</p>
+				)}
+			</div>
+			{labelable ? (
+				control
+			) : (
+				<div role="group" aria-labelledby={ids.label} aria-describedby={describedBy}>
+					{control}
+				</div>
+			)}
+			{error && (
+				<p id={ids.error} className="mt-1.5 text-[13px] text-red-600">
+					{error}
+				</p>
+			)}
 		</div>
 	);
 }
