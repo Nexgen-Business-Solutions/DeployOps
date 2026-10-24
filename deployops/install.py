@@ -1,6 +1,67 @@
+from pathlib import Path
+
 import frappe
 
 from deployops.roles import DESK_ACCESS
+
+PRE_INSTALLATION = "DeployOps Cashmatic Pre-installation"
+# Bundled references (deployops/reference_files/) and where the pre-installation Jotform showed them.
+BUNDLED_REFERENCES = (
+	("user-manual.pdf", "Self Pay 460 user manual", "shared_documents_prior_to_the_visit_section"),
+	("web-interface.pdf", "Web panel interface", "shared_documents_prior_to_the_visit_section"),
+	("my-cashmatic-app.pdf", "My Cashmatic App", "shared_documents_prior_to_the_visit_section"),
+	(
+		"device-installation-guide.pdf",
+		"Cashmatic Device Installation Guide (CDIG)",
+		"machine_configuration_steps_section",
+	),
+	(
+		"device-installation-guide.pdf",
+		"Cashmatic Device Installation Guide (CDIG)",
+		"machine_activation_steps_section",
+	),
+	("device-configuration.pdf", "F1 client device configuration", "machine_configuration_steps_section"),
+	("user-setup.pdf", "F2 user access configuration", "employee_checklist_section"),
+	("logo.png", "Massarie logo (machine labeling)", "employee_checklist_section"),
+)
+
+
+def install_reference_files():
+	"""Seed the bundled reference files once; administrators own the list afterwards (#42).
+
+	Files missing from deployops/reference_files/ are skipped, so a fresh install without them
+	simply starts with an empty list.
+	"""
+	settings = frappe.get_single("DeployOps Reference Files")
+	if settings.references:
+		return
+	root = Path(frappe.get_app_path("deployops", "reference_files"))
+	uploaded: dict[str, str] = {}
+	for filename, title, section in BUNDLED_REFERENCES:
+		path = root / filename
+		if not path.is_file():
+			continue
+		if filename not in uploaded:
+			uploaded[filename] = (
+				frappe.get_doc(
+					{
+						"doctype": "File",
+						"file_name": filename,
+						"content": path.read_bytes(),
+						"is_private": 1,
+						"attached_to_doctype": settings.doctype,
+						"attached_to_name": settings.name,
+					}
+				)
+				.insert(ignore_permissions=True)
+				.file_url
+			)
+		settings.append(
+			"references",
+			{"title": title, "file": uploaded[filename], "checklist": PRE_INSTALLATION, "section": section},
+		)
+	if settings.references:
+		settings.save(ignore_permissions=True)
 
 
 def create_roles():

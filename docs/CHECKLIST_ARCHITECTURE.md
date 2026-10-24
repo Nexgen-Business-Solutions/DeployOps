@@ -79,6 +79,9 @@ All rules live in `deployops/checklists/form.py` (`ChecklistForm`), and each Doc
 - The snapshot includes the record, and the app shows "Signed by … · time" under each signature.
 - BellaBot Installation got a **Customer name** field for its customer signature, which had none.
 
+### Reference files (#42)
+The manuals the Jotforms embedded (CDIG, user manuals, F1/F2 references) are uploaded by an administrator to **DeployOps Reference Files**: one row per place they appear, with a title, the file, the checklist and optionally the section (its field name; empty = top). The app shows them as links under that section's heading. They stay private; any DeployOps role can open them, nobody else. Bundled files in `deployops/reference_files/` are seeded once on install (see its README).
+
 ### Evidence files (#21)
 Photos and files are private and attached to the form, so access to them follows the form, and the form follows the job. Tested: the assigned technician and a Supervisor in scope can open a file; another technician and Guest cannot.
 

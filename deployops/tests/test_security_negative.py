@@ -89,15 +89,19 @@ class TestSecurityNegative(IntegrationTestCase):
 		existing = [
 			dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt) and not frappe.get_meta(dt).istable
 		]
+
+		def url(doctype):  # a Single DocType has no list: read its one document
+			return f"/api/resource/{doctype}" + (f"/{doctype}" if frappe.get_meta(doctype).issingle else "")
+
 		for role, sid in self.sids.items():
 			for doctype in existing:
 				with self.subTest(role=role, doctype=doctype):
-					response = self.request(f"/api/resource/{doctype}", {"sid": sid})
+					response = self.request(url(doctype), {"sid": sid})
 					self.assertEqual(response.status_code, 200 if allowed(doctype, role, "read") else 403)
 
 		for doctype in existing:
 			with self.subTest(guest=True, doctype=doctype):
-				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
+				self.assertEqual(self.request(url(doctype)).status_code, 403)
 
 	def test_guest_cannot_call_source_lookups(self):
 		for method, params in (

@@ -13,6 +13,7 @@ from deployops.api.sources import require_deployops_role
 from deployops.checklists import layout
 from deployops.checklists.cards import CARDS, CARDS_BY_ID, card_for, form_for_device, items_by_product_line
 from deployops.checklists.form import HEADER_FIELDS
+from deployops.deployops.doctype.deployops_reference_files.deployops_reference_files import references_for
 from deployops.roles import ALIASES, ALL_ROLES
 from deployops.workflow import job_workflow
 
@@ -161,6 +162,7 @@ def form_view(doctype: str, name: str) -> dict:
 		else None,
 		"submitted_on": layout.as_text(doc.modified) if doc.docstatus == 1 else None,
 		"can_edit": doc.docstatus == 0 and frappe.has_permission(doctype, "write", doc),
+		"references": references_for(doctype),
 		**_form_content(doc),
 	}
 

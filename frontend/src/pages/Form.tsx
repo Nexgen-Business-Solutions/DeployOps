@@ -1,12 +1,13 @@
-import { Check, CloudOff, Loader2 } from "lucide-react";
+import { BookOpen, Check, CloudOff, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { FieldInput } from "../components/form/FieldInput";
+import { ReferenceCard } from "../components/form/ReferenceCard";
 import { ActionDialog, Banner, Button, Page, Skeleton, TopBar } from "../components/ui";
 import { ApiError, post } from "../lib/api";
 import { findProblems, progress, visibleSections } from "../lib/form";
-import type { Field, FormView, Value, Values } from "../lib/types";
+import type { Field, FormView, Reference, Section, Value, Values } from "../lib/types";
 import { useApi } from "../lib/useApi";
 
 type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
@@ -137,6 +138,7 @@ export default function Form() {
 						</p>
 						<h2 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight">{data.title}</h2>
 						<p className="mt-2 text-muted">{data.intro}</p>
+						<DocumentsSummary references={data.references} sections={data.sections} />
 
 						<dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl bg-zinc-50 p-4 text-sm">
 							<Meta label="Customer" value={header.customer_name} />
@@ -169,6 +171,7 @@ export default function Form() {
 										<p className="font-mono text-xs text-zinc-400">{String(index + 1).padStart(2, "0")}</p>
 										<h3 className="mt-1 text-xl font-semibold tracking-tight">{section.label}</h3>
 										{section.description && <p className="mt-1 text-sm text-muted">{section.description}</p>}
+										<SectionReferences items={data.references.filter((r) => r.section === section.name)} />
 										{section.any_of && editable && (
 											<p className={`mt-1 text-[13px] ${problems.has(section.name) ? "text-red-600" : "text-muted"}`}>Tick at least one.</p>
 										)}
@@ -222,6 +225,43 @@ export default function Form() {
 				onClose={() => setConfirmOpen(false)}
 			/>
 		</>
+	);
+}
+
+/** Every document of the checklist, once each, near the top, so none is missed. */
+function DocumentsSummary({ references, sections }: { references: Reference[]; sections: Section[] }) {
+	if (!references.length) return null;
+	const labels = new Map(sections.map((s) => [s.name, s.label]));
+	const documents = new Map<string, { reference: Reference; places: string[] }>();
+	for (const reference of references) {
+		const entry = documents.get(reference.url) ?? { reference, places: [] };
+		if (reference.section && labels.get(reference.section)) entry.places.push(labels.get(reference.section) as string);
+		documents.set(reference.url, entry);
+	}
+	return (
+		<section className="mt-6 rounded-2xl bg-brand-50/70 p-4" aria-label="Documents for this checklist">
+			<p className="flex items-center gap-2 text-sm font-semibold text-brand-600">
+				<BookOpen className="size-4" aria-hidden /> Documents for this checklist ({documents.size})
+			</p>
+			<p className="mt-0.5 text-[13px] text-muted">Read them before you start; they are also shown in the steps that need them.</p>
+			<div className="mt-3 space-y-2">
+				{[...documents.values()].map(({ reference, places }) => (
+					<ReferenceCard key={reference.url} reference={reference} note={places.length ? `Used in ${places.join(", ")}` : undefined} />
+				))}
+			</div>
+		</section>
+	);
+}
+
+/** The documents this section needs, right under its heading. */
+function SectionReferences({ items }: { items: Reference[] }) {
+	if (!items.length) return null;
+	return (
+		<div className="mt-3 space-y-2">
+			{items.map((item) => (
+				<ReferenceCard key={`${item.url}-${item.title}`} reference={item} />
+			))}
+		</div>
 	);
 }
 

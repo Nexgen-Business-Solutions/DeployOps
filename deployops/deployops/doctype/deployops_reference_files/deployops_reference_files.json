@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 10:00:00.000000",
+ "description": "Manuals and guides shown to technicians inside the checklists (#42), e.g. the CDIG, user manuals, F1/F2 references.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "references"
+ ],
+ "fields": [
+  {
+   "description": "Upload each file here (private), give it a title and choose the checklist and section where technicians see it. One file can be listed in several sections.",
+   "fieldname": "references",
+   "fieldtype": "Table",
+   "label": "Reference files",
+   "options": "DeployOps Reference File"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-24 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Reference Files",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "DeployOps Technician"
+  },
+  {
+   "read": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "read": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "read": 1,
+   "role": "DeployOps Administrator",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -37,6 +37,8 @@ DOCTYPE_MATRIX = {
 		MANAGER: "r",
 		ADMINISTRATOR: "rcwd",
 	},
+	# Manuals shown inside the checklists (#42): everyone reads, the Administrator maintains.
+	"DeployOps Reference Files": {TECHNICIAN: "r", SUPERVISOR: "r", MANAGER: "r", ADMINISTRATOR: "rw"},
 	"DeployOps Equipment Allocation": {
 		TECHNICIAN: "r",
 		SUPERVISOR: "rcw",
