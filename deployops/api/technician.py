@@ -4,13 +4,15 @@ Visibility (#12), workflow (#19), allocation (#14) and checklist rules (#41) are
 these functions only shape the data each screen needs.
 """
 
+from urllib.parse import urlencode
+
 import frappe
 from frappe import _
 from frappe.model import no_value_fields
 
 from deployops.api.checklists import form_doctype
 from deployops.api.sources import require_deployops_role
-from deployops.checklists import layout
+from deployops.checklists import layout, report
 from deployops.checklists.cards import CARDS, CARDS_BY_ID, card_for, form_for_device, items_by_product_line
 from deployops.checklists.form import HEADER_FIELDS
 from deployops.deployops.doctype.deployops_reference_files.deployops_reference_files import references_for
@@ -171,8 +173,29 @@ def form_view(doctype: str, name: str) -> dict:
 		"submitted_on": layout.as_text(doc.modified) if doc.docstatus == 1 else None,
 		"can_edit": doc.docstatus == 0 and frappe.has_permission(doctype, "write", doc),
 		"references": references_for(doctype),
+		"reports": _reports(doc),
 		**_form_content(doc),
 	}
+
+
+def _reports(doc) -> list[dict]:
+	"""PDF reports of a submitted checklist (#27), for users who may print it."""
+	if (
+		doc.docstatus != 1
+		or doc.doctype not in report.REPORTABLE
+		or not frappe.has_permission(doc.doctype, "print", doc)
+	):
+		return []
+	labels = {"internal": "Report", "customer": "Customer copy"}
+	return [
+		{
+			"audience": audience,
+			"label": labels[audience],
+			"url": "/api/method/deployops.api.reports.checklist_pdf?"
+			+ urlencode({"doctype": doc.doctype, "name": doc.name, "audience": audience}),
+		}
+		for audience in report.AUDIENCES
+	]
 
 
 def _apply_table(doc, df, rows: list):

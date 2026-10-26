@@ -26,7 +26,7 @@ Record each result as Pass / Fail with the date, the tester and, for a Fail, wha
 | U15 | Who can see it | Open the checklist URL as another technician (not on the job) and as a guest | Refused for both; the supervisor and manager in scope can open it | `test_only_people_on_the_job_can_read_the_form` |
 | U16 | Approval | Complete both machines, Submit for Review; as supervisor, Approve | Job Completed; both checklists locked with their snapshots | `test_release_scenarios.py::TestSale` |
 | U17 | Phone | Repeat U1, U5 and U12 on a phone-sized window | Usable without horizontal scrolling; viewer pages fit the width | manual only |
+| U18 | Report (#27) | On the submitted checklist from U12, tap **Report (PDF)**, then **Customer copy (PDF)**. Open each URL as another technician and signed out | Both PDFs open: logo, every step ticked, versions, photo, working hours, signature with signer and time. Only the internal report has the job, form version and audit trail. Another technician and a guest are refused | `test_reports.py` |
 
 ## Not covered yet (open)
 - Field mapping differences awaiting product-owner decisions: [CASHMATIC_PREINSTALLATION_MAPPING.md §4](CASHMATIC_PREINSTALLATION_MAPPING.md).
-- No printable report of the submitted checklist yet (#27).

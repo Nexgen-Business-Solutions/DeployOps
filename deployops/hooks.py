@@ -88,10 +88,8 @@ required_apps = ["erpnext"]
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "deployops.utils.jinja_methods",
-# 	"filters": "deployops.utils.jinja_filters"
-# }
+# Checklist reports (#27) for the Desk print formats.
+jinja = {"methods": ["deployops.checklists.report.checklist_report_html"]}
 
 # Installation
 # ------------

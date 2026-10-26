@@ -38,11 +38,11 @@ These walk a real job from its ERPNext source to approval through the public API
 | **Reference manuals (PDF) in checklists:** private, readable by DeployOps roles only, shown per section | `test_reference_files.py`, `src/lib/pdf.test.ts` | — | ✅ (in-app viewer checked by hand, see §4) |
 | **No secrets in checklists:** passwords, PINs, OTPs and pairing codes refused in text and table cells | `test_checklists.py` (`test_secrets_*`) | 32 | ✅ |
 | **Technician app (React):** session, guest shell, URLs under `/deployops`, API per screen | `test_technician_api.py`, `test_install.py`, `test_security_negative.py`, frontend unit tests | 02, 05, 31–33 | 🟡 No automated browser tests in CI; browser runs are manual (§4) |
-| **Printable reports / PDF output** (#27) | — | — | ❌ Not built yet |
+| **Printable reports / PDF output** (#27) | `test_reports.py` | UAT U18 | 🟡 Cashmatic pre-installation only; the other checklists are on hold |
 | **Production rollout approval** | — | §5 below | 🟡 A release step, not code |
 
 ## 3. Known gaps to close before a production release
-1. **Printable reports (#27)** don't exist yet, so "PDF" in #44 can't be tested.
+1. **Printable reports (#27)** exist for the Cashmatic pre-installation only; the other four checklists are on hold.
 2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine is an open product-owner decision. (A machine with a checklist already completes only once it's submitted.)
 3. **Return for Correction:** which machines reopen is undefined (open with the product owner).
 4. **Field mapping sign-off (#40)** for all five checklists.
