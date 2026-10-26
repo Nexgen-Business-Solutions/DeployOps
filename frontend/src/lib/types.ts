@@ -119,6 +119,8 @@ export type FormView = {
 	values: Values;
 	signatures: Record<string, { signer_name: string | null; signed_on: string | null }>;
 	references: Reference[];
+	/** PDF reports of a submitted checklist, when the user may print it. */
+	reports: { audience: "internal" | "customer"; label: string; url: string }[];
 };
 
 /** A manual or guide shown in a checklist section (or at the top when section is null). */

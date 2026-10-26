@@ -1,4 +1,4 @@
-import { BookOpen, Check, CloudOff, Loader2 } from "lucide-react";
+import { BookOpen, Check, CloudOff, FileDown, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
@@ -157,6 +157,21 @@ export default function Form() {
 									Submitted{data.submitted_on ? ` on ${new Date(data.submitted_on.replace(" ", "T")).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}` : ""}
 									{data.submitted_by ? ` by ${data.submitted_by}` : ""}. This checklist is locked.
 								</Banner>
+							)}
+							{data.reports.length > 0 && (
+								<div className="flex flex-wrap gap-2">
+									{data.reports.map((report) => (
+										<a
+											key={report.audience}
+											href={report.url}
+											download
+											className="inline-flex h-10 items-center gap-2 rounded-full bg-zinc-100 px-4 text-sm font-medium text-ink transition hover:bg-zinc-200"
+										>
+											<FileDown className="size-4" aria-hidden />
+											{report.label} (PDF)
+										</a>
+									))}
+								</div>
 							)}
 							{data.docstatus === 2 && <Banner kind="warning">This checklist was cancelled.</Banner>}
 							{editable && !data.header.serial_no && (

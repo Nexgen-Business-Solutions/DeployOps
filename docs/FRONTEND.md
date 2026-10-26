@@ -44,6 +44,7 @@ A card lists my open jobs of its job type that have a machine in its product lin
 | `form_view(doctype, name)` | Header, sections and fields read from the DocType itself, current values, whether I can edit |
 | `save_form(doctype, name, values)` | Partial save (POST), used by autosave |
 | `submit_form(doctype, name)` | Submit (POST) |
+| `deployops.api.reports.checklist_pdf(doctype, name, audience)` | PDF report of a submitted checklist (GET); `form_view` lists the links in `reports`. See [REPORTS.md](REPORTS.md) |
 
 The app also uses these existing methods:
 - `deployops.api.jobs.job_action`
