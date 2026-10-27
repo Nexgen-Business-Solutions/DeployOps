@@ -9,6 +9,9 @@ NO_ROLE_USER = "deployops-no-role@example.com"
 
 
 class TestInstall(IntegrationTestCase):
+	"""The installed configuration. The install itself (fresh install, a second migrate, uninstall and
+	reinstall) is proven by the CI server job, not here."""
+
 	def test_app_is_installed(self):
 		self.assertIn("deployops", frappe.get_installed_apps())
 
@@ -72,13 +75,28 @@ class TestFrontendUrls(IntegrationTestCase):
 			with self.subTest(path):
 				self.assertEqual(self.resolve(path), path)
 
+	def test_technicians_land_in_the_app_and_others_keep_their_home(self):
+		from frappe.website.utils import get_home_page
+
+		from deployops.roles import SUPERVISOR, TECHNICIAN
+		from deployops.tests.utils import make_role_user
+
+		for role, home in ((TECHNICIAN, "deployops"), (SUPERVISOR, None)):
+			user = make_role_user(role)
+			with self.subTest(role=role), set_user(user):
+				frappe.cache.hdel("home_page", user)
+				if home:
+					self.assertEqual(get_home_page(), home)
+				else:
+					self.assertNotEqual(get_home_page(), "deployops")
+
 	def test_the_site_root_is_not_claimed(self):
 		self.assertNotIn("frontend", frappe.get_hooks("home_page", app_name="deployops"))
 		self.assertNotIn("deployops", frappe.get_hooks("home_page", app_name="deployops"))
 
 
-class TestOldUrlRedirects(IntegrationTestCase):
-	"""Links from when the app owned the site root move to the same screen under /deployops."""
+class TestNoRedirects(IntegrationTestCase):
+	"""DeployOps redirects nothing: the site root and every URL outside /deployops keep their owner."""
 
 	def setUp(self):
 		frappe.cache.delete_value("website_redirects")  # resolved redirects are cached per path
@@ -95,20 +113,20 @@ class TestOldUrlRedirects(IntegrationTestCase):
 			return frappe.flags.redirect_location, redirect.http_status_code
 		return None
 
-	def test_old_screens_move_to_deployops(self):
-		for path, target in (
-			("", "/deployops"),
-			("c/cashmatic-installation", "/deployops/c/cashmatic-installation"),
-			("job/JOB-0001", "/deployops/job/JOB-0001"),
-			(
-				"form/DeployOps Cashmatic Installation/CI-0001",
-				"/deployops/form/DeployOps Cashmatic Installation/CI-0001",
-			),
-		):
-			with self.subTest(path):
-				self.assertEqual(self.redirect(path), (target, 302))
+	def test_the_app_declares_no_redirects(self):
+		self.assertEqual(frappe.get_hooks("website_redirects", app_name="deployops"), [])
 
-	def test_other_urls_are_not_redirected(self):
-		for path in ("deployops", "deployops/job/JOB-0001", "login", "update-password", "other-app", "jobs"):
+	def test_site_root_and_other_urls_are_not_redirected(self):
+		for path in (
+			"",  # the site root
+			"c/cashmatic-installation",  # the app's earlier root-level screens
+			"job/JOB-0001",
+			"form/DeployOps Cashmatic Installation/CI-0001",
+			"deployops",
+			"deployops/job/JOB-0001",
+			"login",
+			"other-app",
+			"jobs",
+		):
 			with self.subTest(path):
 				self.assertIsNone(self.redirect(path))

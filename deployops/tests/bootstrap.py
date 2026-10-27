@@ -2,6 +2,10 @@
 
 Run by the ``before_tests`` hook. Each record is created only if missing, so on a configured site
 (deployops.local) nothing changes.
+
+These records are **committed and stay on the site**; test rollbacks do not remove them. On a site
+that lacks them, running the tests adds: UOM "Nos", Item Groups "All Item Groups" and "Products",
+and a default Address Template for Cameroon. CI runs on a throwaway site (``test_site``).
 """
 
 import frappe

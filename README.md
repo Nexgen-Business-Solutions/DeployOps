@@ -410,6 +410,7 @@ bench --site <site> backup --with-files       # before any migrate that runs a n
 git checkout <previous-commit> && bench --site <site> migrate      # code rollback
 bench --site <site> restore <path-to-sql.gz>  # data rollback
 ```
+A code rollback does not undo database changes made by the newer release (added columns, patched data, new records). Undoing those needs a restore from a backup taken before the migrate; see `docs/COMPATIBILITY_REPORT.md` §5.4.
 Do **not** use `bench remove-app` as a rollback. It deletes the DeployOps DocTypes and their data.
 
 ---
@@ -423,9 +424,15 @@ bench --site deployops.local run-tests --app deployops
 
 Uncommitted test data is rolled back at the end of each test class. HTTP tests commit their users and records and delete them again in cleanup, so no test data remains on the site.
 
+One exception: before the tests start, `before_tests` (`deployops/tests/bootstrap.py`) creates base records **if they are missing** and commits them, so they stay: UOM "Nos", Item Groups "All Item Groups" and "Products", and a default Address Template. A configured site like `deployops.local` already has them, so nothing changes there. CI runs on a throwaway site.
+
 - Tests create their own anonymised data: company, serialised items, customers, orders, deliveries, subscriptions and maintenance visits.
 - Permission tests always include a user **without** the right role, profile or assignment.
-- CI is defined in `.github/workflows/` and runs on a fresh v16 bench with ERPNext.
+- CI is defined in `.github/workflows/` and runs on a fresh v16 bench with ERPNext:
+  - **Frontend:** type check, lint, unit tests and the production build, without the backend.
+  - **Server:** fresh install of ERPNext and DeployOps, the test suite, then a second `migrate`, and an uninstall and reinstall of DeployOps.
+  - A newer push to a pull request cancels its older run; every push to `main` runs to the end.
+- Not covered by CI: browser tests of Desk and the technician app (run by hand, see `docs/RELEASE_TEST_MATRIX.md` §4).
 
 ---
 
