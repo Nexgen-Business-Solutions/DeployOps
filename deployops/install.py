@@ -66,15 +66,29 @@ def install_reference_files():
 
 
 def create_roles():
-	"""Create the DeployOps roles if they are missing.
+	"""Create the DeployOps roles if they are missing, and keep their Desk access as designed.
 
-	Runs before install and before every migrate, so any site with the app has the roles.
-	Roles that already exist are left as the site administrator configured them.
+	Runs before install and before every migrate, so any site with the app has the roles. Desk access
+	is part of the security model (Technicians use only the app), so a role whose Desk access was
+	changed on the site is set back, and its users' type (System / Website User) is recomputed.
+	Other role settings are left as the site administrator configured them.
 	"""
+	corrected = []
 	for role, desk_access in DESK_ACCESS.items():
-		if frappe.db.exists("Role", role):
-			continue
-
-		frappe.get_doc(
-			{"doctype": "Role", "role_name": role, "desk_access": desk_access, "is_custom": 0}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("Role", role):
+			frappe.get_doc(
+				{"doctype": "Role", "role_name": role, "desk_access": desk_access, "is_custom": 0}
+			).insert(ignore_permissions=True)
+		elif frappe.utils.cint(frappe.db.get_value("Role", role, "desk_access")) != desk_access:
+			frappe.db.set_value("Role", role, "desk_access", desk_access)
+			corrected.append(role)
+			print(
+				f"DeployOps: Desk access of role {role} was changed on this site; set back to {desk_access}."
+			)
+	if corrected:
+		frappe.clear_cache()
+		users = frappe.get_all(
+			"Has Role", filters={"role": ["in", corrected], "parenttype": "User"}, pluck="parent"
+		)
+		for user in set(users):
+			frappe.get_doc("User", user).save(ignore_permissions=True)  # recomputes the user type
