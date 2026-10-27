@@ -71,9 +71,9 @@ required_apps = ["erpnext"]
 # home_page = "frontend"
 
 # website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
+# Technicians (Website Users) land in the app after signing in through Frappe's /login. Only users
+# with this role are affected; the site root stays Frappe's.
+role_home_page = {"DeployOps Technician": "deployops"}
 
 # Generators
 # ----------
@@ -286,14 +286,8 @@ website_route_rules = [
 	{"from_route": "/deployops/<path:app_path>", "to_route": "deployops"},
 ]
 
-# Earlier URLs of the app (it used to own the site root) move to /deployops. 302, not 301: browsers
-# cache a 301 forever, and another app may later need these URLs.
-website_redirects = [
-	{"source": "/", "target": "/deployops", "redirect_http_status": 302, "forward_query_parameters": True},
-	{"source": r"/c/(.+)", "target": r"/deployops/c/\1", "redirect_http_status": 302},
-	{"source": r"/job/(.+)", "target": r"/deployops/job/\1", "redirect_http_status": 302},
-	{"source": r"/form/(.+)", "target": r"/deployops/form/\1", "redirect_http_status": 302},
-]
+# No website_redirects: the site root and every URL outside /deployops belong to Frappe and the
+# other apps. (Redirects from the app's earlier root URLs were removed; it was never released there.)
 
 # The five checklist forms (#41), one DocType each; see deployops/checklists/cards.py.
 CHECKLIST_FORMS = (

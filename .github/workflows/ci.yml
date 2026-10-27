@@ -6,9 +6,11 @@ on:
       - main
   pull_request:
 
+# A new push to a pull request cancels that pull request's older run. Pushes to main are never
+# cancelled: each commit on main gets a complete run.
 concurrency:
-  group: version-16-deployops-${{ github.event.number }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || format('push-{0}', github.sha) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   frontend:
@@ -41,6 +43,10 @@ jobs:
 
       - name: Unit tests
         run: yarn test
+
+      # The production bundle, on its own: it must build without the backend.
+      - name: Production build
+        run: yarn build
 
   tests:
     runs-on: ubuntu-latest
@@ -136,3 +142,14 @@ jobs:
           bench --site test_site run-tests --app deployops
         env:
           TYPE: server
+
+      # The install itself: a second migrate changes nothing, and the app uninstalls and installs
+      # again cleanly. Runs after the tests, on the throwaway CI site only.
+      - name: Migrate and reinstall
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site migrate
+          bench --site test_site uninstall-app deployops --yes --no-backup
+          bench --site test_site install-app deployops
+          bench --site test_site migrate
+          bench --site test_site list-apps | grep -q deployops

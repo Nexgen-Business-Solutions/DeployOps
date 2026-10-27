@@ -14,7 +14,7 @@ from frappe.tests.test_api import make_request
 from frappe.utils import get_test_client, get_url, set_request
 
 import deployops
-from deployops.roles import ALL_ROLES
+from deployops.roles import ALL_ROLES, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX, ERPNEXT_DENIED, allowed, erpnext_allowed
 from deployops.tests.utils import make_role_user
 
@@ -79,6 +79,21 @@ class TestSecurityNegative(IntegrationTestCase):
 				self.assertEqual(
 					self.request(f"/api/method/deployops.api.technician.{method}", params).status_code, 403
 				)
+
+	def test_site_root_sends_only_technicians_to_the_app(self):
+		"""DeployOps doesn't claim "/": guests get Frappe's login page; a Technician, whose home page is
+		the app, is redirected to /deployops; Desk roles keep their own home."""
+		guest = self.request("/")
+		self.assertEqual(guest.status_code, 200)
+		self.assertIn("<title>Login</title>", guest.data.decode())
+		for role in ALL_ROLES:
+			with self.subTest(role=role):
+				response = self.request("/", {"sid": self.sids[role]})
+				location = response.headers.get("Location") or ""
+				if role == TECHNICIAN:
+					self.assertEqual((response.status_code, location.endswith("/deployops")), (302, True))
+				else:
+					self.assertFalse(location.endswith("/deployops"))
 
 	def test_guest_cannot_read_erpnext_records(self):
 		for doctype in ERPNEXT_DENIED:

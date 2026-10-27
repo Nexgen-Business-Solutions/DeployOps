@@ -14,7 +14,7 @@ The React app at `/deployops` is where technicians do field work: pick a checkli
 | Forms | One long page split into numbered sections, with a progress bar under the top bar and a sticky Submit button |
 
 ## Screens
-All routes are under `/deployops` (the router's base); DeployOps leaves every other URL to Frappe and the other apps.
+All routes are under `/deployops` (the router's base); DeployOps leaves every other URL to Frappe and the other apps. The one exception is per user: a Technician's home page is the app (`role_home_page`), so a signed-in technician who opens `/` is sent to `/deployops` (302). Guests and Desk users keep Frappe's own `/`.
 
 | Route | Screen |
 |---|---|
