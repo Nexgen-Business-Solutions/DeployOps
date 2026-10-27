@@ -268,6 +268,22 @@ class TestJobPermissions(JobTestCase):
 		with set_user(manager):
 			self.assertEqual(set(frappe.get_list(JOB, pluck="name")), {mine.name, other.name})
 
+	def test_company_user_permission_hides_other_companies_jobs(self):
+		"""Multi-company (#8 review): a Company restriction on a user also limits the jobs they see."""
+		from frappe.permissions import add_user_permission
+
+		order = fx.make_sales_order(self.customer, [self.cash]).name
+		job = make_job(
+			"Sales Order", order, job_type="Pre-installation", assigned_technician=self.technician
+		).name
+		for user in (self.technician, self.supervisor):
+			with self.subTest(user=user):
+				self.assertTrue(frappe.has_permission(JOB, "read", job, user=user))
+				add_user_permission("Company", fx.OTHER_COMPANY, user)
+				self.assertFalse(frappe.has_permission(JOB, "read", job, user=user))
+				with set_user(user):
+					self.assertNotIn(job, frappe.get_list(JOB, pluck="name"))
+
 	def test_technician_cannot_reassign_or_change_planning(self):
 		job = make_job(
 			"Sales Order",
