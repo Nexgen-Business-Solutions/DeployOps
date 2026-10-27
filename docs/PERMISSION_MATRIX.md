@@ -1,6 +1,6 @@
 # DeployOps — Permission Matrix (#10 / #35)
 
-**Status:** Approved by the owner on 2026-10-18.
+**Status:** Marked approved by the owner on 2026-10-18, but **that approval isn't recorded on GitHub**: PR #50 has no review, and #10 and #35 have no acceptance comment. See [Approval record](#approval-record).
 **Source of truth in code:** [`deployops/security/matrix.py`](../deployops/security/matrix.py). The tests read that file, so this document and the code must change together.
 
 ---
@@ -40,6 +40,7 @@ The roles ship with the app. They are created automatically on `install-app` and
 - **No delete on operational records** (Job, checklist forms, Allocation). Mistakes are cancelled, so the audit trail stays complete.
 - **Admin configures but doesn't approve.** Approval is an operational decision (Supervisor, Manager).
 - **Only Manager and Admin can export.**
+- **Print needs P, not just R.** Frappe on its own lets anyone who can read a record print it. DeployOps checks the print right before every print (`/printview`, PDF, Desk Print): see `deployops/security/print_permissions.py`. So a Technician can't print a Job, and nobody prints Allocations, Categories, Profiles or Reference Files.
 - **Guests get nothing.** `/` shows them Frappe's login page (DeployOps doesn't claim the site root), `/deployops` shows the app's empty sign-in shell, and no DeployOps API method is open to guests.
 
 **Scope.** This matrix is role-level only. "Assigned" and "own jobs" are enforced later:
@@ -101,6 +102,8 @@ Roles decide *what* a user may do. Equipment access profiles decide *which equip
 | `deployops/tests/test_matrix_unit.py` (unit, no database) | The matrix is well formed: every row covers all 4 roles with valid letters only; no delete on Job, the checklist forms or Allocation; only Manager and Admin export; Admin never approves; only Technician lacks Desk; the Item exception covers exactly Desk roles and its four rights |
 | `deployops/tests/test_permission_matrix.py` | Roles exist with the right Desk access; names are generic; roles can be assigned; Technician users are Website Users; every DeployOps DocType is in the matrix and its permissions match it exactly; ERPNext records are denied except the accepted defaults; the workspace is visible only to Desk roles |
 | `deployops/tests/test_security_negative.py` | Over HTTP: guests get only the app's empty shell and 403 on ERPNext APIs; DeployOps DocType APIs return 200 or 403 exactly as the matrix says, and 403 for guests; each role gets 403 listing ERPNext records (except the Item default), opening a record by URL (`/api/resource/...`, `frappe.client.get`) and printing it (`/printview`); no DeployOps method is open to guests |
+| `deployops/tests/test_security_writes.py` | Over HTTP, as real users with real records, each refusal checked to leave the record unchanged: only the assigned technician edits a checklist; nobody else creates or submits one; only a Manager cancels a submitted one; nobody deletes a Job, checklist or Allocation; Technicians don't create Jobs and another technician can't change one; every create, write, print and export the matrix withholds on Job, Allocation, Category, Profile and Reference Files is refused; Serial No, Sales Order and Delivery Note records can't be opened, printed or changed by URL. Positive controls and an identity check prove the requests run as the intended user |
+| `deployops/tests/test_permission_matrix.py::TestRoleDrift` | A DeployOps role whose Desk access was changed on the site is set back on migrate, and its users' type is recomputed |
 | `deployops/tests/test_equipment_access.py` | Categories reject non-serial Items and duplicate rows; one profile per user; no profile, a disabled category or a disabled profile grants nothing; a profile grants only its categories; multiple and overlapping categories; Item Groups include sub-groups and only serial-numbered Items; revocation is immediate; Supervisor and Manager are restricted; Admin sees all serial-numbered equipment |
 | `deployops/tests/test_install.py` | App installed, ERPNext required, module and workspace set up |
 
@@ -121,3 +124,13 @@ bench --site deployops.local run-tests --app deployops
    - `/desk` opens, and the **DeployOps** workspace is visible;
    - `/api/resource/Sales Order` returns 403.
 4. Log out and open `/`. You are sent to `/login`, and after logging in you return to `/`.
+
+## Approval record
+The owner records the approval on #10 (linked from #35), covering:
+- this matrix (commit reviewed) and the decisions above: no delete on operational records, Admin doesn't approve, only Manager and Admin export, guests get nothing;
+- the accepted Item exception (ERPNext's `Desk User` default);
+- the tests that enforce it (table above).
+
+| Approver | Date | Where recorded |
+|---|---|---|
+| | | |
