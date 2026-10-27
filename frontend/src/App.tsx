@@ -1,17 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
-import { FrappeProvider } from 'frappe-react-sdk'
-function App() {
-    const [count, setCount] = useState(0)
+import { Loader2 } from "lucide-react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
-    return (
-        <div className="App">
-            <FrappeProvider>
-                <h1>Cashmatic Pre-installation checklist</h1>
-            </FrappeProvider>
-        </div>
-    )
+import { Banner } from "./components/ui";
+import { logout } from "./lib/api";
+import { SessionContext } from "./lib/session";
+import type { Me } from "./lib/types";
+import { APP_BASE } from "./lib/paths";
+import { useApi } from "./lib/useApi";
+import CardJobs from "./pages/CardJobs";
+import ChangePassword from "./pages/ChangePassword";
+import Form from "./pages/Form";
+import Home from "./pages/Home";
+import Job from "./pages/Job";
+import Login from "./pages/Login";
+
+function sessionUser(): string | undefined {
+    const match = document.cookie.match(/(?:^|;\s*)user_id=([^;]*)/);
+    const user = match ? decodeURIComponent(match[1]) : "Guest";
+    return user && user !== "Guest" ? user : undefined;
 }
 
-export default App
+export default function App() {
+    const { data: me, error, loading } = useApi<Me>("deployops.api.technician.me");
+
+    async function signOut() {
+        try {
+            await logout();
+        } finally {
+            window.location.assign(APP_BASE);
+        }
+    }
+
+    if (loading && !me) {
+        return (
+            <div className="grid min-h-svh place-items-center">
+                <Loader2 className="size-6 animate-spin text-zinc-300" aria-label="Loading" />
+            </div>
+        );
+    }
+
+    if (!me) {
+        if (error && error.status !== 403 && error.status !== 401) {
+            return (
+                <div className="mx-auto max-w-md p-6">
+                    <Banner>{error.message}</Banner>
+                </div>
+            );
+        }
+        return <Login signedInAs={sessionUser()} />;
+    }
+
+    return (
+        <SessionContext.Provider value={me}>
+            <BrowserRouter basename={APP_BASE}>
+                <Routes>
+                    <Route path="/" element={<Home onLogout={signOut} />} />
+                    <Route path="/c/:card" element={<CardJobs />} />
+                    <Route path="/job/:job" element={<Job />} />
+                    <Route path="/form/:doctype/:name" element={<Form />} />
+                    <Route path="/password" element={<ChangePassword />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </BrowserRouter>
+        </SessionContext.Provider>
+    );
+}
