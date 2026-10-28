@@ -1,0 +1,114 @@
+{#- Checklist report (#27). Rendered from deployops.checklists.report.context(); every value is escaped here
+    because Frappe's Jinja environment does not autoescape. -#}
+{%- set r = report -%}
+<style>
+	@page {
+		size: A4;
+		margin: 16mm 14mm 18mm;
+		@bottom-left { content: "{{ r.name | e }}{% if r.audience == 'customer' %} · Customer copy{% endif %}"; font: 8pt sans-serif; color: #71717a; }
+		@bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt sans-serif; color: #71717a; }
+	}
+	.do-report { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-size: 9.5pt; color: #18181b; line-height: 1.4; }
+	.do-report * { box-sizing: border-box; }
+	.do-report header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #18181b; padding-bottom: 8px; margin-bottom: 12px; }
+	.do-report header img { height: 46px; }
+	.do-report h1 { font-size: 16pt; margin: 0; text-align: right; }
+	.do-report .kind { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; text-align: right; }
+	.do-report .facts { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+	.do-report .facts th { width: 26%; text-align: left; font-weight: 500; color: #71717a; padding: 3px 8px 3px 0; vertical-align: top; }
+	.do-report .facts td { padding: 3px 0; white-space: pre-line; }
+	.do-report h2 { font-size: 11pt; margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 1px solid #e4e4e7; break-after: avoid; }
+	.do-report .description { color: #71717a; margin: -2px 0 6px; }
+	.do-report .steps { list-style: none; padding: 0; margin: 0 0 6px; }
+	.do-report .steps li { display: flex; gap: 8px; padding: 2px 0; break-inside: avoid; }
+	.do-report .tick { flex: none; width: 12px; font-weight: 700; }
+	.do-report .tick.done { color: #2b7fff; }
+	.do-report .tick.missed { color: #dc2626; }
+	.do-report .value { display: flex; gap: 8px; padding: 3px 0; break-inside: avoid; }
+	.do-report .value .label { width: 32%; flex: none; color: #71717a; }
+	.do-report .value .text { white-space: pre-line; }
+	.do-report .block-label { color: #71717a; margin: 6px 0 4px; }
+	.do-report .grid { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+	.do-report .grid th, .do-report .grid td { border: 1px solid #e4e4e7; padding: 3px 6px; text-align: left; }
+	.do-report .grid th { background: #fafafa; font-weight: 500; }
+	.do-report .photos { display: flex; flex-wrap: wrap; gap: 8px; }
+	.do-report figure { margin: 0; width: 48%; break-inside: avoid; }
+	.do-report figure img { width: 100%; border: 1px solid #e4e4e7; border-radius: 4px; }
+	.do-report figcaption { color: #71717a; font-size: 8pt; }
+	.do-report .signature { break-inside: avoid; }
+	.do-report .signature img { height: 70px; border-bottom: 1px solid #a1a1aa; }
+	.do-report .muted { color: #71717a; }
+	.do-report .audit { width: 100%; border-collapse: collapse; font-size: 8pt; }
+	.do-report .audit th, .do-report .audit td { border-bottom: 1px solid #e4e4e7; padding: 3px 4px; text-align: left; vertical-align: top; }
+	.do-report footer { margin-top: 16px; color: #a1a1aa; font-size: 7.5pt; }
+</style>
+<div class="do-report">
+	<header>
+		<img src="{{ r.logo }}" alt="Massarie">
+		<div>
+			<div class="kind">{% if r.audience == "customer" %}Customer copy{% else %}Internal report{% endif %}</div>
+			<h1>{{ r.title | e }}</h1>
+		</div>
+	</header>
+
+	<table class="facts">
+		{%- for label, value in r.facts %}
+		<tr><th>{{ label | e }}</th><td>{{ value | e }}</td></tr>
+		{%- endfor %}
+	</table>
+
+	{%- for section in r.sections %}
+	{%- if section.label %}<h2>{{ section.label | e }}</h2>{% endif %}
+	{%- if section.description %}<p class="description">{{ section.description | e }}</p>{% endif %}
+	{%- for block in section.blocks %}
+		{%- if block.kind == "steps" %}
+		<ul class="steps">
+			{%- for step in block.steps %}
+			<li><span class="tick {{ 'done' if step.done else 'missed' }}">{{ '✓' if step.done else '✗' }}</span><span>{{ step.label | e }}</span></li>
+			{%- endfor %}
+		</ul>
+		{%- elif block.kind == "value" %}
+		<div class="value"><span class="label">{{ block.label | e }}</span><span class="text">{{ block.text | e if block.text else '—' }}</span></div>
+		{%- elif block.kind == "table" %}
+		<div class="block-label">{{ block.label | e }}</div>
+		<table class="grid">
+			<tr>{% for column in block.columns %}<th>{{ column | e }}</th>{% endfor %}</tr>
+			{%- for row in block.rows %}
+			<tr>{% for cell in row %}<td>{{ cell | e }}</td>{% endfor %}</tr>
+			{%- endfor %}
+		</table>
+		{%- elif block.kind == "photos" %}
+		<div class="block-label">{{ block.label | e }}</div>
+		<div class="photos">
+			{%- for photo in block.photos %}
+			<figure>
+				{%- if photo.src %}<img src="{{ photo.src }}" alt="">{% else %}<p class="muted">Photo could not be shown.</p>{% endif %}
+				{%- if photo.caption %}<figcaption>{{ photo.caption | e }}</figcaption>{% endif %}
+			</figure>
+			{%- endfor %}
+		</div>
+		{%- elif block.kind == "files" %}
+		<div class="block-label">{{ block.label | e }}</div>
+		<ul>{% for file in block.files %}<li>{{ file | e }}</li>{% endfor %}</ul>
+		{%- elif block.kind == "signature" %}
+		<div class="signature">
+			<div class="block-label">{{ block.label | e }}</div>
+			{%- if block.src %}<img src="{{ block.src }}" alt="Signature">{% else %}<p class="muted">Not signed.</p>{% endif %}
+			{%- if block.signer %}<div>{{ block.signer | e }}{% if block.signed_on %} · {{ block.signed_on | e }}{% endif %}</div>{% endif %}
+		</div>
+		{%- endif %}
+	{%- endfor %}
+	{%- endfor %}
+
+	{%- if r.audit %}
+	<h2>Audit trail</h2>
+	<table class="audit">
+		<tr><th>When</th><th>Who</th><th>Action</th><th>Status</th><th>Reason</th></tr>
+		{%- for entry in r.audit %}
+		<tr><td>{{ entry.when | e }}</td><td>{{ entry.who | e }}</td><td>{{ entry.action | e }}</td><td>{{ entry.change | e }}</td><td>{{ (entry.reason or '') | e }}</td></tr>
+		{%- endfor %}
+	</table>
+	{%- endif %}
+
+	<footer>Generated {{ r.generated | e }} from the checklist as submitted.</footer>
+</div>

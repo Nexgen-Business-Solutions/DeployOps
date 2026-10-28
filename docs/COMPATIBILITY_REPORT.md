@@ -1,6 +1,6 @@
 # DeployOps — Compatibility Report (#8 / #33)
 
-**Status:** Draft for review. Feature implementation (#9 onward) starts only after this report is approved.
+**Status:** Draft. **Owner approval not yet recorded.** Implementation (#9 onward) went ahead before an approval was written down; §8 lists what the acceptance must cover. Change this line to *Approved* only with the approver and date from that record.
 **Prepared:** 2026-10-17 by @Nexgen-Kimbi (AI-assisted).
 **Scope:** Feature [#8](https://github.com/Nexgen-Business-Solutions/DeployOps/issues/8), task [#33](https://github.com/Nexgen-Business-Solutions/DeployOps/issues/33).
 
@@ -31,6 +31,14 @@ The local bench already meets all of these.
 - No code is committed or pushed until the owner has reviewed and approved it.
 - Because nothing can be checked on a hosted site, everything in this report was verified on the local bench and in the installed Frappe/ERPNext source.
 
+### 2.1 Hosted deployment readiness: **unverified**
+Nothing in this report shows that DeployOps can be installed on the future hosted environment. Before hosting is approved, confirm on that environment:
+1. A private custom app can be installed (GitHub access to `Nexgen-Business-Solutions/DeployOps`).
+2. The runtime matches §1: Frappe and ERPNext `>=16.50,<17`, Python 3.14, Node 24.
+3. PDF reports work: WeasyPrint's system libraries (Pango) are present.
+4. Who may deploy, run `bench migrate` and restore a site.
+5. A backup and a **restore** have been tested there (§5.4).
+
 ## 3. Available environments
 
 ### 3.1 Local bench
@@ -40,7 +48,7 @@ The local bench already meets all of these.
 | Bench path | `~/frappe/massarie_project` |
 | Existing site | `deployops.local` (default site), apps: `frappe`, `erpnext` |
 | System settings | Time zone `Africa/Douala`, country Cameroon, date format `dd-mm-yyyy`, 2FA off |
-| Companies | One: `Massarie` (Cameroon, XAF) |
+| Companies | One: `Massarie` (Cameroon, XAF). Multi-company behaviour is tested with a second company created by the tests (R5) |
 | Data | Empty development site: no Customers, Items, Serial Nos, Sales Orders, Delivery Notes, Subscriptions or Maintenance Visits/Schedules; 3 users |
 
 ### 3.2 Site
@@ -98,10 +106,17 @@ A GitHub Actions workflow is written in #34 so CI is ready once code is pushed. 
 - No fixture contains customer data, credentials or employee personal data.
 
 ### 5.4 Backup and rollback (local)
-1. Before any `bench migrate` that runs a new patch, run `bench --site <site> backup --with-files`. Backups stay under `sites/<site>/private/backups/` and are never committed.
-2. Code rollback: check out the previous commit and run `bench migrate`.
-3. Data rollback: restore the site from the pre-migrate backup with `bench --site <site> restore ...`.
-4. Do not use `bench remove-app` as a rollback. It drops the DeployOps DocTypes and their data.
+Code and database roll back separately. Going back to older code does **not** undo what a newer migration did to the database.
+
+1. **Backup first.** Before every `bench migrate` with new DocType changes or patches: `bench --site <site> backup --with-files`. Backups stay under `sites/<site>/private/backups/` and are never committed. A backup counts only if a restore of it has been tested (step 3).
+2. **Code rollback:** check out the previous commit and run `bench migrate`. This brings back the old code and DocType definitions. It does not reverse database changes:
+   - columns and tables added by newer DocTypes stay (Frappe never drops columns on migrate), and so does any data written to them;
+   - data changed by a patch stays changed;
+   - records created by the newer code (jobs, allocations, checklists) stay, and may not satisfy the older code's rules.
+   Code rollback alone is safe only when the newer release made no schema or data changes.
+3. **Database rollback:** restore the pre-migrate backup with `bench --site <site> restore <sql.gz> --with-public-files … --with-private-files …`, then run the older code. Anything entered after the backup is lost.
+4. **Changes that need a restore to undo:** every data patch, removed or renamed fields, and changed field types. Each release note says whether it has any. As of this report `patches.txt` contains no patches.
+5. Do not use `bench remove-app` as a rollback. It drops the DeployOps DocTypes and their data.
 
 ## 6. Risks
 
@@ -111,8 +126,18 @@ A GitHub Actions workflow is written in #34 so CI is ready once code is pushed. 
 | R2 | `main` is unprotected and there is no CI | Confirmed / Medium | Add CI in #34; enable branch protection (PR required, 1 approving review, CI must pass) before the first push |
 | R3 | wkhtmltopdf is not installed, so PDF reports (#27) cannot be rendered yet | Confirmed / Medium | Install wkhtmltopdf 0.12.6 (patched Qt) or use the v16 Chrome generator; decide in #27 |
 | R4 | The sample checklist PDF contains credentials and personal data, and `docs/CHECKLIST_SPECS.md` line 3 names the sample customer/site | Confirmed / Medium | Never use the sample in fixtures; anonymise that line before the first push |
-| R5 | Local site has a single company | Confirmed / Medium | Permission tests (#12, #35) create a second company |
+| R5 | Local site has a single company | Confirmed / Medium | Tests create a second company. Covered: sources and serials from another company are refused (`test_erpnext_sources.py`: `test_company_boundary`, `test_company_user_permissions_limit_sources`); a job can't take another company's source or switch company (`test_job.py`, `test_job_integrity.py`); a Company user permission hides other companies' jobs (`test_job.py::test_company_user_permission_hides_other_companies_jobs`). Not covered: a real second company with its own accounts and stock on a site |
 | R6 | Single local machine: disk failure or WSL reset could lose uncommitted work and local sites | Low / Medium | Regular off-machine copy of the repo (`git bundle create` to another disk); sites can be rebuilt from the repo and fixtures |
 
 ## 7. Open questions
 None at this time.
+
+## 8. Review and acceptance
+GitHub shows no review on PR #45 and no acceptance comment on #8 or #33. The owner should record acceptance on #8 (and link it from #33), covering:
+- this report (commit and date reviewed);
+- what was verified: §1 versions, §4 schema findings and §4.1 method on the local bench;
+- the limitations accepted: hosted readiness unverified (§2.1), multi-company coverage (R5), rollback depends on tested restores (§5.4).
+
+| Approver | Date | Where recorded | Accepted limitations |
+|---|---|---|---|
+| | | | |

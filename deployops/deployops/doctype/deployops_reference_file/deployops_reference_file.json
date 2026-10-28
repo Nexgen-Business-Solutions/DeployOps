@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "file",
+  "checklist",
+  "section"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "Shown to the technician, e.g. \"Cashmatic Device Installation Guide (CDIG)\".",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "PDF or image, uploaded here as a private file.",
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "File",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "checklist",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Checklist",
+   "options": "\nDeployOps Cashmatic Pre-installation\nDeployOps Cashmatic Installation\nDeployOps BellaBot Pre-installation\nDeployOps BellaBot Installation\nDeployOps Cashmatic Maintenance",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "description": "Field name of the checklist section to show it in, e.g. machine_activation_steps_section. Empty: at the top of the checklist.",
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-24 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Reference File",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
