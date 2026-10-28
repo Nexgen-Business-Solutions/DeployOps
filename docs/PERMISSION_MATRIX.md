@@ -74,12 +74,14 @@ Roles decide *what* a user may do. Equipment access profiles decide *which equip
 | **DeployOps Equipment Access Profile** | One per user. Lists the categories the user is authorised for |
 
 **Rules:**
-- **Serial-numbered Items only.** An Item without serial numbers is rejected.
+- **Serial-numbered Items only.** An Item without serial numbers is rejected. An Item that stops being serial-numbered after it was added is left out of everyone's access.
 - **No duplicate rows** within a category or a profile.
 - **One profile per user.** Several categories per profile are allowed, and categories may overlap.
-- **Disabled means nothing granted.** A disabled category or a disabled profile grants nothing.
+- **Disabled means nothing granted.** A disabled category, a disabled profile or a disabled user grants nothing.
+- **A profile needs a role.** A profile works only for a user with the Technician, Supervisor or Manager role. A profile left on a user without one (never given, or removed later) grants nothing.
 - **Changes apply immediately.** Access is computed live, so removing a category revokes it at once.
 - **Admin isn't restricted.** Technician, Supervisor and Manager are limited to their profile. DeployOps Administrators configure categories and see all serial-numbered equipment.
+- **Profiles are visible to Supervisors and Managers.** They can read every profile (who is authorised for which categories), as the matrix in §2 says. Only Admins change them.
 
 **Server API** (`deployops/security/equipment_access.py`): `get_allowed_categories(user)`, `get_allowed_items(user)` and `has_equipment_access(item_code, user)`. Jobs, serial allocation and checklists (#12, #14, #18, #20) use these to filter what each user sees.
 
@@ -94,6 +96,8 @@ Roles decide *what* a user may do. Equipment access profiles decide *which equip
 2. Give a Technician a profile with only A. Item X is allowed and Y is not.
 3. Remove A from the profile. X is no longer allowed, with no logout needed.
 4. A DeployOps Administrator without a profile is still allowed X and Y.
+5. Give A back, then remove the Technician role from the user. X is no longer allowed, though the profile still lists A.
+6. Give the role back, then disable the user. Nothing is allowed.
 
 ## 5. Tests
 
