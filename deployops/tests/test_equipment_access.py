@@ -7,7 +7,9 @@ from deployops.security.equipment_access import (
 	PROFILE,
 	get_allowed_categories,
 	get_allowed_items,
+	get_category_items,
 	has_equipment_access,
+	is_unrestricted,
 )
 from deployops.tests.utils import make_role_user
 
@@ -146,6 +148,52 @@ class TestEquipmentAccess(IntegrationTestCase):
 		for role in (SUPERVISOR, MANAGER):
 			with self.subTest(role=role):
 				self.assertFalse(has_equipment_access(self.recycler, make_role_user(role)))
+
+	def test_profile_needs_an_operational_role(self):
+		"""#11 review: a profile alone grants nothing; the user needs a Technician, Supervisor or
+		Manager role."""
+		make_category("_Test Cash", items=[self.recycler])
+		user = "_test-no-role@deployops.test"
+		frappe.get_doc(
+			{"doctype": "User", "email": user, "first_name": "No role", "send_welcome_email": 0}
+		).insert(ignore_permissions=True)
+		make_profile(user, ["_Test Cash"])
+		self.assertEqual(get_allowed_categories(user), [])
+		self.assertFalse(has_equipment_access(self.recycler, user))
+
+	def test_revoking_the_role_revokes_the_equipment(self):
+		make_category("_Test Cash", items=[self.recycler])
+		make_profile(self.technician, ["_Test Cash"])
+		self.assertTrue(has_equipment_access(self.recycler, self.technician))
+
+		self.addCleanup(
+			frappe.clear_cache, user=self.technician
+		)  # cached roles; the rollback restores the row
+		user = frappe.get_doc("User", self.technician)
+		user.roles = []
+		user.save(ignore_permissions=True)
+		self.assertEqual(get_allowed_categories(self.technician), [])
+		self.assertFalse(has_equipment_access(self.recycler, self.technician))
+
+	def test_disabled_users_get_nothing(self):
+		make_category("_Test Cash", items=[self.recycler])
+		make_profile(self.technician, ["_Test Cash"])
+		admin = make_role_user(ADMINISTRATOR)
+		for user in (self.technician, admin):
+			self.addCleanup(frappe.clear_document_cache, "User", user)
+			frappe.db.set_value("User", user, "enabled", 0)
+			frappe.clear_document_cache("User", user)
+			with self.subTest(user=user):
+				self.assertEqual(get_allowed_categories(user), [])
+				self.assertEqual(get_allowed_items(user), set())
+				self.assertFalse(is_unrestricted(user))
+
+	def test_mapped_item_that_lost_its_serial_numbers_is_left_out(self):
+		make_category("_Test Cash", items=[self.recycler, self.robot])
+		make_profile(self.technician, ["_Test Cash"])
+		frappe.db.set_value("Item", self.robot, "has_serial_no", 0)  # changed after mapping
+		self.assertEqual(get_allowed_items(self.technician), {self.recycler})
+		self.assertEqual(get_category_items(["_Test Cash"]), {self.recycler})
 
 	def test_admin_sees_all_serialized_equipment(self):
 		admin = make_role_user(ADMINISTRATOR)
