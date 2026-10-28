@@ -95,15 +95,26 @@ def render_html(doc, audience: str = "internal") -> str:
 	return frappe.get_template(TEMPLATE).render({"report": context(doc, audience)})  # a fixed app file
 
 
+def embedded_only_fetcher():
+	"""A WeasyPrint URL fetcher that loads only data URLs: images are embedded, nothing else is fetched.
+
+	Built on `URLFetcher` (WeasyPrint 68+); version 70 removed `default_url_fetcher`.
+	"""
+	from weasyprint.urls import URLFetcher
+
+	class EmbeddedOnly(URLFetcher):
+		def fetch(self, url, headers=None):
+			if not url.startswith("data:"):
+				raise ValueError(f"Reports do not load external resources: {url}")
+			return super().fetch(url, headers)
+
+	return EmbeddedOnly()
+
+
 def render_pdf(doc, audience: str = "internal") -> bytes:
-	from weasyprint import HTML, default_url_fetcher
+	from weasyprint import HTML
 
-	def embedded_only(url, *args, **kwargs):  # images are data URLs; never fetch anything else
-		if not url.startswith("data:"):
-			raise ValueError(f"Reports do not load external resources: {url}")
-		return default_url_fetcher(url, *args, **kwargs)
-
-	return HTML(string=render_html(doc, audience), url_fetcher=embedded_only).write_pdf()
+	return HTML(string=render_html(doc, audience), url_fetcher=embedded_only_fetcher()).write_pdf()
 
 
 def checklist_report_html(doc, audience: str = "internal") -> str:
