@@ -248,6 +248,31 @@ class TestSourceApi(SourceTestCase):
 			with self.assertRaises(frappe.PermissionError):
 				api.get_source_summary("Sales Order", home)
 
+	def test_get_serial_respects_company_user_permissions(self):
+		"""#13 review: the caller's companies decide, not the company argument (or its absence)."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company()
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("SN-HOME", self.cash)
+		fx.make_serial("SN-AWAY", self.cash, company=fx.OTHER_COMPANY)
+
+		with set_user(self.technician):  # no company restriction: both companies
+			self.assertEqual(api.get_serial("SN-HOME")["company"], fx.COMPANY)
+			self.assertEqual(api.get_serial("SN-AWAY")["company"], fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.technician, applicable_for="Sales Invoice")
+		with set_user(self.technician):  # restriction for another DocType only: still both
+			self.assertEqual(api.get_serial("SN-AWAY")["company"], fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.technician)
+		with set_user(self.technician):
+			self.assertEqual(api.get_serial("SN-HOME")["name"], "SN-HOME")
+			self.assertEqual(api.get_serial("SN-HOME", self.cash, fx.COMPANY)["name"], "SN-HOME")
+			for company in (None, fx.OTHER_COMPANY, fx.COMPANY):
+				with self.subTest(company=company), self.assertRaises(frappe.PermissionError):
+					api.get_serial("SN-AWAY", company=company)
+
 	def test_get_serial_respects_equipment(self):
 		fx.make_serial("SN-CASH", self.cash)
 		fx.make_serial("SN-ROBOT", self.robot)

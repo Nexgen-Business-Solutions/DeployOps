@@ -183,7 +183,11 @@ def get_source_snapshot(doc) -> dict:
 
 
 def validate_serial(serial_no: str, item_code: str | None = None, company: str | None = None):
-	"""Return the Serial No if it exists, matches the Item and belongs to the company."""
+	"""Return the Serial No if it exists, matches the Item and belongs to the company.
+
+	The caller's Company user permissions apply whatever `company` is passed (or not): a serial of a
+	company outside them is refused, like a source document (#13 review).
+	"""
 	if not frappe.db.exists("Serial No", serial_no):
 		frappe.throw(_("Serial No {0} does not exist.").format(serial_no), frappe.DoesNotExistError)
 
@@ -205,6 +209,12 @@ def validate_serial(serial_no: str, item_code: str | None = None, company: str |
 	if item_code and serial.item_code != item_code:
 		frappe.throw(
 			_("Serial No {0} belongs to Item {1}, not {2}.").format(serial_no, serial.item_code, item_code)
+		)
+	companies = allowed_companies("Serial No")
+	if companies is not None and serial.company not in companies:
+		frappe.throw(
+			_("You are not allowed to use serials of company {0}.").format(serial.company or _("(none)")),
+			frappe.PermissionError,
 		)
 	if company and serial.company and serial.company != company:
 		frappe.throw(
