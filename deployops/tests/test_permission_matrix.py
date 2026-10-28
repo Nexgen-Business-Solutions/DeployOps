@@ -3,7 +3,7 @@ from frappe.desk.desktop import Workspace
 from frappe.tests import IntegrationTestCase
 from frappe.tests.classes.context_managers import set_user
 
-from deployops.roles import ALL_ROLES, DESK_ACCESS, TECHNICIAN
+from deployops.roles import ALL_ROLES, DESK_ACCESS, SUPERVISOR, TECHNICIAN
 from deployops.security.matrix import (
 	DOCTYPE_MATRIX,
 	ERPNEXT_DENIED,
@@ -44,11 +44,43 @@ class TestRoles(IntegrationTestCase):
 				self.assertEqual(user_type, expected)
 
 
+class TestRoleDrift(IntegrationTestCase):
+	def setUp(self):
+		self.addCleanup(frappe.db.rollback)
+		self.addCleanup(frappe.clear_cache)
+
+	def test_migrate_sets_changed_desk_access_back(self):
+		"""#35 review: a Technician role given Desk access on a site is corrected by the next migrate."""
+		from deployops.install import create_roles
+
+		technician = make_role_user(TECHNICIAN)
+		frappe.db.set_value("Role", TECHNICIAN, "desk_access", 1)
+		frappe.db.set_value("Role", SUPERVISOR, "desk_access", 0)
+		frappe.clear_cache()
+		frappe.get_doc("User", technician).save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_value("User", technician, "user_type"), "System User")  # the drift
+
+		create_roles()  # what before_migrate runs
+
+		for role, desk_access in DESK_ACCESS.items():
+			with self.subTest(role=role):
+				self.assertEqual(frappe.db.get_value("Role", role, "desk_access"), desk_access)
+		self.assertEqual(frappe.db.get_value("User", technician, "user_type"), "Website User")
+
+
 class TestPermissionMatrix(IntegrationTestCase):
 	def test_every_deployops_doctype_is_in_matrix(self):
 		doctypes = frappe.get_all("DocType", filters={"module": "DeployOps", "istable": 0}, pluck="name")
 		missing = sorted(set(doctypes) - set(DOCTYPE_MATRIX))
 		self.assertEqual(missing, [], "Add these DocTypes to deployops/security/matrix.py")
+
+	def test_every_deployops_doctype_checks_the_print_right(self):
+		from deployops.hooks import PRINT_CHECKED
+
+		doctypes = frappe.get_all("DocType", filters={"module": "DeployOps", "istable": 0}, pluck="name")
+		self.assertEqual(
+			sorted(set(doctypes) - set(PRINT_CHECKED)), [], "Add these to PRINT_CHECKED in hooks.py"
+		)
 
 	def test_doctype_rights_match_matrix(self):
 		existing = [dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt)]

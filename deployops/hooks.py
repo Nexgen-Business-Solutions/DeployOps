@@ -312,7 +312,22 @@ has_permission = {
 
 # ERPNext deliveries close sale reservations (#14) and hand machines over to installation jobs
 # (#16). Read-only on the Delivery Note itself.
+# Printing needs the print right of the matrix, not just read (#35); see security/print_permissions.py.
+# Every DeployOps DocType that isn't a child table is listed (tested).
+PRINT_CHECKED = (
+	"DeployOps Job",
+	*CHECKLIST_FORMS,
+	"DeployOps Equipment Category",
+	"DeployOps Equipment Access Profile",
+	"DeployOps Reference Files",
+	"DeployOps Equipment Allocation",
+)
+
 doc_events = {
+	**{
+		doctype: {"before_print": "deployops.security.print_permissions.check_print_permission"}
+		for doctype in PRINT_CHECKED
+	},
 	"Delivery Note": {
 		"on_submit": [
 			"deployops.equipment.allocations.on_delivery_note_submit",

@@ -1,4 +1,4 @@
-"""Negative security tests over HTTP (#35).
+"""Negative security tests over HTTP
 
 Requests go through Frappe's WSGI app in a separate thread with its own DB connection, so the
 fixtures here are committed and removed again in tearDownClass.
@@ -16,9 +16,10 @@ from frappe.utils import get_test_client, get_url, set_request
 import deployops
 from deployops.roles import ALL_ROLES, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX, ERPNEXT_DENIED, allowed, erpnext_allowed
-from deployops.tests.utils import make_role_user
+from deployops.tests.utils import make_role_user, role_user_email
 
-TEST_CUSTOMER = "DeployOps Test Customer"
+# Unique per run: the tests create it and delete only what they created.
+TEST_CUSTOMER = f"DeployOps Test Customer {frappe.generate_hash(length=6)}"
 
 
 def login_sid(user: str) -> str:
@@ -36,8 +37,11 @@ class TestSecurityNegative(IntegrationTestCase):
 	def setUpClass(cls):
 		super().setUpClass()
 		cls.client = get_test_client(use_cookies=False)
+		# Delete in teardown only the users this class created (make_role_user reuses existing ones).
+		cls.created_users = [r for r in ALL_ROLES if not frappe.db.exists("User", role_user_email(r))]
 		cls.users = {role: make_role_user(role) for role in ALL_ROLES}
-		if not frappe.db.exists("Customer", TEST_CUSTOMER):
+		cls.created_customer = not frappe.db.exists("Customer", TEST_CUSTOMER)
+		if cls.created_customer:
 			frappe.get_doc({"doctype": "Customer", "customer_name": TEST_CUSTOMER}).insert(
 				ignore_permissions=True, ignore_mandatory=True
 			)
@@ -49,8 +53,9 @@ class TestSecurityNegative(IntegrationTestCase):
 	@classmethod
 	def tearDownClass(cls):
 		frappe.set_user("Administrator")
-		frappe.delete_doc("Customer", TEST_CUSTOMER, force=True, ignore_permissions=True)
-		for user in cls.users.values():
+		if cls.created_customer:
+			frappe.delete_doc("Customer", TEST_CUSTOMER, force=True, ignore_permissions=True)
+		for user in (cls.users[role] for role in cls.created_users):
 			frappe.delete_doc("User", user, force=True, ignore_permissions=True)
 		# Remove the committed fixtures so no test data stays on the site.
 		frappe.db.commit()  # nosemgrep
