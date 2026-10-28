@@ -17,3 +17,16 @@ def make_role_user(role: str) -> str:
 		user.append("roles", {"role": role})
 		user.insert(ignore_permissions=True)
 	return email
+
+
+def api_token(user: str) -> str:
+	"""Give `user` an API key and return the `Authorization` header that signs HTTP tests in as them.
+
+	Use this rather than a `sid` in the URL: Frappe ignores a query-string sid on requests with a JSON
+	body, which quietly turns them into guest requests (#35). Commit before the requests run.
+	"""
+	doc = frappe.get_doc("User", user)
+	doc.api_key, secret = frappe.generate_hash(length=15), frappe.generate_hash(length=15)
+	doc.api_secret = secret
+	doc.save(ignore_permissions=True)
+	return f"token {doc.api_key}:{secret}"

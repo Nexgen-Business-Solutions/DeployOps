@@ -9,6 +9,7 @@ from deployops.roles import ADMINISTRATOR, MANAGER, SUPERVISOR, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_checklists import ChecklistTestCase
+from deployops.tests.utils import api_token
 from deployops.workflow import job_workflow
 
 JOB = "DeployOps Job"
@@ -107,15 +108,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 			cls.customer, [{"item_code": cls.item, "serial_and_batch_bundle": bundle}]
 		).name
 
-		# API keys, not a sid parameter: Frappe ignores a query-string sid on requests with a JSON body,
-		# which would quietly turn every write test into a guest test.
-		cls.tokens = {}
-		for key, user in cls.users.items():
-			doc = frappe.get_doc("User", user)
-			doc.api_key, secret = frappe.generate_hash(length=15), frappe.generate_hash(length=15)
-			doc.api_secret = secret
-			doc.save(ignore_permissions=True)
-			cls.tokens[key] = f"token {doc.api_key}:{secret}"
+		cls.tokens = {key: api_token(user) for key, user in cls.users.items()}
 		frappe.db.commit()  # nosemgrep
 		cls.client = get_test_client(use_cookies=False)
 
