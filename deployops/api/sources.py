@@ -1,7 +1,8 @@
 """ERPNext source lookups for Desk and the React frontend
 
 Any user with a DeployOps role may call these; guests and users without a DeployOps role may not.
-Results are limited to the equipment in the caller's access profile (Admin is unrestricted).
+Results are limited to the equipment in the caller's access profile (Admin is unrestricted) and
+to the companies allowed by the caller's Company user permissions, if any.
 """
 
 import frappe
@@ -9,6 +10,7 @@ from frappe import _
 
 from deployops.integrations import erpnext_sources
 from deployops.roles import ALL_ROLES
+from deployops.security.company_access import allowed_companies
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
 
 MAX_SEARCH_RESULTS = 50
@@ -62,6 +64,9 @@ def search_sources(doctype: str, txt: str = "", company: str | None = None, limi
 	filters = {"docstatus": ["!=", 2]}
 	if company:
 		filters["company"] = company
+	companies = allowed_companies(doctype)
+	if companies is not None:
+		filters["company"] = ["in", list(companies & {company} if company else companies) or [""]]
 	or_filters = {"name": ["like", f"%{txt}%"], customer_field: ["like", f"%{txt}%"]} if txt else None
 
 	results = []

@@ -15,7 +15,7 @@
 It replaces external Jotform checklists with **native Frappe DocTypes** linked directly to existing ERPNext records: Customer, Item, Serial No, Sales Order, Delivery Note, Subscription, Maintenance Schedule and Maintenance Visit. Technicians work from verified customer, product and serial data instead of retyping it. Every checklist, photo, signature and decision is traceable to the physical device and the business document it came from.
 
 DeployOps has two user interfaces on the same site:
-- a **React frontend** served at `/`, for day-to-day operational work;
+- a **React frontend** served at `/deployops`, for day-to-day operational work;
 - **Frappe Desk** at `/desk`, for administration and configuration.
 
 Both read and write the same DocTypes through Frappe's server-side permissions.
@@ -75,7 +75,7 @@ DeployOps centralises the technical lifecycle of equipment such as **Cashmatic**
 │                        DeployOps                              │
 │                                                               │
 │  Jobs & per-device lines      Equipment access profiles       │
-│  Serial allocation history    Versioned native checklists     │
+│  Serial allocation history    Native checklist DocTypes       │
 │  Workflow & approvals         Evidence, signatures, reports   │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -138,7 +138,7 @@ Maintenance Visit (and Maintenance Schedule where present)
 ┌──────────────────────────────┐   ┌───────────────────────────────┐
 │   React frontend  ( / )      │   │   Frappe Desk  ( /desk )      │
 │ React 19 · TypeScript · Vite │   │ DocType forms · list views    │
-│ frappe-react-sdk             │   │ print formats · admin/config  │
+│ Tailwind 4 · React Router    │   │ print formats · admin/config  │
 └──────────────┬───────────────┘   └───────────────┬───────────────┘
                │  /api (session + CSRF)            │
 ┌──────────────▼───────────────────────────────────▼───────────────┐
@@ -165,8 +165,8 @@ These are **candidates**. Final schemas are decided in #18 and #20 before they a
 | DeployOps Job Device | One Item / Serial No per line, with its own installation status | #16, #18 |
 | Equipment Category & Access Profile | Categories and models a user is authorised for | #10–#12 |
 | Equipment Allocation / Event | Reserved, deployed, returned and swapped history, and conflict prevention | #14, #15 |
-| Checklist Template / Item | Versioned checklist definition with typed fields and rules | #20 |
-| Checklist Response / Result | Answers, evidence, signatures, actor and timestamp, linked to template version, job and device | #21 |
+| Five checklist DocTypes | One native, submittable DocType per checklist (Cashmatic and BellaBot pre-installation and installation, Cashmatic maintenance), linked to the job and machine | #20, #41 |
+| Checklist child tables | Photos, files, opening hours, maintenance tasks, trainees, actions | #21, #41 |
 
 ### ERPNext v16 facts the design relies on
 Verified in [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md).
@@ -183,28 +183,28 @@ The operational UI is a React single-page app in [`frontend/`](frontend/). It wa
 
 | Item | Value |
 |---|---|
-| Stack | React 19, TypeScript 6, Vite 8, `frappe-react-sdk`, oxlint |
+| Stack | React 19, TypeScript 6, Vite 8, Tailwind 4, React Router 7, oxlint, Vitest |
 | Source | `frontend/src/` |
 | Served at | `/` on the site, e.g. `http://deployops.local:8004/` |
 | Desk | `/desk` (`/app` redirects there) |
-| Build output | `deployops/public/frontend/` and `deployops/www/frontend.html` (generated, git-ignored) |
-| Page controller | `deployops/www/frontend.py` (login check, CSRF token, boot data) |
+| Build output | `deployops/public/frontend/` and `deployops/www/deployops.html` (generated, git-ignored) |
+| Page controller | `deployops/www/deployops.py` (CSRF token only; no data) |
+| Technician API | `deployops/api/technician.py` |
+| Design | [`docs/FRONTEND.md`](docs/FRONTEND.md) |
 
 ### URL routing
 Set in `deployops/hooks.py`:
 
 | URL | Served by |
 |---|---|
-| `/` | React (`home_page = "frontend"`) |
-| `/<anything>` | React (catch-all `website_route_rules`) |
-| `/login`, `/update-password`, `/printview`, `/message` | Frappe (explicit rules listed before the catch-all) |
-| `/desk/...`, `/app/...` | Frappe Desk |
-| `/api/...`, `/assets/...`, `/files/...`, `/private/...` | Frappe (never routed to React) |
+| `/deployops` | React (the `www/deployops` page) |
+| `/deployops/<anything>` | React (`website_route_rules`); client-side routes such as `/deployops/job/<name>` |
+| Everything else (`/`, `/login`, `/desk/...`, `/api/...`, other apps' pages) | Frappe and the other apps on the site; DeployOps never claims them |
 
-If another Frappe website page has to stay reachable, add an exact rule for it **above** the catch-all. Otherwise React serves it.
+DeployOps does not set `home_page` and has no catch-all route, so other apps can have their own URLs on the same site.
 
 ### Authentication
-- `frontend.py` redirects guests to `/login?redirect-to=<requested path>`. The React page is never served to a user who isn't logged in.
+- Guests get the empty app shell, which shows the DeployOps login screen. The shell holds no data; every API refuses guests.
 - Every request to `/api` runs with the user's session and CSRF token, so DocType permissions, permission hooks and equipment/job restrictions apply exactly as in Desk.
 
 ### Commands
@@ -213,8 +213,10 @@ If another Frappe website page has to stay reachable, add an exact rule for it *
 yarn install                 # installs root and frontend/ dependencies (postinstall)
 yarn dev                     # Vite dev server on :8080 with hot reload
 yarn build                   # production build into deployops/public/frontend
+cd frontend && yarn test     # Vitest unit tests
+cd frontend && yarn typecheck && yarn lint
 ```
-- **Dev server:** `bench start` must be running. Open `http://deployops.local:8080`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
+- **Dev server:** `bench start` must be running. Open `http://deployops.local:8080/deployops`. The dev server proxies `/app`, `/api`, `/assets`, `/files` and `/private` to the bench web server, on the port read from `sites/common_site_config.json` (`webserver_port`).
 - **Production build:** `bench build` (or `bench build --app deployops`) also runs `yarn build` for this app, because the root `package.json` has a `build` script.
 
 ### Frontend rules
@@ -392,9 +394,9 @@ cd apps/deployops && yarn dev                 # React dev server on :8080 (needs
 
 | URL | What |
 |---|---|
-| `http://deployops.local:8004/` | Built React frontend, served by Frappe |
+| `http://deployops.local:8004/deployops` | Built React frontend, served by Frappe |
 | `http://deployops.local:8004/desk` | Frappe Desk |
-| `http://deployops.local:8080/` | React dev server with hot reload |
+| `http://deployops.local:8080/deployops` | React dev server with hot reload |
 
 ### Schema and data rules
 - DocTypes are defined as JSON in this app. **Do not** create them with Customize Form or through the UI.
@@ -408,6 +410,7 @@ bench --site <site> backup --with-files       # before any migrate that runs a n
 git checkout <previous-commit> && bench --site <site> migrate      # code rollback
 bench --site <site> restore <path-to-sql.gz>  # data rollback
 ```
+A code rollback does not undo database changes made by the newer release (added columns, patched data, new records). Undoing those needs a restore from a backup taken before the migrate; see `docs/COMPATIBILITY_REPORT.md` §5.4.
 Do **not** use `bench remove-app` as a rollback. It deletes the DeployOps DocTypes and their data.
 
 ---
@@ -421,9 +424,15 @@ bench --site deployops.local run-tests --app deployops
 
 Uncommitted test data is rolled back at the end of each test class. HTTP tests commit their users and records and delete them again in cleanup, so no test data remains on the site.
 
+One exception: before the tests start, `before_tests` (`deployops/tests/bootstrap.py`) creates base records **if they are missing** and commits them, so they stay: UOM "Nos", Item Groups "All Item Groups" and "Products", and a default Address Template. A configured site like `deployops.local` already has them, so nothing changes there. CI runs on a throwaway site.
+
 - Tests create their own anonymised data: company, serialised items, customers, orders, deliveries, subscriptions and maintenance visits.
 - Permission tests always include a user **without** the right role, profile or assignment.
-- CI is defined in `.github/workflows/` and runs on a fresh v16 bench with ERPNext.
+- CI is defined in `.github/workflows/` and runs on a fresh v16 bench with ERPNext:
+  - **Frontend:** type check, lint, unit tests and the production build, without the backend.
+  - **Server:** fresh install of ERPNext and DeployOps, the test suite, then a second `migrate`, and an uninstall and reinstall of DeployOps.
+  - A newer push to a pull request cancels its older run; every push to `main` runs to the end.
+- Not covered by CI: browser tests of Desk and the technician app (run by hand, see `docs/RELEASE_TEST_MATRIX.md` §4).
 
 ---
 
@@ -496,6 +505,7 @@ deployops/                       ← repository root (apps/deployops)
 
 | Document | Purpose |
 |---|---|
+| [`docs/CASHMATIC_PREINSTALLATION_QUICKSTART.md`](docs/CASHMATIC_PREINSTALLATION_QUICKSTART.md) | Short setup-to-completion guide for Cashmatic pre-installation |
 | [`ROADMAP.md`](ROADMAP.md) | Mission, governance, phases and sequencing rules |
 | [`docs/FUNCTIONAL_SPEC.md`](docs/FUNCTIONAL_SPEC.md) | Business journeys, actors, workflow, UAT scenarios |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Data ownership, candidate objects, permissions, lifecycle |
@@ -503,6 +513,11 @@ deployops/                       ← repository root (apps/deployops)
 | [`docs/COMPATIBILITY_REPORT.md`](docs/COMPATIBILITY_REPORT.md) | Verified versions, environments, ERPNext v16 findings, risks |
 | [`docs/PERMISSION_MATRIX.md`](docs/PERMISSION_MATRIX.md) | Roles, role × object rights, ERPNext exceptions, security tests, UAT steps |
 | [`docs/ERPNEXT_SOURCES.md`](docs/ERPNEXT_SOURCES.md) | Usable ERPNext sources, lookup snapshot, source API and its access rules |
+| [`docs/JOBS.md`](docs/JOBS.md) | Job data model, creation from a source, rules, permissions, tests, UAT steps |
+| [`docs/ALLOCATIONS.md`](docs/ALLOCATIONS.md) | Equipment allocation (rental and sale), collision protection, movement log, serial history |
+| [`docs/RELEASE_TEST_MATRIX.md`](docs/RELEASE_TEST_MATRIX.md) | Release test matrix (#44): every release scenario mapped to its automated and manual tests, known gaps, rollout approval |
+| [`docs/DELIVERY_HANDOFF.md`](docs/DELIVERY_HANDOFF.md) | Delivery Note handoff to installation jobs (#16): partial deliveries, returns, cancellations |
+| [`docs/CHECKLIST_ARCHITECTURE.md`](docs/CHECKLIST_ARCHITECTURE.md) | Checklist architecture (#20): one DocType per checklist, rules, mapping notes |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding assistants |
 
 Where these documents disagree, work stops until the product owner decides.
@@ -519,8 +534,7 @@ Where these documents disagree, work stops until the product owner decides.
 | Missing assets or stale UI | `bench build --app deployops` then `bench --site <site> clear-cache` |
 | Schema changes not applied | `bench --site <site> migrate` |
 | PDF printing fails | Install wkhtmltopdf 0.12.6 (patched Qt) or switch the Print Format to the Chrome generator |
-| `/` shows a blank page or 404 | The frontend was never built: `bench build --app deployops` (or `yarn build`) |
-| A Frappe page (e.g. `/me`) opens the React app | Add an exact rule for it above the catch-all in `website_route_rules`, then `bench --site <site> clear-cache` |
+| `/deployops` shows a blank page or 404 | The frontend was never built: `bench build --app deployops` (or `yarn build`) |
 | Route changes in `hooks.py` have no effect | `bench --site <site> clear-cache`. Route rules are cached |
 | `yarn dev` API calls fail | `bench start` must be running; the proxy reads `webserver_port` from `sites/common_site_config.json` |
 

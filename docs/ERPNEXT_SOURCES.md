@@ -43,13 +43,15 @@ DeployOps **reads** ERPNext records and never writes them. DeployOps roles have 
 **Access rules:**
 - **Who:** any user with a DeployOps role. Guests and users without a DeployOps role are refused (403).
 - **Which equipment:** lines are limited to the equipment in the caller's **access profile** (#36). A source with none of the caller's equipment is refused. DeployOps Administrators are unrestricted.
-- **Subscriptions** are not refused for lack of equipment, because they carry none.
+- **Subscriptions** are not refused for lack of equipment, because they carry none. So any DeployOps role, Technicians included, can look up the customer, contact, address and plans of any Subscription in their companies.
+- **Which companies:** if the caller has Frappe **User Permissions on Company** (for all DocTypes, or for that source's DocType), they only find and use sources in those companies: search, summary, job details, serial lookups (`get_serial`, whether or not a company is passed) and job or allocation creation. Without a Company user permission, every company is allowed. This applies to everyone, Admin included. (Decided 2026-10-20.)
+- Any DeployOps user can still search subscriptions and see their customer and site. That's the #37 decision, reconfirmed on 2026-10-20.
 
 ## 4. Tests
 
 | Test file | What it proves |
 |---|---|
-| `deployops/tests/test_erpnext_sources.py` | Every source type in valid and invalid states; company boundary; unknown type and missing record; snapshot customer, contact, address and lines; fallback to the Customer's primary contact and address; serials from the bundle, from the text field, and from the text field when the bundle is cancelled; several machines on one Delivery Note; a Subscription never yields a device; serial checks (item, company, missing); the API needs a DeployOps role, filters lines by profile, refuses sources with none of the user's equipment, restricts Supervisors too, gives Admin every line, allows Subscriptions; search returns only usable and authorised sources; `get_serial` respects equipment |
+| `deployops/tests/test_erpnext_sources.py` | Every source type in valid and invalid states; company boundary; unknown type and missing record; snapshot customer, contact, address and lines; fallback to the Customer's primary contact and address; serials from the bundle, from the text field, and from the text field when the bundle is cancelled; several machines on one Delivery Note; a Subscription never yields a device; serial checks (item, company, missing); the API needs a DeployOps role, filters lines by profile, refuses sources with none of the user's equipment, restricts Supervisors too, gives Admin every line, allows Subscriptions; search returns only usable and authorised sources; Company user permissions limit search, summary and `get_serial`, with or without a company argument (and a restriction for another DocType does not); `get_serial` respects equipment |
 | `deployops/tests/test_security_negative.py` | Guests get 403 on all three API methods over HTTP |
 
 The tests write ERPNext documents straight to the database in the exact state under test (`tests/erpnext_fixtures.py`). DeployOps only reads them, so the tests don't depend on the site's accounting or stock setup and run on a fresh CI site.

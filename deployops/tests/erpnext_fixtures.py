@@ -24,6 +24,22 @@ def db_insert(doc_dict: dict, docstatus: int = 0) -> "frappe.model.document.Docu
 	return doc
 
 
+def make_company(name: str = COMPANY) -> str:
+	"""A bare Company row so Link validation passes; no accounts are needed because nothing posts."""
+	if not frappe.db.exists("Company", name):
+		db_insert(
+			{
+				"doctype": "Company",
+				"name": name,
+				"company_name": name,
+				"abbr": "".join(word[0] for word in name.split() if word[0].isalnum())[:5],
+				"default_currency": "XAF",
+				"country": "Cameroon",
+			}
+		)
+	return name
+
+
 def make_item(code: str, serialized: bool = True) -> str:
 	if not frappe.db.exists("Item", code):
 		db_insert(
@@ -41,6 +57,8 @@ def make_item(code: str, serialized: bool = True) -> str:
 
 
 def make_customer(name: str, contact: str | None = None, address: str | None = None) -> str:
+	if frappe.db.exists("Customer", name):
+		return name
 	db_insert(
 		{
 			"doctype": "Customer",
@@ -81,7 +99,8 @@ def make_address(name: str) -> str:
 	return name
 
 
-def make_serial(serial_no: str, item_code: str, company: str = COMPANY) -> str:
+def make_serial(serial_no: str, item_code: str, company: str = COMPANY, customer: str | None = None) -> str:
+	"""In stock by default (Active, in a warehouse); delivered when a customer is given."""
 	db_insert(
 		{
 			"doctype": "Serial No",
@@ -89,6 +108,9 @@ def make_serial(serial_no: str, item_code: str, company: str = COMPANY) -> str:
 			"serial_no": serial_no,
 			"item_code": item_code,
 			"company": company,
+			"status": "Delivered" if customer else "Active",
+			"warehouse": None if customer else "_Test Stores",
+			"customer": customer,
 		}
 	)
 	return serial_no
@@ -178,3 +200,43 @@ def make_maintenance_schedule(customer: str, rows: list[dict], docstatus: int = 
 		},
 		docstatus=docstatus,
 	)
+
+
+def purge(company: str = COMPANY, names: dict | None = None):
+	"""Remove committed fixtures (HTTP tests must commit). Submitted rows are deleted directly.
+
+	names: extra {doctype: [names]} to delete, e.g. Items, Users, Jobs, Files.
+	"""
+	children = {
+		"Sales Order": ["Sales Order Item"],
+		"Delivery Note": ["Delivery Note Item"],
+		"Subscription": ["Subscription Plan Detail"],
+		"Maintenance Visit": ["Maintenance Visit Purpose"],
+		"Maintenance Schedule": ["Maintenance Schedule Item"],
+		"Serial and Batch Bundle": ["Serial and Batch Entry"],
+	}
+	for parent, child_tables in children.items():
+		parents = frappe.get_all(parent, filters={"company": company}, pluck="name")
+		if parents:
+			for child in child_tables:
+				frappe.db.delete(child, {"parent": ["in", parents]})
+			frappe.db.delete(parent, {"name": ["in", parents]})
+	frappe.db.delete("Serial No", {"company": company})
+
+	# Try every delete, so one failure cannot leave the rest behind; report failures at the end.
+	failures = []
+	for doctype, doc_names in (names or {}).items():
+		for name in doc_names:
+			if not frappe.db.exists(doctype, name):
+				continue
+			try:
+				# File's on_trash removes the stored file, so it must run for Files.
+				frappe.delete_doc(
+					doctype, name, force=True, ignore_permissions=True, ignore_on_trash=doctype != "File"
+				)
+			except Exception as e:
+				failures.append(f"{doctype} {name}: {e}")
+	if frappe.db.exists("Company", company):
+		frappe.db.delete("Company", {"name": company})
+	if failures:
+		raise AssertionError("Fixture cleanup failed:\n" + "\n".join(failures))

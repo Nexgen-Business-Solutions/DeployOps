@@ -20,6 +20,8 @@
 6. Complete typed field mapping table and obtain product-owner sign-off before coding each checklist; this document is intentionally **not** a claim that every original Jotform field/condition is verified.
 
 ## 1. Cashmatic Pre-installation — detailed PDF-derived inventory
+**Field mapping against the original Jotform:** [CASHMATIC_PREINSTALLATION_MAPPING.md](CASHMATIC_PREINSTALLATION_MAPPING.md) (#40, awaiting product-owner sign-off). It supersedes the proposals below where they differ.
+
 **Source:** Completed pre-visit PDF, pages 1-5. Document says to complete checklist **one week before installation**. Device example Self Pay 460; activation and software/firmware information was recorded before installation. The PDF displays checklist text, sample fields and audit trail, but **not** definitive builder-only mandatory/conditional rules.
 
 ### A. Shared documents before visit (PDF p.1)
@@ -124,6 +126,6 @@ Use existing ERPNext Maintenance Visit/Schedule rather than an independently inv
 ## 7. Outstanding questions
 - Source builder exports or sample completed PDFs for the other four forms.
 - Exact conditional rules and mandatory settings on all five Jotforms.
-- Reusable checklist template design vs dedicated Frappe native DocTypes (#20).
+- ~~Reusable checklist template design vs dedicated Frappe native DocTypes (#20).~~ Decided 2026-10-20: one native DocType per checklist. The field lists read from the live Jotforms and the differences from them are in [CHECKLIST_ARCHITECTURE.md](CHECKLIST_ARCHITECTURE.md) §5.
 - What evidence is mandatory for each risk-critical step.
 - Signature and approval behavior, override rights and customer-facing report format.

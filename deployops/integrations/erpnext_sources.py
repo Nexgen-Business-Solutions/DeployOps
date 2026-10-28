@@ -10,6 +10,8 @@ from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
 from frappe import _
 from frappe.contacts.doctype.address.address import render_address
 
+from deployops.security.company_access import allowed_companies
+
 SALES_ORDER = "Sales Order"
 DELIVERY_NOTE = "Delivery Note"
 SUBSCRIPTION = "Subscription"
@@ -31,6 +33,13 @@ def validate_source(doctype: str, name: str, company: str | None = None):
 	reason = state_problem(doc)
 	if reason:
 		frappe.throw(_("{0} {1} cannot be used: {2}").format(_(doctype), name, reason))
+
+	companies = allowed_companies(doctype)
+	if companies is not None and doc.company not in companies:
+		frappe.throw(
+			_("You are not allowed to use sources of company {0}.").format(doc.company),
+			frappe.PermissionError,
+		)
 
 	if company and doc.company != company:
 		frappe.throw(
@@ -115,6 +124,21 @@ def get_row_serials(row) -> list[str]:
 	return get_serial_nos(row.get("serial_no") or "")
 
 
+def delivery_orders(delivery_note: str) -> set[str]:
+	"""Sales orders a Delivery Note delivers against."""
+	return set(
+		frappe.get_all(
+			"Delivery Note Item",
+			filters={
+				"parent": delivery_note,
+				"parenttype": DELIVERY_NOTE,
+				"against_sales_order": ["is", "set"],
+			},
+			pluck="against_sales_order",
+		)
+	)
+
+
 def get_contact(doc) -> dict | None:
 	name = doc.get("contact_person")
 	customer = get_customer(doc)
@@ -159,7 +183,11 @@ def get_source_snapshot(doc) -> dict:
 
 
 def validate_serial(serial_no: str, item_code: str | None = None, company: str | None = None):
-	"""Return the Serial No if it exists, matches the Item and belongs to the company."""
+	"""Return the Serial No if it exists, matches the Item and belongs to the company.
+
+	The caller's Company user permissions apply whatever `company` is passed (or not): a serial of a
+	company outside them is refused, like a source document (#13 review).
+	"""
 	if not frappe.db.exists("Serial No", serial_no):
 		frappe.throw(_("Serial No {0} does not exist.").format(serial_no), frappe.DoesNotExistError)
 
@@ -182,9 +210,49 @@ def validate_serial(serial_no: str, item_code: str | None = None, company: str |
 		frappe.throw(
 			_("Serial No {0} belongs to Item {1}, not {2}.").format(serial_no, serial.item_code, item_code)
 		)
+	companies = allowed_companies("Serial No")
+	if companies is not None and serial.company not in companies:
+		frappe.throw(
+			_("You are not allowed to use serials of company {0}.").format(serial.company or _("(none)")),
+			frappe.PermissionError,
+		)
 	if company and serial.company and serial.company != company:
 		frappe.throw(
 			_("Serial No {0} belongs to company {1}, not {2}.").format(serial_no, serial.company, company)
 		)
 
 	return serial
+
+
+def get_delivered_serials(sales_order: str) -> dict[str, list[str]]:
+	"""Serials delivered against a Sales Order, per Item, minus any returned since.
+
+	Read from submitted Delivery Notes made from the order; returns are subtracted.
+	"""
+	notes = frappe.get_all(
+		"Delivery Note Item",
+		filters={"against_sales_order": sales_order, "docstatus": 1},
+		pluck="parent",
+		distinct=True,
+	)
+	notes = frappe.get_all(
+		"Delivery Note", filters={"name": ["in", notes or [""]], "is_return": 0}, pluck="name"
+	)
+	if not notes:
+		return {}
+
+	returned = set()
+	for name in frappe.get_all(
+		"Delivery Note",
+		filters={"return_against": ["in", notes], "is_return": 1, "docstatus": 1},
+		pluck="name",
+	):
+		for line in get_equipment_lines(frappe.get_doc(DELIVERY_NOTE, name)):
+			returned.update(line["serial_nos"])
+
+	delivered: dict[str, list[str]] = {}
+	for name in notes:
+		for line in get_equipment_lines(frappe.get_doc(DELIVERY_NOTE, name)):
+			serials = [s for s in line["serial_nos"] if s not in returned]
+			delivered.setdefault(line["item_code"], []).extend(serials)
+	return delivered

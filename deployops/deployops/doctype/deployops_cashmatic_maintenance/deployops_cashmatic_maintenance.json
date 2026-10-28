@@ -1,0 +1,405 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-20 12:00:00.000000",
+ "description": "Maintenance of the four main internal components: banknote recycler / NVS200, cashbox, Pelicano coin acceptor and Smart Hopper. Source: https://form.jotform.com/253383306590256 (field mapping pending #40 sign-off).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "job",
+  "job_device",
+  "customer_name",
+  "site_address",
+  "column_break_header",
+  "item_code",
+  "item_name",
+  "serial_no",
+  "technician",
+  "company",
+  "form_version",
+  "prepared_by_section",
+  "maintenance_date",
+  "technician_position",
+  "prepared_for_section",
+  "contact_name",
+  "contact_phone",
+  "contact_email",
+  "contact_position",
+  "tasks_section",
+  "cashbox_tasks",
+  "recycler_tasks",
+  "pelicano_tasks",
+  "hopper_tasks",
+  "damage_identification_section",
+  "damage_wear",
+  "damage_misuse",
+  "damage_maintenance",
+  "damage_liquid",
+  "damage_electrical",
+  "damage_tampering",
+  "damage_impact",
+  "damage_relocation",
+  "maintenance_report_section",
+  "maintenance_report",
+  "technician_sign_off_section",
+  "technician_signed_on",
+  "technician_signature",
+  "customer_sign_off_section",
+  "customer_signatory",
+  "customer_email",
+  "customer_signed_on",
+  "customer_signature",
+  "snapshot_section",
+  "signatures",
+  "submission_snapshot",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "DO-CMT-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DO-CMT-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job",
+   "options": "DeployOps Job",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "job_device",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Job machine row",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Machine",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Machine name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Serial number",
+   "options": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "description": "Version of this checklist's questions when the form was started.",
+   "fieldname": "form_version",
+   "fieldtype": "Int",
+   "label": "Form version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "prepared_by_section",
+   "fieldtype": "Section Break",
+   "label": "Prepared by"
+  },
+  {
+   "fieldname": "maintenance_date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "technician_position",
+   "fieldtype": "Data",
+   "label": "Technician position"
+  },
+  {
+   "fieldname": "prepared_for_section",
+   "fieldtype": "Section Break",
+   "label": "Prepared for"
+  },
+  {
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "contact_position",
+   "fieldtype": "Data",
+   "label": "Position"
+  },
+  {
+   "description": "Manuals: NVS200 (recycler and cashbox), Pelicano, Smart Hopper.",
+   "fieldname": "tasks_section",
+   "fieldtype": "Section Break",
+   "label": "Tasks"
+  },
+  {
+   "fieldname": "cashbox_tasks",
+   "fieldtype": "Table",
+   "label": "A. Cashbox",
+   "options": "DeployOps Checklist Maintenance Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recycler_tasks",
+   "fieldtype": "Table",
+   "label": "B. Banknote recycler (NVS200)",
+   "options": "DeployOps Checklist Maintenance Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pelicano_tasks",
+   "fieldtype": "Table",
+   "label": "C. Pelicano",
+   "options": "DeployOps Checklist Maintenance Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hopper_tasks",
+   "fieldtype": "Table",
+   "label": "D. Smart Hopper",
+   "options": "DeployOps Checklist Maintenance Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "damage_identification_section",
+   "fieldtype": "Section Break",
+   "label": "Damage identification"
+  },
+  {
+   "fieldname": "damage_wear",
+   "fieldtype": "Small Text",
+   "label": "Normal wear and tear"
+  },
+  {
+   "fieldname": "damage_misuse",
+   "fieldtype": "Small Text",
+   "label": "Misuse or improper handling"
+  },
+  {
+   "fieldname": "damage_maintenance",
+   "fieldtype": "Small Text",
+   "label": "Lack of proper maintenance"
+  },
+  {
+   "fieldname": "damage_liquid",
+   "fieldtype": "Small Text",
+   "label": "Liquid or environmental damage"
+  },
+  {
+   "fieldname": "damage_electrical",
+   "fieldtype": "Small Text",
+   "label": "Electrical damage"
+  },
+  {
+   "fieldname": "damage_tampering",
+   "fieldtype": "Small Text",
+   "label": "Unauthorized service or tampering"
+  },
+  {
+   "fieldname": "damage_impact",
+   "fieldtype": "Small Text",
+   "label": "Physical impact or external damage"
+  },
+  {
+   "fieldname": "damage_relocation",
+   "fieldtype": "Small Text",
+   "label": "Unreported relocation damage"
+  },
+  {
+   "fieldname": "maintenance_report_section",
+   "fieldtype": "Section Break",
+   "label": "Maintenance report"
+  },
+  {
+   "fieldname": "maintenance_report",
+   "fieldtype": "Text",
+   "label": "Maintenance report"
+  },
+  {
+   "fieldname": "technician_sign_off_section",
+   "fieldtype": "Section Break",
+   "label": "Technician sign-off"
+  },
+  {
+   "fieldname": "technician_signed_on",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "technician_signature",
+   "fieldtype": "Signature",
+   "label": "Technician signature"
+  },
+  {
+   "fieldname": "customer_sign_off_section",
+   "fieldtype": "Section Break",
+   "label": "Customer sign-off"
+  },
+  {
+   "fieldname": "customer_signatory",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_signed_on",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_signature",
+   "fieldtype": "Signature",
+   "label": "Customer signature"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Submitted snapshot"
+  },
+  {
+   "description": "Who signed each signature and when; recorded by the system.",
+   "fieldname": "signatures",
+   "fieldtype": "Table",
+   "label": "Signature record",
+   "no_copy": 1,
+   "options": "DeployOps Checklist Signature",
+   "read_only": 1
+  },
+  {
+   "description": "Every question and answer exactly as submitted, kept even if the form changes later.",
+   "fieldname": "submission_snapshot",
+   "fieldtype": "JSON",
+   "label": "Submission snapshot",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "DeployOps Cashmatic Maintenance",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "list",
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Cashmatic Maintenance",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Technician",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Supervisor"
+  },
+  {
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "DeployOps Administrator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}
