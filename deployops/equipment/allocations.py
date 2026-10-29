@@ -94,6 +94,7 @@ def reserve(
 			**extra,
 		}
 	)
+	doc.flags.from_allocation_actions = True  # lets reserved_by_job / replaces through
 	doc.insert(ignore_permissions=system)
 	return doc
 
