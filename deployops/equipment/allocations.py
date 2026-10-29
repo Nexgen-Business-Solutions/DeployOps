@@ -301,13 +301,18 @@ def get_serial_history(serial_no: str, user: str | None = None) -> list[dict]:
 
 	Allocations and jobs are listed only when the user may read them (#12 visibility), so the
 	history never shows another customer's job or allocation to someone outside it.
+	ERPNext stock movements are shown to Supervisors, Managers and Administrators only, not
+	Technicians, because warehouse and voucher references are outside their operational scope.
 	"""
+	from deployops.security.job_permissions import get_scope
+
 	user = user or frappe.session.user
 	rows = []
 
-	entry = frappe.qb.DocType("Serial and Batch Entry")
-	bundle = frappe.qb.DocType("Serial and Batch Bundle")
-	for move in (
+	if get_scope(user) != "assigned":  # stock moves for Supervisors+ only, not Technicians
+		entry = frappe.qb.DocType("Serial and Batch Entry")
+		bundle = frappe.qb.DocType("Serial and Batch Bundle")
+		for move in (
 		frappe.qb.from_(entry)
 		.join(bundle)
 		.on(entry.parent == bundle.name)
@@ -322,17 +327,17 @@ def get_serial_history(serial_no: str, user: str | None = None) -> list[dict]:
 		.where(bundle.is_cancelled == 0)
 		.where(bundle.docstatus == 1)
 		.run(as_dict=True)
-	):
-		rows.append(
-			{
-				"when": move.posting_datetime,
-				"source": "ERPNext",
-				"event": _("Stock {0}").format(_(move.type_of_transaction)),
-				"reference_doctype": move.voucher_type,
-				"reference_name": move.voucher_no,
-				"detail": move.warehouse,
-			}
-		)
+		):
+			rows.append(
+				{
+					"when": move.posting_datetime,
+					"source": "ERPNext",
+					"event": _("Stock {0}").format(_(move.type_of_transaction)),
+					"reference_doctype": move.voucher_type,
+					"reference_name": move.voucher_no,
+					"detail": move.warehouse,
+				}
+			)
 
 	for name in frappe.get_all(ALLOCATION, filters={"serial_no": serial_no}, pluck="name"):
 		allocation = frappe.get_doc(ALLOCATION, name)
