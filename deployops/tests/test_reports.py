@@ -104,6 +104,13 @@ class TestReportContent(ReportTestCase):
 		self.assertIn("SW 3.2.1", text)
 		self.assertIn("Customer copy", text)
 
+	def test_pdf_renderer_fetches_only_embedded_data(self):
+		fetcher = report.embedded_only_fetcher()
+		for url in ("https://example.com/logo.png", "file:///etc/passwd", "/private/files/x.png"):
+			with self.subTest(url=url), self.assertRaises(ValueError):
+				fetcher.fetch(url)
+		self.assertTrue(fetcher.fetch("data:text/plain;base64,aGk="))
+
 	def test_desk_print_formats_render_the_same_report(self):
 		doc = self.submitted()
 		for print_format, kind in (
