@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+import frappe
+
 from deployops.checklists.form import ChecklistForm
 
 
@@ -59,3 +61,14 @@ class DeployOpsCashmaticMaintenance(ChecklistForm):
 		),
 	}
 	INTRO = "Maintenance of the four main internal components: banknote recycler / NVS200, cashbox, Pelicano coin acceptor and Smart Hopper."
+
+	def before_insert(self):
+		super().before_insert()
+		job = frappe.get_doc("DeployOps Job", self.job)
+		if job.source_doctype == "Maintenance Visit":
+			self.maintenance_visit = job.source_name
+			self.maintenance_schedule = frappe.db.get_value(
+				"Maintenance Visit", job.source_name, "maintenance_schedule"
+			)
+		elif job.source_doctype == "Maintenance Schedule":
+			self.maintenance_schedule = job.source_name
