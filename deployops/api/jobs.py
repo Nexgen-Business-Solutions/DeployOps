@@ -7,6 +7,7 @@ from deployops.api.sources import require_deployops_role, search_sources, visibl
 from deployops.deployops.doctype.deployops_job.deployops_job import devices_from_source, serial_choices
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
+from deployops.security.company_access import allowed_companies
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
 from deployops.workflow import job_workflow
 
@@ -107,23 +108,22 @@ def serial_link_query(
 		)
 
 	conditions = {"item_code": item_code, "name": ["like", f"%{txt or ''}%"]}
+	# Only serials of the caller's companies (Company user permissions), whatever the client sends.
+	companies = allowed_companies("Serial No")
+	if filters.get("company"):
+		companies = {filters["company"]} & companies if companies is not None else {filters["company"]}
+	if companies is not None:
+		conditions["company"] = ["in", list(companies) or [""]]
 	if choices is not None:
 		names = [s for s in choices if (txt or "").lower() in s.lower()]
 		if stock_units:
 			names += frappe.get_all(
 				"Serial No",
-				filters={
-					**conditions,
-					"status": "Active",
-					"warehouse": ["is", "set"],
-					**({"company": filters["company"]} if filters.get("company") else {}),
-				},
+				filters={**conditions, "status": "Active", "warehouse": ["is", "set"]},
 				pluck="name",
 			)
 		conditions["name"] = ["in", names or [""]]
 	else:
-		if filters.get("company"):
-			conditions["company"] = filters["company"]
 		if filters.get("job_type") != "Maintenance":
 			conditions["status"] = "Active"
 
