@@ -7,6 +7,7 @@ from deployops.api.sources import require_deployops_role
 from deployops.equipment import allocations
 from deployops.equipment.allocations import ALLOCATION, CANCEL_ROLES, HANDLER_ROLES
 from deployops.integrations import erpnext_sources
+from deployops.security.company_access import allowed_companies
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
 
 
@@ -52,9 +53,9 @@ def get_allocation_actions(allocation: str) -> list[str]:
 @frappe.whitelist()
 def serial_history(serial_no: str) -> list[dict]:
 	require_deployops_role()
-	serial = erpnext_sources.validate_serial(serial_no)  # validates existence + Company User Permissions (#13)
-	if not is_unrestricted(frappe.session.user) and serial.item_code not in get_allowed_items():
-		frappe.throw(_("You are not authorised for equipment {0}.").format(serial.item_code), frappe.PermissionError)
+	item_code = erpnext_sources.validate_serial(serial_no).item_code  # exists, caller's companies
+	if not is_unrestricted(frappe.session.user) and item_code not in get_allowed_items():
+		frappe.throw(_("You are not authorised for equipment {0}.").format(item_code), frappe.PermissionError)
 	return allocations.get_serial_history(serial_no)
 
 
@@ -73,6 +74,9 @@ def in_stock_serial_query(
 	]
 	if filters.get("company"):
 		conditions.append(["company", "=", filters["company"]])
+	companies = allowed_companies("Serial No")  # the caller's companies, whatever the client sends
+	if companies is not None:
+		conditions.append(["company", "in", list(companies)])
 	taken = frappe.get_all(ALLOCATION, filters={"active_serial": ["is", "set"]}, pluck="active_serial")
 	if taken:
 		conditions.append(["name", "not in", taken])

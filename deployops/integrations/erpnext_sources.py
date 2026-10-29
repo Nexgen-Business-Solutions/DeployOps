@@ -30,16 +30,16 @@ def validate_source(doctype: str, name: str, company: str | None = None):
 		frappe.throw(_("{0} {1} does not exist.").format(_(doctype), name), frappe.DoesNotExistError)
 
 	doc = frappe.get_doc(doctype, name)
-	reason = state_problem(doc)
-	if reason:
-		frappe.throw(_("{0} {1} cannot be used: {2}").format(_(doctype), name, reason))
-
+	# Company scope first, so a refused user learns nothing about the document (state, company).
 	companies = allowed_companies(doctype)
 	if companies is not None and doc.company not in companies:
 		frappe.throw(
-			_("You are not allowed to use sources of company {0}.").format(doc.company),
-			frappe.PermissionError,
+			_("You are not allowed to use {0} {1}.").format(_(doctype), name), frappe.PermissionError
 		)
+
+	reason = state_problem(doc)
+	if reason:
+		frappe.throw(_("{0} {1} cannot be used: {2}").format(_(doctype), name, reason))
 
 	if company and doc.company != company:
 		frappe.throw(
@@ -183,7 +183,11 @@ def get_source_snapshot(doc) -> dict:
 
 
 def validate_serial(serial_no: str, item_code: str | None = None, company: str | None = None):
-	"""Return the Serial No if it exists, matches the Item and belongs to the company."""
+	"""Return the Serial No if it exists, matches the Item and belongs to the company.
+
+	The caller's Company user permissions apply whatever `company` is passed (or not): a serial of a
+	company outside them is refused, like a source document (#13 review).
+	"""
 	if not frappe.db.exists("Serial No", serial_no):
 		frappe.throw(_("Serial No {0} does not exist.").format(serial_no), frappe.DoesNotExistError)
 
@@ -206,6 +210,9 @@ def validate_serial(serial_no: str, item_code: str | None = None, company: str |
 		frappe.throw(
 			_("Serial No {0} belongs to Item {1}, not {2}.").format(serial_no, serial.item_code, item_code)
 		)
+	companies = allowed_companies("Serial No")
+	if companies is not None and serial.company not in companies:
+		frappe.throw(_("You are not allowed to use Serial No {0}.").format(serial_no), frappe.PermissionError)
 	if company and serial.company and serial.company != company:
 		frappe.throw(
 			_("Serial No {0} belongs to company {1}, not {2}.").format(serial_no, serial.company, company)
