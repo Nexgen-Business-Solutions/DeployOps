@@ -95,3 +95,23 @@ def form_for_device(job: str, device: str):
 		if row:
 			return doctype, row.name, row.docstatus
 	return None
+
+
+def _form_for_device_locked(job: str, device: str) -> bool:
+	"""Duplicate guard that acquires a row lock (or gap lock) before inserting.
+
+	Uses ``SELECT … FOR UPDATE`` so that two concurrent transactions that both
+	check the same job/device before either inserts will serialise on the lock,
+	preventing a TOCTOU race where both see "no checklist" and both proceed to
+	insert.  Returns ``True`` when a live (draft or submitted) checklist already
+	exists; ``False`` when the field is clear (and the gap lock is held).
+	"""
+	for doctype in FORM_DOCTYPES:
+		table = f"tab{doctype}"
+		rows = frappe.db.sql(
+			f"SELECT name FROM `{table}` WHERE job = %s AND job_device = %s AND docstatus != 2 LIMIT 1 FOR UPDATE",
+			(job, device),
+		)
+		if rows:
+			return True
+	return False

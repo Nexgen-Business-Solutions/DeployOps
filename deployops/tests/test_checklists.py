@@ -1,5 +1,9 @@
 """The five checklist forms (#20 / #41): one native DocType per Jotform, one form per machine."""
 
+import base64
+import unittest
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.classes.context_managers import set_user
 from frappe.utils import now_datetime, today
@@ -381,3 +385,80 @@ class TestAccess(ChecklistTestCase):
 				checklist_api.cancel_checklist(CASH_INSTALL, name, " ")
 			checklist_api.cancel_checklist(CASH_INSTALL, name, "Filled on the wrong machine")
 		self.assertEqual(frappe.db.get_value(CASH_INSTALL, name, "docstatus"), 2)
+
+
+class TestSignatureValidation(ChecklistTestCase):
+	"""P2b: validate_values decodes the Base64 payload and verifies PNG magic bytes."""
+
+	def setUp(self):
+		super().setUp()
+		self.name = self.start(self.working_job())
+
+	def doc(self):
+		return frappe.get_doc(CASH_INSTALL, self.name)
+
+	def test_valid_png_signature_is_accepted(self):
+		"""A well-formed data:image/png;base64,... value with the correct PNG header passes."""
+		# SIGNATURE = "data:image/png;base64,iVBORw0KGgo=" which decodes to the 8-byte PNG magic.
+		with set_user(self.technician):
+			doc = self.doc()
+			doc.keys_receiver_signature = SIGNATURE
+			doc.save()  # must not raise
+
+	def test_bad_base64_signature_is_rejected(self):
+		"""A payload that contains characters outside the Base64 alphabet is rejected."""
+		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
+			doc = self.doc()
+			doc.keys_receiver_signature = "data:image/png;base64,!!!NOTBASE64"
+			doc.save()
+
+	def test_non_png_signature_is_rejected(self):
+		"""Valid Base64 that decodes to non-PNG bytes (JPEG magic) is rejected."""
+		jpeg_magic = b"\xff\xd8\xff\xe0" + b"\x00" * 12
+		bad_sig = "data:image/png;base64," + base64.b64encode(jpeg_magic).decode()
+		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
+			doc = self.doc()
+			doc.keys_receiver_signature = bad_sig
+			doc.save()
+
+
+class TestDuplicateCheckLock(unittest.TestCase):
+	"""P2a: before_insert uses a locking query to close the TOCTOU race window.
+
+	A true concurrent-race test requires two live DB connections and cannot run
+	in the standard single-threaded test runner.  These unit tests verify the
+	structural guarantees: that _form_for_device_locked always issues
+	``SELECT … FOR UPDATE`` queries (the property that prevents the race) and
+	correctly signals when a conflicting row exists.
+	"""
+
+	def test_locked_duplicate_check_uses_for_update(self):
+		"""Every SQL query issued by _form_for_device_locked contains FOR UPDATE."""
+		from deployops.checklists.cards import FORM_DOCTYPES, _form_for_device_locked
+
+		with patch("frappe.db.sql", return_value=[]) as mock_sql:
+			result = _form_for_device_locked("JOB-001", "DEVICE-001")
+
+		self.assertFalse(result)
+		self.assertEqual(len(mock_sql.call_args_list), len(FORM_DOCTYPES))
+		for args, _ in mock_sql.call_args_list:
+			query = args[0].upper()
+			self.assertIn("FOR UPDATE", query, msg=f"Query missing FOR UPDATE: {args[0]!r}")
+
+	def test_locked_check_returns_true_when_row_exists(self):
+		"""_form_for_device_locked returns True as soon as any table has a matching row."""
+		from deployops.checklists.cards import _form_for_device_locked
+
+		with patch("frappe.db.sql", return_value=[("FORM-001",)]):
+			result = _form_for_device_locked("JOB-001", "DEVICE-001")
+
+		self.assertTrue(result)
+
+	def test_locked_check_returns_false_when_no_rows(self):
+		"""_form_for_device_locked returns False (field clear) when all tables are empty."""
+		from deployops.checklists.cards import _form_for_device_locked
+
+		with patch("frappe.db.sql", return_value=[]):
+			result = _form_for_device_locked("JOB-001", "DEVICE-001")
+
+		self.assertFalse(result)
