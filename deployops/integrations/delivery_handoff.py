@@ -74,7 +74,16 @@ def open_job_for_order(doc):
 		"name",
 		order_by="creation desc",
 	)
-	return frappe.get_doc(JOB, name) if name else None
+	if not name:
+		return None
+	# P2a guard: confirm the found job's source DN shares at least one SO with the current DN.
+	# Two concurrent orders for the same customer must not cross-contaminate: a DN that only
+	# covers SO-001 must never absorb machines from a DN that only covers SO-002.
+	job = frappe.get_doc(JOB, name)
+	earlier_dn_orders = erpnext_sources.delivery_orders(job.source_name)
+	if not (orders & earlier_dn_orders):
+		return None
+	return job
 
 
 def add_to_open_job(doc):
@@ -106,17 +115,27 @@ def add_to_open_job(doc):
 			).format(doc.name, len(new)),
 		)
 		return
+	# P2b: add devices one at a time so a single failed device does not block the rest.
+	added = []
+	skipped = []
 	for row in new:
 		job.append("devices", row)
-	try:
-		_save(job, _("{0} machine(s) added from Delivery Note {1}.").format(len(new), doc.name))
-	except frappe.ValidationError as e:
-		# The delivery itself must never fail because of a job; leave a note for the supervisor.
-		job.reload()
-		job.add_comment(
-			"Info",
-			_("Delivery Note {0}: machines could not be added to this job: {1}").format(doc.name, str(e)),
-		)
+		job.flags.delivery_handoff = True
+		try:
+			job.save(ignore_permissions=True)
+			added.append(row["serial_no"])
+		except frappe.ValidationError as e:
+			# Discard the failed append and continue with the next device.
+			job.reload()
+			skipped.append((row["serial_no"], str(e)))
+	parts = []
+	if added:
+		parts.append(_("{0} machine(s) added").format(len(added)))
+	if skipped:
+		detail = "; ".join("{0}: {1}".format(s, r) for s, r in skipped)
+		parts.append(_("{0} skipped ({1})").format(len(skipped), detail))
+	if parts:
+		job.add_comment("Info", _("Delivery Note {0}: {1}.").format(doc.name, ", ".join(parts)))
 
 
 def _open_rows(filters: dict) -> dict[str, list[str]]:

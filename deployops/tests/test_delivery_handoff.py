@@ -1,12 +1,13 @@
 """Delivery Note handoff to installation jobs (#16 / #43): per-device rows, partial deliveries,
 returns, cancellations and mismatches."""
 
+import frappe.model.document
 from unittest.mock import patch
 
 import frappe
 from frappe.tests.classes.context_managers import set_user
 
-from deployops.integrations import delivery_handoff
+from deployops.integrations import delivery_handoff, erpnext_sources
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_job import JOB, JobTestCase, make_job
 
@@ -115,7 +116,7 @@ class TestPartialDeliveries(DeliveryTestCase):
 		)
 		delivery_handoff.on_delivery_note_submit(robot)
 		self.assertEqual(len(self.rows(job)), 1)
-		self.assertTrue(any("could not be added" in c for c in self.comments(job)))
+		self.assertTrue(any("skipped" in c for c in self.comments(job)))
 
 
 class TestReturnsAndCancellations(DeliveryTestCase):
@@ -187,3 +188,116 @@ class TestReturnsAndCancellations(DeliveryTestCase):
 			job.devices[1].delivery_note = unrelated.name
 			job.flags.delivery_handoff = True
 			job.save(ignore_permissions=True)
+
+
+class TestP2aOrderMismatchGuard(DeliveryTestCase):
+	"""P2a: open_job_for_order must not return a job whose source DN shares no SO
+	with the current DN (defense against two concurrent orders for the same customer)."""
+
+	def test_guard_fires_when_earlier_dn_shares_no_so_with_current_dn(self):
+		"""The P2a guard returns None when delivery_orders(source_dn) ∩ current_orders = ∅."""
+		so1 = self.order()
+		so2 = self.order()
+
+		# dn1 covers BOTH so1 and so2 so it naturally appears in the SQL 'earlier' list
+		# when processing any DN against so2.  Job-1 is opened from dn1.
+		dn1 = fx.make_delivery_note(
+			self.customer,
+			[
+				{
+					"item_code": self.cash,
+					"serial_and_batch_bundle": fx.make_bundle(self.cash, ["JOB-CR-1"]),
+					"qty": 1,
+					"against_sales_order": so1,
+				},
+				{
+					"item_code": self.cash,
+					"serial_and_batch_bundle": fx.make_bundle(self.cash, ["JOB-CR-2"]),
+					"qty": 1,
+					"against_sales_order": so2,
+				},
+			],
+		)
+		job1_name = self.job_for(dn1)
+
+		# dn2 covers so2 only.
+		dn2 = self.note(["JOB-CR-3"], so2)
+
+		# Sanity: without the mock, dn1 truly covers so2 so the guard correctly lets
+		# job1 through (shared SO-2).
+		real_result = delivery_handoff.open_job_for_order(dn2)
+		self.assertIsNotNone(real_result)
+		self.assertEqual(real_result.name, job1_name)
+
+		# Now simulate the guard scenario: dn1 is found in 'earlier' (it has a so2 item)
+		# but delivery_orders says dn1 only covers so1 (no overlap with dn2's {so2}).
+		# The guard must detect the empty intersection and return None.
+		original = erpnext_sources.delivery_orders
+
+		def patched_delivery_orders(dn):
+			if dn == dn1.name:
+				return {so1}  # dn1 covers only so1 → no overlap with dn2's {so2}
+			return original(dn)
+
+		with patch.object(erpnext_sources, "delivery_orders", patched_delivery_orders):
+			guarded_result = delivery_handoff.open_job_for_order(dn2)
+
+		self.assertIsNone(guarded_result)
+
+	def test_different_orders_same_customer_do_not_cross_attach(self):
+		"""End-to-end: a DN for SO-2 is not added to the job opened for SO-1."""
+		so1 = self.order()
+		so2 = self.order()
+
+		dn1 = self.note(["JOB-CR-1"], so1)
+		job1_name = self.job_for(dn1)
+
+		dn2 = self.note(["JOB-CR-2"], so2)
+		delivery_handoff.on_delivery_note_submit(dn2)
+
+		# Job-1 must still hold only dn1's machine.
+		self.assertEqual(self.rows(job1_name), [("JOB-CR-1", dn1.name, None)])
+
+
+class TestP2bPerDeviceSaveResilience(DeliveryTestCase):
+	"""P2b: devices are saved one at a time; a failed device is skipped, others are still added."""
+
+	def test_first_device_added_when_second_save_fails(self):
+		"""If one device's save raises ValidationError the others are unaffected."""
+		so = self.order()
+		dn1 = self.note(["JOB-CR-1"], so)
+		job_name = self.job_for(dn1)
+
+		# dn2 delivers two more machines against the same order.
+		dn2 = self.note(["JOB-CR-2", "JOB-CR-3"], so)
+
+		# Simulate: the second DeployOps Job save (JOB-CR-3) raises ValidationError.
+		save_count = [0]
+		original_save = frappe.model.document.Document.save
+
+		def patched_save(instance, **kwargs):
+			if instance.doctype == "DeployOps Job":
+				save_count[0] += 1
+				if save_count[0] == 2:
+					raise frappe.ValidationError("simulated per-device failure")
+			return original_save(instance, **kwargs)
+
+		with patch.object(frappe.model.document.Document, "save", patched_save):
+			delivery_handoff.on_delivery_note_submit(dn2)
+
+		rows = self.rows(job_name)
+		serial_nos = [r[0] for r in rows]
+
+		# JOB-CR-1 was there before; JOB-CR-2 succeeded; JOB-CR-3 was skipped.
+		self.assertIn("JOB-CR-1", serial_nos)
+		self.assertIn("JOB-CR-2", serial_nos)
+		self.assertNotIn("JOB-CR-3", serial_nos)
+
+		# Summary comment mentions both the added count and the skipped count.
+		comments = self.comments(job_name)
+		self.assertTrue(any("1 machine(s) added" in c for c in comments))
+		self.assertTrue(any("1 skipped" in c for c in comments))
+
+		# The job must not be left in a broken state.
+		doc = frappe.get_doc(JOB, job_name)
+		doc.save()  # must not raise
