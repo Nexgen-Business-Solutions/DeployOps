@@ -155,12 +155,14 @@ class TestSecurityNegative(IntegrationTestCase):
 				self.assertEqual(response.status_code, 403)
 
 	def test_roles_cannot_print_erpnext_record(self):
+		# Printview answers 403 for a missing record too, so first make sure the refusal is about rights.
+		self.assertTrue(frappe.db.exists("Customer", TEST_CUSTOMER))
 		for role, sid in self.sids.items():
 			with self.subTest(role=role):
 				response = self.request(
 					"/printview", {"doctype": "Customer", "name": TEST_CUSTOMER, "sid": sid}
 				)
-				self.assertNotEqual(response.status_code, 200)
+				self.assertEqual(response.status_code, 403)
 
 	def test_no_deployops_method_is_open_to_guests(self):
 		for module in pkgutil.walk_packages(deployops.__path__, "deployops."):

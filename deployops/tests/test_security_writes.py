@@ -252,7 +252,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 
 	def test_print_and_export_follow_the_matrix(self):
 		response = self.call("get", "/printview", "other", params={"doctype": FORM, "name": self.submitted})
-		self.assertNotEqual(response.status_code, 200)  # a technician not on the job
+		self.assertEqual(response.status_code, 403)  # a technician not on the job
 		response = self.call("get", "/printview", "tech", params={"doctype": FORM, "name": self.submitted})
 		self.assertEqual(response.status_code, 200)
 
@@ -321,6 +321,9 @@ class TestWritesOverHttp(IntegrationTestCase):
 			("Sales Order", self.order),
 			("Delivery Note", self.delivery),
 		)
+		# These URLs answer 403 for a missing record too, so first make sure the refusals are about rights.
+		for doctype, name in records:
+			self.assertTrue(frappe.db.exists(doctype, name))
 		for who in ("tech", "sup", "man", "admin"):
 			for doctype, name in records:
 				with self.subTest(who=who, doctype=doctype):
@@ -332,7 +335,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 					)
 					self.assertEqual(response.status_code, 403)
 					response = self.call("get", "/printview", who, params={"doctype": doctype, "name": name})
-					self.assertNotEqual(response.status_code, 200)
+					self.assertEqual(response.status_code, 403)
 					before = self.state(doctype, name)
 					response = self.call("put", f"/api/resource/{doctype}/{name}", who, json={"remarks": "x"})
 					self.assert_refused(response, doctype, name, before)
