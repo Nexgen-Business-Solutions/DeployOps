@@ -46,9 +46,9 @@ An **allocation** says which physical machine (ERPNext Serial No) is promised to
 
 ## 4. Who sees which allocation
 
-Same model as jobs (#12): Technician — machines on jobs assigned to them, within their equipment profile; Supervisor / Manager — equipment in their profile; DeployOps Administrator — all. Permissions follow the approved matrix (Technician read; Supervisor create/write; Manager also cancel/export; Admin read/export; nobody deletes).
+Same model as jobs (#12): Technician — the current allocation of machines on jobs assigned to them, for that job's customer, within their equipment profile (not the machine's allocations for other customers, not cancelled machines, nothing once the equipment is revoked); Supervisor / Manager — equipment in their profile; DeployOps Administrator — all. Permissions follow the approved matrix (Technician read; Supervisor create/write; Manager also cancel/export; Admin read/export; nobody deletes).
 
-Status, dates, links and the movement log **can only be changed by the actions above** — not by editing the form, the API or an import.
+Customer, status, dates, links and the movement log **can only be changed by the actions above** — not by editing the form, the API or an import. The Item always comes from the serial. The job and replaced-allocation links are set only by DeployOps (a job's reservation, a swap), never taken from a request.
 
 ## 5. Serial Deployment History
 
