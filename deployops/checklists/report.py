@@ -29,9 +29,12 @@ TEMPLATE = "deployops/templates/checklist_report.html"
 LOGO = Path(__file__).parent.parent / "public" / "images" / "massarie-logo.png"
 PHOTO_SIZE = 1200  # longest side in the report, in pixels
 
-# Checklists that offer a report. The product owner limits work to the Cashmatic pre-installation
-# until it is confirmed; the renderer itself works for any checklist.
-REPORTABLE = ("DeployOps Cashmatic Pre-installation",)
+# Checklists with confirmed PDF reports. The renderer works for any checklist with a
+# submission snapshot; add a doctype here once its report layout is product-owner approved.
+REPORTABLE = (
+	"DeployOps Cashmatic Pre-installation",
+	"DeployOps Cashmatic Maintenance",
+)
 
 
 def check_reportable(doc, audience: str):
