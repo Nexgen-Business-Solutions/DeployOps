@@ -94,6 +94,7 @@ def reserve(
 			**extra,
 		}
 	)
+	doc.flags.from_allocation_actions = True  # lets reserved_by_job / replaces through
 	doc.insert(ignore_permissions=system)
 	return doc
 
@@ -234,6 +235,7 @@ def on_delivery_note_submit(doc, method=None):
 	"""ERPNext delivered machines: close their sale reservations as Delivered."""
 	if doc.is_return:
 		return
+	dn_orders = erpnext_sources.delivery_orders(doc.name)
 	for line in erpnext_sources.get_equipment_lines(doc):
 		for serial_no in line["serial_nos"]:
 			active = get_active(serial_no)
@@ -247,6 +249,9 @@ def on_delivery_note_submit(doc, method=None):
 					reference=(doc.doctype, doc.name),
 				)
 				save_system(active)
+				continue
+			# Sale: only transition when the DN delivers the same Sales Order and company as the allocation.
+			if active.source_name not in dn_orders or doc.company != active.company:
 				continue
 			active.deployed_on = getdate(doc.posting_date)
 			set_status(active, "Delivered")
