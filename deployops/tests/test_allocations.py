@@ -399,7 +399,7 @@ class TestDeliveryNoteValidation(TestSaleReservations):
 	"""#14 review P2b: on_delivery_note_submit only transitions when SO and company match."""
 
 	def test_unrelated_sales_order_delivery_does_not_close_allocation(self):
-		order, job = self.order_job()
+		_order, job = self.order_job()
 		self.set_serial(job, "JOB-CR-3")
 		other_order = fx.make_sales_order(self.customer, [self.cash]).name
 		note = fx.make_delivery_note(
@@ -412,9 +412,7 @@ class TestDeliveryNoteValidation(TestSaleReservations):
 	def test_delivery_without_sales_order_link_does_not_close_allocation(self):
 		_order, job = self.order_job()
 		self.set_serial(job, "JOB-CR-3")
-		note = fx.make_delivery_note(
-			self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}]
-		)
+		note = fx.make_delivery_note(self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}])
 		allocations.on_delivery_note_submit(note)
 		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")
 
