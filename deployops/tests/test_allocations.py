@@ -209,10 +209,12 @@ class TestSaleReservations(AllocationTestCase):
 		self.assertEqual(self.sale("JOB-CR-2").status, "Cancelled")
 
 	def test_delivery_closes_and_cancelled_delivery_reopens(self):
-		_order, job = self.order_job()
+		order, job = self.order_job()
 		self.set_serial(job, "JOB-CR-3")
 		note = fx.make_delivery_note(
-			self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}], posting_date="2026-10-20"
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": order}],
+			posting_date="2026-10-20",
 		)
 		allocations.on_delivery_note_submit(note)
 		sale = self.sale("JOB-CR-3")
@@ -378,3 +380,52 @@ class TestSerialHistory(AllocationTestCase):
 		profile.save(ignore_permissions=True)
 		with set_user(self.supervisor), self.assertRaises(frappe.PermissionError):
 			allocation_api.serial_history("JOB-BB-1")
+
+	def test_serial_history_respects_company_user_permissions(self):
+		"""#14 review P1: Company User Permissions gate serial_history before equipment profile."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("JOB-AWAY", self.robot, company=fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.supervisor)
+		with set_user(self.supervisor):
+			allocation_api.serial_history("JOB-BB-1")  # own company: allowed
+		with set_user(self.supervisor), self.assertRaises(frappe.PermissionError):
+			allocation_api.serial_history("JOB-AWAY")  # other company: refused
+
+
+class TestDeliveryNoteValidation(TestSaleReservations):
+	"""#14 review P2b: on_delivery_note_submit only transitions when SO and company match."""
+
+	def test_unrelated_sales_order_delivery_does_not_close_allocation(self):
+		order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		other_order = fx.make_sales_order(self.customer, [self.cash]).name
+		note = fx.make_delivery_note(
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": other_order}],
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")
+
+	def test_delivery_without_sales_order_link_does_not_close_allocation(self):
+		_order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		note = fx.make_delivery_note(
+			self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}]
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")
+
+	def test_wrong_company_delivery_does_not_close_allocation(self):
+		order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		fx.make_company(fx.OTHER_COMPANY)
+		note = fx.make_delivery_note(
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": order}],
+			company=fx.OTHER_COMPANY,
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")

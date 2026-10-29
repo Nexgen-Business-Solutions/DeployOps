@@ -6,6 +6,7 @@ from frappe import _
 from deployops.api.sources import require_deployops_role
 from deployops.equipment import allocations
 from deployops.equipment.allocations import ALLOCATION, CANCEL_ROLES, HANDLER_ROLES
+from deployops.integrations import erpnext_sources
 from deployops.security.equipment_access import get_allowed_items, is_unrestricted
 
 
@@ -51,11 +52,9 @@ def get_allocation_actions(allocation: str) -> list[str]:
 @frappe.whitelist()
 def serial_history(serial_no: str) -> list[dict]:
 	require_deployops_role()
-	item_code = frappe.db.get_value("Serial No", serial_no, "item_code")
-	if not item_code:
-		frappe.throw(_("Serial No {0} does not exist.").format(serial_no), frappe.DoesNotExistError)
-	if not is_unrestricted(frappe.session.user) and item_code not in get_allowed_items():
-		frappe.throw(_("You are not authorised for equipment {0}.").format(item_code), frappe.PermissionError)
+	serial = erpnext_sources.validate_serial(serial_no)  # validates existence + Company User Permissions (#13)
+	if not is_unrestricted(frappe.session.user) and serial.item_code not in get_allowed_items():
+		frappe.throw(_("You are not authorised for equipment {0}.").format(serial.item_code), frappe.PermissionError)
 	return allocations.get_serial_history(serial_no)
 
 
