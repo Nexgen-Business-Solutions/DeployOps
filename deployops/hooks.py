@@ -67,12 +67,13 @@ required_apps = ["erpnext"]
 # ----------
 
 # application home page (will override Website Settings)
-home_page = "frontend"
+# Not set: the site root stays with the site, so other apps can have their own URLs.
+# home_page = "frontend"
 
 # website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
+# Technicians (Website Users) land in the app after signing in through Frappe's /login. Only users
+# with this role are affected; the site root stays Frappe's.
+role_home_page = {"DeployOps Technician": "deployops"}
 
 # Generators
 # ----------
@@ -87,10 +88,8 @@ home_page = "frontend"
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "deployops.utils.jinja_methods",
-# 	"filters": "deployops.utils.jinja_filters"
-# }
+# Checklist reports (#27) for the Desk print formats.
+jinja = {"methods": ["deployops.checklists.report.checklist_report_html"]}
 
 # Installation
 # ------------
@@ -98,7 +97,7 @@ home_page = "frontend"
 # Roles must exist before DocTypes and the workspace that reference them are synced.
 before_install = "deployops.install.create_roles"
 before_migrate = "deployops.install.create_roles"
-# after_install = "deployops.install.after_install"
+after_install = "deployops.install.install_reference_files"
 
 # Uninstallation
 # ------------
@@ -193,7 +192,8 @@ before_migrate = "deployops.install.create_roles"
 # Testing
 # -------
 
-# before_tests = "deployops.install.before_tests"
+# Base records a fresh CI site lacks (no ERPNext setup wizard); created only if missing.
+before_tests = "deployops.tests.bootstrap.before_tests"
 
 # Extend DocType Class
 # ------------------------------
@@ -279,30 +279,63 @@ before_migrate = "deployops.install.create_roles"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-# The React frontend is served at "/". Frappe's own website pages are listed first so the
-# catch-all does not swallow them (exact routes always win over the <path:> converter).
+# The React frontend is served only under /deployops (www/deployops.py); every other URL is left to
+# Frappe and the other apps on the site. /deployops itself is the www page, its sub-paths are the
+# client-side routes.
 website_route_rules = [
-	{"from_route": "/login", "to_route": "login"},
-	{"from_route": "/update-password", "to_route": "update-password"},
-	{"from_route": "/printview", "to_route": "printview"},
-	{"from_route": "/message", "to_route": "message"},
-	{"from_route": "/<path:app_path>", "to_route": "frontend"},
+	{"from_route": "/deployops/<path:app_path>", "to_route": "deployops"},
 ]
+
+# No website_redirects: the site root and every URL outside /deployops belong to Frappe and the
+# other apps. (Redirects from the app's earlier root URLs were removed; it was never released there.)
+
+# The five checklist forms (#41), one DocType each; see deployops/checklists/cards.py.
+CHECKLIST_FORMS = (
+	"DeployOps Cashmatic Pre-installation",
+	"DeployOps Cashmatic Installation",
+	"DeployOps BellaBot Pre-installation",
+	"DeployOps BellaBot Installation",
+	"DeployOps Cashmatic Maintenance",
+)
 
 # Technicians only see jobs assigned to them (#18). Broader job scoping is #12.
 permission_query_conditions = {
 	"DeployOps Job": "deployops.security.job_permissions.job_query_conditions",
 	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_query_conditions",
+	**{doctype: "deployops.security.job_permissions.form_query_conditions" for doctype in CHECKLIST_FORMS},
 }
 has_permission = {
 	"DeployOps Job": "deployops.security.job_permissions.job_has_permission",
 	"DeployOps Equipment Allocation": "deployops.security.allocation_permissions.allocation_has_permission",
+	**{doctype: "deployops.security.job_permissions.form_has_permission" for doctype in CHECKLIST_FORMS},
 }
 
-# ERPNext deliveries close sale reservations (#14). Read-only on the Delivery Note itself.
+# ERPNext deliveries close sale reservations (#14) and hand machines over to installation jobs
+# (#16). Read-only on the Delivery Note itself.
+# Printing needs the print right of the matrix, not just read (#35); see security/print_permissions.py.
+# Every DeployOps DocType that isn't a child table is listed (tested).
+PRINT_CHECKED = (
+	"DeployOps Job",
+	*CHECKLIST_FORMS,
+	"DeployOps Equipment Category",
+	"DeployOps Equipment Access Profile",
+	"DeployOps Reference Files",
+	"DeployOps Equipment Allocation",
+)
+
 doc_events = {
+	**{
+		doctype: {"before_print": "deployops.security.print_permissions.check_print_permission"}
+		for doctype in PRINT_CHECKED
+	},
 	"Delivery Note": {
-		"on_submit": "deployops.equipment.allocations.on_delivery_note_submit",
-		"on_cancel": "deployops.equipment.allocations.on_delivery_note_cancel",
+		"on_submit": [
+			"deployops.equipment.allocations.on_delivery_note_submit",
+			"deployops.integrations.delivery_handoff.on_delivery_note_submit",
+		],
+		"on_cancel": [
+			"deployops.equipment.allocations.on_delivery_note_cancel",
+			"deployops.integrations.delivery_handoff.on_delivery_note_cancel",
+		],
 	},
 }

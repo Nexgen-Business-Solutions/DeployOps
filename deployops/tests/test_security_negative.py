@@ -1,4 +1,4 @@
-"""Negative security tests over HTTP (#35).
+"""Negative security tests over HTTP
 
 Requests go through Frappe's WSGI app in a separate thread with its own DB connection, so the
 fixtures here are committed and removed again in tearDownClass.
@@ -14,11 +14,12 @@ from frappe.tests.test_api import make_request
 from frappe.utils import get_test_client, get_url, set_request
 
 import deployops
-from deployops.roles import ALL_ROLES
+from deployops.roles import ALL_ROLES, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX, ERPNEXT_DENIED, allowed, erpnext_allowed
-from deployops.tests.utils import make_role_user
+from deployops.tests.utils import make_role_user, role_user_email
 
-TEST_CUSTOMER = "DeployOps Test Customer"
+# Unique per run: the tests create it and delete only what they created.
+TEST_CUSTOMER = f"DeployOps Test Customer {frappe.generate_hash(length=6)}"
 
 
 def login_sid(user: str) -> str:
@@ -36,8 +37,11 @@ class TestSecurityNegative(IntegrationTestCase):
 	def setUpClass(cls):
 		super().setUpClass()
 		cls.client = get_test_client(use_cookies=False)
+		# Delete in teardown only the users this class created (make_role_user reuses existing ones).
+		cls.created_users = [r for r in ALL_ROLES if not frappe.db.exists("User", role_user_email(r))]
 		cls.users = {role: make_role_user(role) for role in ALL_ROLES}
-		if not frappe.db.exists("Customer", TEST_CUSTOMER):
+		cls.created_customer = not frappe.db.exists("Customer", TEST_CUSTOMER)
+		if cls.created_customer:
 			frappe.get_doc({"doctype": "Customer", "customer_name": TEST_CUSTOMER}).insert(
 				ignore_permissions=True, ignore_mandatory=True
 			)
@@ -49,8 +53,9 @@ class TestSecurityNegative(IntegrationTestCase):
 	@classmethod
 	def tearDownClass(cls):
 		frappe.set_user("Administrator")
-		frappe.delete_doc("Customer", TEST_CUSTOMER, force=True, ignore_permissions=True)
-		for user in cls.users.values():
+		if cls.created_customer:
+			frappe.delete_doc("Customer", TEST_CUSTOMER, force=True, ignore_permissions=True)
+		for user in (cls.users[role] for role in cls.created_users):
 			frappe.delete_doc("User", user, force=True, ignore_permissions=True)
 		# Remove the committed fixtures so no test data stays on the site.
 		frappe.db.commit()  # nosemgrep
@@ -61,10 +66,39 @@ class TestSecurityNegative(IntegrationTestCase):
 			target=self.client.get, args=(get_url(path),), kwargs={"query_string": params or {}}
 		)
 
-	def test_guest_is_redirected_to_login(self):
-		response = self.request("/")
-		self.assertEqual(response.status_code, 302)
-		self.assertTrue(response.location.startswith("/login"))
+	def test_guest_gets_only_the_app_shell(self):
+		# The React app (under /deployops) shows its own login screen; the shell holds no data and
+		# no session token, also on a deep link.
+		for path in ("/deployops", "/deployops/job/JOB-0001"):
+			with self.subTest(path=path):
+				response = self.request(path)
+				self.assertEqual(response.status_code, 200)
+				body = response.data.decode()
+				self.assertIn('id="root"', body)
+				for leak in (TEST_CUSTOMER, "@deployops.test"):
+					self.assertNotIn(leak, body)
+				self.assertIn("window.csrf_token = '';", body)  # guests get no session token
+		for method in ("me", "home", "my_jobs"):
+			with self.subTest(method=method):
+				params = {"card": "cashmatic-onsite"} if method == "my_jobs" else None
+				self.assertEqual(
+					self.request(f"/api/method/deployops.api.technician.{method}", params).status_code, 403
+				)
+
+	def test_site_root_sends_only_technicians_to_the_app(self):
+		"""DeployOps doesn't claim "/": guests get Frappe's login page; a Technician, whose home page is
+		the app, is redirected to /deployops; Desk roles keep their own home."""
+		guest = self.request("/")
+		self.assertEqual(guest.status_code, 200)
+		self.assertIn("<title>Login</title>", guest.data.decode())
+		for role in ALL_ROLES:
+			with self.subTest(role=role):
+				response = self.request("/", {"sid": self.sids[role]})
+				location = response.headers.get("Location") or ""
+				if role == TECHNICIAN:
+					self.assertEqual((response.status_code, location.endswith("/deployops")), (302, True))
+				else:
+					self.assertFalse(location.endswith("/deployops"))
 
 	def test_guest_cannot_read_erpnext_records(self):
 		for doctype in ERPNEXT_DENIED:
@@ -75,15 +109,19 @@ class TestSecurityNegative(IntegrationTestCase):
 		existing = [
 			dt for dt in DOCTYPE_MATRIX if frappe.db.exists("DocType", dt) and not frappe.get_meta(dt).istable
 		]
+
+		def url(doctype):  # a Single DocType has no list: read its one document
+			return f"/api/resource/{doctype}" + (f"/{doctype}" if frappe.get_meta(doctype).issingle else "")
+
 		for role, sid in self.sids.items():
 			for doctype in existing:
 				with self.subTest(role=role, doctype=doctype):
-					response = self.request(f"/api/resource/{doctype}", {"sid": sid})
+					response = self.request(url(doctype), {"sid": sid})
 					self.assertEqual(response.status_code, 200 if allowed(doctype, role, "read") else 403)
 
 		for doctype in existing:
 			with self.subTest(guest=True, doctype=doctype):
-				self.assertEqual(self.request(f"/api/resource/{doctype}").status_code, 403)
+				self.assertEqual(self.request(url(doctype)).status_code, 403)
 
 	def test_guest_cannot_call_source_lookups(self):
 		for method, params in (

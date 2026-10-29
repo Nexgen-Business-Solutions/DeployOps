@@ -11,6 +11,9 @@ from deployops.security.equipment_access import get_allowed_items, is_unrestrict
 
 SOURCE_FOR_TYPE = {RENTAL: erpnext_sources.SUBSCRIPTION, SALE: erpnext_sources.SALES_ORDER}
 WORKFLOW_FIELDS = (
+	"customer",
+	"customer_name",
+	"item_code",
 	"status",
 	"active_serial",
 	"reserved_on",
@@ -37,6 +40,10 @@ class DeployOpsEquipmentAllocation(Document):
 					_(self.allocation_type), _(SOURCE_FOR_TYPE[self.allocation_type])
 				)
 			)
+
+		if not self.flags.from_allocation_actions:
+			# Set only by DeployOps (a job's reservation, a swap), never by the client.
+			self.reserved_by_job = self.replaces = None
 
 		source = erpnext_sources.validate_source(self.source_doctype, self.source_name, self.company)
 		serial = erpnext_sources.validate_serial(self.serial_no, company=self.company)
@@ -86,7 +93,9 @@ class DeployOpsEquipmentAllocation(Document):
 		before = self.get_doc_before_save()
 		if any(self.get(field) != before.get(field) for field in WORKFLOW_FIELDS):
 			frappe.throw(
-				_("Allocation status and dates change only through Reserve, Return, Swap and Cancel.")
+				_(
+					"Allocation customer, item, status and dates change only through Reserve, Return, Swap and Cancel."
+				)
 			)
 		if [row.name for row in self.events] != [row.name for row in before.events]:
 			frappe.throw(_("The movement log can only be written by DeployOps."))

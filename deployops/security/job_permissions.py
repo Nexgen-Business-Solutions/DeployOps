@@ -1,10 +1,12 @@
 """Job visibility (#18 / #12): who sees which DeployOps Job.
 
-- Technician: only jobs assigned to them.
-- Supervisor / Manager: only jobs within their equipment access profile. A job with machines is in
-  scope when *all* its machines are; a job without machines is in scope when its equipment category
-  is theirs, or when it has no category.
-- DeployOps Administrator, System Manager, Administrator: every job.
+- Technician: jobs assigned to them *and* within their current equipment access profile.
+- Supervisor / Manager: jobs within their equipment access profile.
+- Within a profile: a job with machines is in scope when *all* its machines are; a job without
+  machines when its equipment category is theirs. A job with neither is unclassified and is seen by
+  administrators only (deny by default).
+- DeployOps Administrator and the Administrator user: every job (one definition,
+  ``equipment_access.is_unrestricted``; System Manager alone grants nothing here).
 
 Everything is judged from the *saved* job, so editing a job in memory can neither grant nor lose
 access. These hooks cover lists, reports, link search, the API, print and attachments, because
@@ -13,22 +15,19 @@ Frappe routes all of them through has_permission / permission_query_conditions.
 
 import frappe
 
-from deployops.roles import ADMINISTRATOR, MANAGER, SUPERVISOR, TECHNICIAN
-from deployops.security.equipment_access import get_allowed_categories, get_allowed_items
+from deployops.roles import MANAGER, SUPERVISOR, TECHNICIAN
+from deployops.security.equipment_access import get_allowed_categories, get_allowed_items, is_unrestricted
 
 JOB = "DeployOps Job"
 DEVICE = "DeployOps Job Device"
-UNRESTRICTED_ROLES = {ADMINISTRATOR, "System Manager"}
 SCOPED_ROLES = {SUPERVISOR, MANAGER}
 
 
 def get_scope(user: str) -> str:
 	"""'all', 'equipment' (Supervisor / Manager), 'assigned' (Technician only) or 'none'."""
-	if user == "Administrator":
+	if is_unrestricted(user):
 		return "all"
 	roles = set(frappe.get_roles(user))
-	if roles & UNRESTRICTED_ROLES:
-		return "all"
 	if roles & SCOPED_ROLES:
 		return "equipment"
 	if TECHNICIAN in roles:
@@ -49,11 +48,17 @@ def job_query_conditions(user: str | None = None) -> str:
 	scope = get_scope(user)
 	if scope == "all":
 		return ""
-	if scope == "assigned":
-		return f"`tabDeployOps Job`.`assigned_technician` = {frappe.db.escape(user)}"
 	if scope == "none":
 		return "1 = 0"
 
+	equipment = _equipment_condition(user)
+	if scope == "assigned":
+		return f"(`tabDeployOps Job`.`assigned_technician` = {frappe.db.escape(user)} and {equipment})"
+	return equipment
+
+
+def _equipment_condition(user: str) -> str:
+	"""SQL: the job's machines (or, without machines, its category) are within the user's profile."""
 	items = _sql_list(get_allowed_items(user))
 	categories = _sql_list(get_allowed_categories(user))
 	has_devices = (
@@ -66,8 +71,7 @@ def job_query_conditions(user: str | None = None) -> str:
 	)
 	return (
 		f"(({has_devices} and not {foreign_device}) or (not {has_devices} and "
-		f"(ifnull(`tabDeployOps Job`.`equipment_category`, '') = '' "
-		f"or `tabDeployOps Job`.`equipment_category` in ({categories}))))"
+		f"`tabDeployOps Job`.`equipment_category` in ({categories})))"
 	)
 
 
@@ -87,11 +91,15 @@ def job_in_scope(doc, user: str) -> bool:
 			frappe.get_all(DEVICE, filters={"parent": doc.name, "parenttype": JOB}, pluck="item_code")
 		)
 
-	if scope == "assigned":
-		return assignee == user
+	if scope == "assigned" and assignee != user:
+		return False
 	if device_items:
 		return device_items <= get_allowed_items(user)
-	return not category or category in get_allowed_categories(user)
+	if doc.is_new():
+		# Being created: its machines are filled from the source during validate, which also checks
+		# the creator's equipment access. An unsaved job exposes nothing yet.
+		return not category or category in get_allowed_categories(user)
+	return bool(category) and category in get_allowed_categories(user)
 
 
 def job_has_permission(doc, user: str | None = None, permission_type: str | None = None) -> bool:
@@ -99,3 +107,21 @@ def job_has_permission(doc, user: str | None = None, permission_type: str | None
 	if isinstance(doc, str):
 		doc = frappe.get_doc(JOB, doc)
 	return job_in_scope(doc, user)
+
+
+# Checklist forms (#41) are visible exactly when their job is.
+def form_query_conditions(user: str | None = None, doctype: str | None = None) -> str:
+	if not doctype:
+		return "1 = 0"  # fail closed: the condition must name the form's own table
+	conditions = job_query_conditions(user)
+	if not conditions:
+		return conditions
+	return f"`tab{doctype}`.`job` in (select `tabDeployOps Job`.`name` from `tabDeployOps Job` where {conditions})"
+
+
+def form_has_permission(doc, user: str | None = None, permission_type: str | None = None) -> bool:
+	user = user or frappe.session.user
+	job = doc.job if doc.is_new() else frappe.db.get_value(doc.doctype, doc.name, "job")
+	if not job or not frappe.db.exists(JOB, job):
+		return False
+	return job_in_scope(frappe.get_doc(JOB, job), user)

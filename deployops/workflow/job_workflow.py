@@ -14,6 +14,7 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
+from deployops.checklists.cards import card_for, form_for_device
 from deployops.roles import ALL_ROLES, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX
 
@@ -248,6 +249,10 @@ def apply_device_action(
 		frappe.throw(
 			_("Machine {0} needs a Serial No before it can be completed.").format(_device_label(row))
 		)
+	if action == "complete" and _checklist_not_submitted(job, row):
+		frappe.throw(
+			_("Submit the checklist of machine {0} before completing it.").format(_device_label(row))
+		)
 
 	before = row.device_status
 	row.device_status = rule["to"]
@@ -257,6 +262,14 @@ def apply_device_action(
 
 
 # ---------------------------------------------------------------------------------------------
+
+
+def _checklist_not_submitted(job, row) -> bool:
+	"""A machine that has a checklist for this job type is completed only once that checklist is submitted."""
+	if not card_for(job.job_type, row.item_code):
+		return False
+	form = form_for_device(job.name, row.name)
+	return not form or form[2] != 1
 
 
 def _device_label(row) -> str:

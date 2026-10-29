@@ -9,7 +9,9 @@
   "item_name",
   "serial_no",
   "device_status",
-  "source_row"
+  "source_row",
+  "delivery_note",
+  "source_issue"
  ],
  "fields": [
   {
@@ -50,11 +52,27 @@
    "hidden": 1,
    "label": "Source Row",
    "read_only": 1
+  },
+  {
+   "description": "The delivery this machine came on (#16).",
+   "fieldname": "delivery_note",
+   "fieldtype": "Link",
+   "label": "Delivery Note",
+   "options": "Delivery Note",
+   "read_only": 1
+  },
+  {
+   "description": "Set by the system when the delivery is returned or cancelled; a supervisor decides what to do.",
+   "fieldname": "source_issue",
+   "fieldtype": "Small Text",
+   "in_list_view": 0,
+   "label": "Source issue",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-10-18 15:00:00.000000",
+ "modified": "2026-10-20 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Job Device",
