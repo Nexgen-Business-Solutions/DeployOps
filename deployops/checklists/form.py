@@ -17,6 +17,7 @@ form ``eval:doc.<field>=='<value>'``, so the server and the app read them the sa
 """
 
 import base64
+import io
 import re
 from typing import ClassVar
 
@@ -52,6 +53,7 @@ CONDITION = re.compile(r"^eval:doc\.(\w+)\s*==\s*'([^']*)'$")
 SIGNATURE_PREFIX = "data:image/png;base64,"
 MAX_SIGNATURE = 400_000
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+MAX_SIGNATURE_PIXELS = 1_000_000  # 1 MP; rejects decompression-bomb PNGs before full decode
 SECRET_PATTERN = re.compile(
 	r"\b(password|passwd|pwd|mot de passe|otp|pin|pairing code|code d'appairage)\b\s*[:=]\s*\S",
 	re.IGNORECASE,
@@ -196,6 +198,17 @@ class ChecklistForm(Document):
 				except Exception:
 					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
 				if not payload.startswith(PNG_MAGIC):
+					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
+				try:
+					from PIL import Image
+
+					img = Image.open(io.BytesIO(payload))
+					if img.width * img.height > MAX_SIGNATURE_PIXELS:
+						frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
+					img.load()  # fully decode; raises on truncation, corruption or decompression bombs
+				except frappe.ValidationError:
+					raise
+				except Exception:
 					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
 			elif df.fieldtype == "Table":
 				for row in value or []:
