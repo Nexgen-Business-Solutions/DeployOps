@@ -15,6 +15,7 @@ A Check with ``reqd`` must be ticked. ``depends_on`` / ``mandatory_depends_on`` 
 form ``eval:doc.<field>=='<value>'``, so the server and the app read them the same way.
 """
 
+import base64
 import re
 from typing import ClassVar
 
@@ -23,7 +24,7 @@ from frappe import _
 from frappe.model import no_value_fields
 from frappe.model.document import Document
 
-from deployops.checklists.cards import card_for, form_for_device
+from deployops.checklists.cards import _form_for_device_locked, card_for, form_for_device
 from deployops.workflow import job_workflow
 
 JOB = "DeployOps Job"
@@ -46,6 +47,7 @@ HOURS = "DeployOps Checklist Opening Hours"
 CONDITION = re.compile(r"^eval:doc\.(\w+)\s*==\s*'([^']*)'$")
 SIGNATURE_PREFIX = "data:image/png;base64,"
 MAX_SIGNATURE = 400_000
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 SECRET_PATTERN = re.compile(
 	r"\b(password|passwd|pwd|mot de passe|otp|pin|pairing code|code d'appairage)\b\s*[:=]\s*\S",
 	re.IGNORECASE,
@@ -90,7 +92,7 @@ class ChecklistForm(Document):
 					_(self.doctype), _(job.job_type)
 				)
 			)
-		if form_for_device(job.name, device.name):
+		if _form_for_device_locked(job.name, device.name):
 			frappe.throw(_("This machine already has a checklist on this job."))
 
 		self.update(
@@ -154,6 +156,12 @@ class ChecklistForm(Document):
 				self.refuse_secret(df.label)
 			elif df.fieldtype == "Signature" and value:
 				if not value.startswith(SIGNATURE_PREFIX) or len(value) > MAX_SIGNATURE:
+					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
+				try:
+					payload = base64.b64decode(value[len(SIGNATURE_PREFIX) :], validate=True)
+				except Exception:
+					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
+				if not payload.startswith(PNG_MAGIC):
 					frappe.throw(_("{0}: the signature is not a valid image.").format(_(df.label)))
 			elif df.fieldtype == "Table":
 				for row in value or []:
