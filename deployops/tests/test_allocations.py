@@ -209,10 +209,12 @@ class TestSaleReservations(AllocationTestCase):
 		self.assertEqual(self.sale("JOB-CR-2").status, "Cancelled")
 
 	def test_delivery_closes_and_cancelled_delivery_reopens(self):
-		_order, job = self.order_job()
+		order, job = self.order_job()
 		self.set_serial(job, "JOB-CR-3")
 		note = fx.make_delivery_note(
-			self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}], posting_date="2026-10-20"
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": order}],
+			posting_date="2026-10-20",
 		)
 		allocations.on_delivery_note_submit(note)
 		sale = self.sale("JOB-CR-3")
@@ -323,6 +325,31 @@ class TestAllocationIntegrityAndVisibility(AllocationTestCase):
 		with set_user(self.admin):
 			self.assertEqual(set(frappe.get_list(ALLOCATION, pluck="name")) & {robot, cash}, {robot, cash})
 
+	def test_supervisor_cannot_see_or_read_allocation_outside_their_company(self):
+		"""#14 review P2a: Company User Permissions restrict allocation list and read for Supervisors."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("JOB-AWAY", self.robot, company=fx.OTHER_COMPANY)
+		other_sub = frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"party_type": "Customer",
+				"party": self.customer,
+				"company": fx.OTHER_COMPANY,
+				"status": "Active",
+				"plans": [{"plan": "_Test Rental Plan", "qty": 1}],
+			}
+		).insert(ignore_permissions=True)
+		with set_user(self.admin):
+			other_alloc = allocation_api.reserve("JOB-AWAY", "Subscription", other_sub.name)
+
+		add_user_permission("Company", fx.COMPANY, self.supervisor)
+		with set_user(self.supervisor):
+			listed = set(frappe.get_list(ALLOCATION, pluck="name"))
+			self.assertNotIn(other_alloc, listed)
+			self.assertFalse(frappe.has_permission(ALLOCATION, "read", other_alloc))
+
 
 class TestSerialHistory(AllocationTestCase):
 	def test_history_combines_stock_allocations_and_jobs(self):
@@ -367,7 +394,7 @@ class TestSerialHistory(AllocationTestCase):
 		).insert(ignore_permissions=True)
 		with set_user(other):
 			history = allocation_api.serial_history("JOB-BB-1")
-		self.assertEqual({row["source"] for row in history}, {"ERPNext"})  # authorised for the model only
+		self.assertEqual(history, [])  # technician not on this job: no stock moves, no allocations/jobs
 		self.assertNotIn(self.customer, " ".join(str(row["detail"]) for row in history))
 		with set_user(self.technician):  # assigned to the job: sees it
 			self.assertIn(job, [row["reference_name"] for row in allocation_api.serial_history("JOB-BB-1")])
@@ -378,3 +405,65 @@ class TestSerialHistory(AllocationTestCase):
 		profile.save(ignore_permissions=True)
 		with set_user(self.supervisor), self.assertRaises(frappe.PermissionError):
 			allocation_api.serial_history("JOB-BB-1")
+
+	def test_serial_history_respects_company_user_permissions(self):
+		"""#14 review P1: Company User Permissions gate serial_history before equipment profile."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("JOB-AWAY", self.robot, company=fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.supervisor)
+		with set_user(self.supervisor):
+			allocation_api.serial_history("JOB-BB-1")  # own company: allowed
+		with set_user(self.supervisor), self.assertRaises(frappe.PermissionError):
+			allocation_api.serial_history("JOB-AWAY")  # other company: refused
+
+	def test_technician_does_not_see_stock_moves_supervisor_does(self):
+		"""#14 review P2c: ERPNext stock moves are shown to Supervisors+ only, not Technicians."""
+		fx.make_bundle(self.robot, ["JOB-BB-1"])
+		self.deploy_rental()
+
+		with set_user(self.technician):
+			history = allocation_api.serial_history("JOB-BB-1")
+		self.assertNotIn("ERPNext", {row["source"] for row in history})
+
+		with set_user(self.supervisor):
+			history = allocation_api.serial_history("JOB-BB-1")
+		self.assertIn("ERPNext", {row["source"] for row in history})
+
+
+class TestDeliveryNoteValidation(TestSaleReservations):
+	"""#14 review P2b: on_delivery_note_submit only transitions when SO and company match."""
+
+	def test_unrelated_sales_order_delivery_does_not_close_allocation(self):
+		order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		other_order = fx.make_sales_order(self.customer, [self.cash]).name
+		note = fx.make_delivery_note(
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": other_order}],
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")
+
+	def test_delivery_without_sales_order_link_does_not_close_allocation(self):
+		_order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		note = fx.make_delivery_note(
+			self.customer, [{"item_code": self.cash, "serial_no": "JOB-CR-3"}]
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")
+
+	def test_wrong_company_delivery_does_not_close_allocation(self):
+		order, job = self.order_job()
+		self.set_serial(job, "JOB-CR-3")
+		fx.make_company(fx.OTHER_COMPANY)
+		note = fx.make_delivery_note(
+			self.customer,
+			[{"item_code": self.cash, "serial_no": "JOB-CR-3", "against_sales_order": order}],
+			company=fx.OTHER_COMPANY,
+		)
+		allocations.on_delivery_note_submit(note)
+		self.assertEqual(self.sale("JOB-CR-3").status, "Reserved")

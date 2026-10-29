@@ -9,6 +9,7 @@ from deployops.roles import ADMINISTRATOR, MANAGER, SUPERVISOR, TECHNICIAN
 from deployops.security.matrix import DOCTYPE_MATRIX
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_checklists import ChecklistTestCase
+from deployops.tests.utils import api_token
 from deployops.workflow import job_workflow
 
 JOB = "DeployOps Job"
@@ -107,15 +108,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 			cls.customer, [{"item_code": cls.item, "serial_and_batch_bundle": bundle}]
 		).name
 
-		# API keys, not a sid parameter: Frappe ignores a query-string sid on requests with a JSON body,
-		# which would quietly turn every write test into a guest test.
-		cls.tokens = {}
-		for key, user in cls.users.items():
-			doc = frappe.get_doc("User", user)
-			doc.api_key, secret = frappe.generate_hash(length=15), frappe.generate_hash(length=15)
-			doc.api_secret = secret
-			doc.save(ignore_permissions=True)
-			cls.tokens[key] = f"token {doc.api_key}:{secret}"
+		cls.tokens = {key: api_token(user) for key, user in cls.users.items()}
 		frappe.db.commit()  # nosemgrep
 		cls.client = get_test_client(use_cookies=False)
 
@@ -252,7 +245,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 
 	def test_print_and_export_follow_the_matrix(self):
 		response = self.call("get", "/printview", "other", params={"doctype": FORM, "name": self.submitted})
-		self.assertNotEqual(response.status_code, 200)  # a technician not on the job
+		self.assertEqual(response.status_code, 403)  # a technician not on the job
 		response = self.call("get", "/printview", "tech", params={"doctype": FORM, "name": self.submitted})
 		self.assertEqual(response.status_code, 200)
 
@@ -321,6 +314,9 @@ class TestWritesOverHttp(IntegrationTestCase):
 			("Sales Order", self.order),
 			("Delivery Note", self.delivery),
 		)
+		# These URLs answer 403 for a missing record too, so first make sure the refusals are about rights.
+		for doctype, name in records:
+			self.assertTrue(frappe.db.exists(doctype, name))
 		for who in ("tech", "sup", "man", "admin"):
 			for doctype, name in records:
 				with self.subTest(who=who, doctype=doctype):
@@ -332,7 +328,7 @@ class TestWritesOverHttp(IntegrationTestCase):
 					)
 					self.assertEqual(response.status_code, 403)
 					response = self.call("get", "/printview", who, params={"doctype": doctype, "name": name})
-					self.assertNotEqual(response.status_code, 200)
+					self.assertEqual(response.status_code, 403)
 					before = self.state(doctype, name)
 					response = self.call("put", f"/api/resource/{doctype}/{name}", who, json={"remarks": "x"})
 					self.assert_refused(response, doctype, name, before)

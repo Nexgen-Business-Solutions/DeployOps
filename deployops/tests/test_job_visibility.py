@@ -10,7 +10,7 @@ from frappe.utils import get_test_client, get_url
 
 from deployops.roles import ADMINISTRATOR, ALIASES, MANAGER, SUPERVISOR, TECHNICIAN
 from deployops.tests import erpnext_fixtures as fx
-from deployops.tests.test_security_negative import login_sid
+from deployops.tests.utils import api_token
 
 JOB = "DeployOps Job"
 
@@ -213,8 +213,7 @@ class TestJobScopeOverHttp(IntegrationTestCase):
 			for job in (cls.cash_job, cls.robot_job)
 		}
 		# Requests run on a separate DB connection and only see committed data.
-		frappe.db.commit()  # nosemgrep
-		cls.sid = login_sid(cls.users[SUPERVISOR])
+		cls.token = api_token(cls.users[SUPERVISOR])
 		frappe.db.commit()  # nosemgrep
 		cls.client = get_test_client(use_cookies=False)
 
@@ -240,8 +239,14 @@ class TestJobScopeOverHttp(IntegrationTestCase):
 		return make_request(
 			target=self.client.get,
 			args=(get_url(path),),
-			kwargs={"query_string": {**(params or {}), "sid": self.sid}},
+			kwargs={"query_string": params or {}, "headers": {"Authorization": self.token}},
 		)
+
+	def test_requests_run_as_the_supervisor(self):
+		"""Guards every test below: a refusal must come from the supervisor's scope, not a lost login."""
+		response = self.get("/api/method/frappe.auth.get_logged_user")
+		self.assertEqual(response.status_code, 200, response.data[:300])
+		self.assertEqual(response.json["message"], self.users[SUPERVISOR])
 
 	def test_list_api_hides_out_of_scope_jobs(self):
 		response = self.get(f"/api/resource/{JOB}", {"limit_page_length": 100})
@@ -287,8 +292,8 @@ class TestJobScopeOverHttp(IntegrationTestCase):
 		)
 		self.assertFalse(json.loads(response.data).get("message"))
 
-		response = self.get("/printview", {"doctype": JOB, "name": self.robot_job})
-		self.assertNotEqual(response.status_code, 200)
+		self.assertEqual(self.get("/printview", {"doctype": JOB, "name": self.robot_job}).status_code, 403)
+		self.assertEqual(self.get("/printview", {"doctype": JOB, "name": self.cash_job}).status_code, 200)
 		self.assertEqual(self.get(f"/api/resource/{JOB}/{self.cash_job}").status_code, 200)
 
 	def test_private_attachments_follow_the_job(self):

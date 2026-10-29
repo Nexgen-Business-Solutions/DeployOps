@@ -9,6 +9,7 @@
 
 import frappe
 
+from deployops.security.company_access import allowed_companies
 from deployops.security.equipment_access import get_allowed_items
 from deployops.security.job_permissions import _sql_list, get_scope
 
@@ -56,7 +57,11 @@ def allocation_query_conditions(user: str | None = None) -> str:
 			return "1 = 0"
 		return f"(`tab{ALLOCATION}`.`active_serial`, `tab{ALLOCATION}`.`customer`) in ({pairs})"
 	if scope == "equipment":
-		return f"`tab{ALLOCATION}`.`item_code` in ({_sql_list(get_allowed_items(user))})"
+		items = f"`tab{ALLOCATION}`.`item_code` in ({_sql_list(get_allowed_items(user))})"
+		companies = allowed_companies(ALLOCATION, user)
+		if companies is not None:
+			return f"({items}) AND `tab{ALLOCATION}`.`company` in ({_sql_list(companies)})"
+		return items
 	return "1 = 0"
 
 
@@ -78,5 +83,8 @@ def allocation_has_permission(doc, user: str | None = None, permission_type: str
 	if scope == "assigned":
 		return bool(active_serial) and (active_serial, customer) in _technician_machines(user)
 	if scope == "equipment":
+		companies = allowed_companies(ALLOCATION, user)
+		if companies is not None and doc.company not in companies:
+			return False
 		return item_code in get_allowed_items(user)
 	return False

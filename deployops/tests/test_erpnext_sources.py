@@ -248,6 +248,76 @@ class TestSourceApi(SourceTestCase):
 			with self.assertRaises(frappe.PermissionError):
 				api.get_source_summary("Sales Order", home)
 
+	def test_get_serial_respects_company_user_permissions(self):
+		"""#13 review: the caller's companies decide, not the company argument (or its absence)."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company()
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("SN-HOME", self.cash)
+		fx.make_serial("SN-AWAY", self.cash, company=fx.OTHER_COMPANY)
+
+		with set_user(self.technician):  # no company restriction: both companies
+			self.assertEqual(api.get_serial("SN-HOME")["company"], fx.COMPANY)
+			self.assertEqual(api.get_serial("SN-AWAY")["company"], fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.technician, applicable_for="Sales Invoice")
+		with set_user(self.technician):  # restriction for another DocType only: still both
+			self.assertEqual(api.get_serial("SN-AWAY")["company"], fx.OTHER_COMPANY)
+
+		add_user_permission("Company", fx.COMPANY, self.technician)
+		with set_user(self.technician):
+			self.assertEqual(api.get_serial("SN-HOME")["name"], "SN-HOME")
+			self.assertEqual(api.get_serial("SN-HOME", self.cash, fx.COMPANY)["name"], "SN-HOME")
+			for company in (None, fx.OTHER_COMPANY, fx.COMPANY):
+				with self.subTest(company=company), self.assertRaises(frappe.PermissionError):
+					api.get_serial("SN-AWAY", company=company)
+
+	def test_serial_pickers_and_history_respect_company_user_permissions(self):
+		"""#13 review: the Desk serial pickers and the serial history list only the caller's companies."""
+		from frappe.permissions import add_user_permission
+
+		from deployops.api import allocations as allocations_api
+		from deployops.api import jobs as jobs_api
+
+		fx.make_company()
+		fx.make_company(fx.OTHER_COMPANY)
+		fx.make_serial("SN-HOME", self.cash)
+		fx.make_serial("SN-AWAY", self.cash, company=fx.OTHER_COMPANY)
+
+		def picked(company=None):
+			filters = {"item_code": self.cash, **({"company": company} if company else {})}
+			job_picker = jobs_api.serial_link_query("Serial No", "SN-", "name", 0, 20, filters)
+			allocation_picker = allocations_api.in_stock_serial_query(
+				"Serial No", "SN-", "name", 0, 20, filters
+			)
+			return {row[0] for row in job_picker}, {row[0] for row in allocation_picker}
+
+		with set_user(self.technician):  # no company restriction: both companies
+			self.assertEqual(picked(), ({"SN-HOME", "SN-AWAY"}, {"SN-HOME", "SN-AWAY"}))
+
+		add_user_permission("Company", fx.COMPANY, self.technician)
+		with set_user(self.technician):
+			self.assertEqual(picked(), ({"SN-HOME"}, {"SN-HOME"}))
+			self.assertEqual(picked(fx.OTHER_COMPANY), (set(), set()))  # asking for it doesn't help
+			self.assertIsInstance(allocations_api.serial_history("SN-HOME"), list)
+			with self.assertRaises(frappe.PermissionError):
+				allocations_api.serial_history("SN-AWAY")
+
+	def test_foreign_source_is_refused_before_anything_about_it_is_shown(self):
+		"""#13 review: a restricted user learns neither the state nor the company of another company's
+		document."""
+		from frappe.permissions import add_user_permission
+
+		fx.make_company()
+		fx.make_company(fx.OTHER_COMPANY)
+		draft = fx.make_sales_order(self.customer, [self.cash], docstatus=0, company=fx.OTHER_COMPANY).name
+		add_user_permission("Company", fx.COMPANY, self.technician)
+		with set_user(self.technician):
+			with self.assertRaises(frappe.PermissionError) as refused:
+				api.get_source_summary("Sales Order", draft)
+		self.assertNotIn(fx.OTHER_COMPANY, str(refused.exception))
+
 	def test_get_serial_respects_equipment(self):
 		fx.make_serial("SN-CASH", self.cash)
 		fx.make_serial("SN-ROBOT", self.robot)
