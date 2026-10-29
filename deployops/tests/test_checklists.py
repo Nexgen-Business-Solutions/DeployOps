@@ -580,6 +580,41 @@ class TestSignatureValidation(ChecklistTestCase):
 			doc.keys_receiver_signature = bad_sig
 			doc.save()
 
+	def test_truncated_png_is_rejected(self):
+		"""A truncated PNG (valid magic + IHDR, missing IDAT body) is rejected by img.load()."""
+		import io as _io
+
+		from PIL import Image
+
+		buf = _io.BytesIO()
+		Image.new("RGB", (1, 1), color=(255, 255, 255)).save(buf, "PNG")
+		truncated = buf.getvalue()[:-20]  # lop off the tail so the PNG is incomplete
+		bad_sig = "data:image/png;base64," + base64.b64encode(truncated).decode()
+		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
+			doc = self.doc()
+			doc.keys_receiver_signature = bad_sig
+			doc.save()
+
+	def test_oversized_png_is_rejected(self):
+		"""A PNG whose pixel count exceeds MAX_SIGNATURE_PIXELS is rejected before full decode."""
+		from unittest.mock import MagicMock, patch
+
+		from deployops.checklists.form import MAX_SIGNATURE_PIXELS, PNG_MAGIC, SIGNATURE_PREFIX
+
+		# Construct a minimal payload: PNG magic + zero padding to pass the magic check.
+		payload = PNG_MAGIC + b"\x00" * 16
+		sig = SIGNATURE_PREFIX + base64.b64encode(payload).decode()
+
+		mock_img = MagicMock()
+		mock_img.width = 1001
+		mock_img.height = 1000  # 1_001_000 > MAX_SIGNATURE_PIXELS (1_000_000)
+
+		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
+			with patch("PIL.Image.open", return_value=mock_img):
+				doc = self.doc()
+				doc.keys_receiver_signature = sig
+				doc.save()
+
 
 class TestDuplicateCheckLock(unittest.TestCase):
 	"""P2a: before_insert uses a locking query to close the TOCTOU race window.
