@@ -9,6 +9,8 @@
   "naming_series",
   "job",
   "job_device",
+  "maintenance_visit",
+  "maintenance_schedule",
   "customer_name",
   "site_address",
   "column_break_header",
@@ -81,6 +83,22 @@
    "hidden": 1,
    "label": "Job machine row",
    "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "maintenance_visit",
+   "fieldtype": "Link",
+   "label": "Maintenance Visit",
+   "options": "Maintenance Visit",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "maintenance_schedule",
+   "fieldtype": "Link",
+   "label": "Maintenance Schedule",
+   "options": "Maintenance Schedule",
+   "read_only": 1,
    "set_only_once": 1
   },
   {
