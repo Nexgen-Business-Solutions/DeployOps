@@ -439,7 +439,7 @@
    "label": "Special installation request"
   },
   {
-   "description": "Wall mounted / Fixed on counter top / Embedded under counter",
+   "description": "Wall mounted / Fixed on counter top / Embedded under counter. Do not enter passwords, PINs, OTPs or pairing codes.",
    "fieldname": "special_installation_request",
    "fieldtype": "Small Text",
    "label": "Special installation request",
@@ -451,6 +451,7 @@
    "label": "Employee"
   },
   {
+   "description": "Do not enter passwords, PINs, OTPs or pairing codes.",
    "fieldname": "additional_remarks",
    "fieldtype": "Small Text",
    "label": "Additional remarks",
