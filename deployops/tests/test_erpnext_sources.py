@@ -155,6 +155,10 @@ class TestValidateSerial(SourceTestCase):
 class TestSourceApi(SourceTestCase):
 	def setUp(self):
 		super().setUp()
+		# Always delete and recreate so self.cash is in the category regardless of committed state.
+		frappe.db.delete("DeployOps Equipment Category Item", {"parent": "_Test Cash"})
+		frappe.db.delete("DeployOps Equipment Category Item Group", {"parent": "_Test Cash"})
+		frappe.db.delete("DeployOps Equipment Category", {"name": "_Test Cash"})
 		frappe.get_doc(
 			{
 				"doctype": "DeployOps Equipment Category",
@@ -163,6 +167,13 @@ class TestSourceApi(SourceTestCase):
 			}
 		).insert(ignore_permissions=True)
 		self.technician = make_role_user(TECHNICIAN)
+		# Clear the Redis user_permissions cache: a previous test may have added company
+		# user-permissions that were rolled back from DB but left stale in Redis.
+		frappe.cache.hdel("user_permissions", self.technician)
+		# Always delete and recreate the profile — the committed profile may point to a
+		# different category or have no categories, returning an empty allowed-items set.
+		frappe.db.delete("DeployOps Equipment Access Profile Category", {"parent": self.technician})
+		frappe.db.delete("DeployOps Equipment Access Profile", {"name": self.technician})
 		frappe.get_doc(
 			{
 				"doctype": "DeployOps Equipment Access Profile",

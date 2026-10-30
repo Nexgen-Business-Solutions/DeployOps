@@ -84,13 +84,14 @@ class TestDeliveryAndRentalSerials(OrderSerialsTestCase):
 	def test_a_subscription_offers_its_allocated_machines_not_stock(self):
 		from deployops.api import allocations as allocation_api
 
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Category",
-				"category_name": "_Test Robots",
-				"items": [{"item_code": self.robot}],
-			}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("DeployOps Equipment Category", "_Test Robots"):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Category",
+					"category_name": "_Test Robots",
+					"items": [{"item_code": self.robot}],
+				}
+			).insert(ignore_permissions=True)
 		profile = frappe.get_doc("DeployOps Equipment Access Profile", self.supervisor)
 		profile.append("categories", {"category": "_Test Robots"})
 		profile.save(ignore_permissions=True)

@@ -26,13 +26,14 @@ class WorkflowTestCase(JobTestCase):
 		self.addCleanup(NO_CHECKLISTS.stop)
 		self.manager = make_role_user(MANAGER)
 		self.admin = make_role_user(ADMINISTRATOR)
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Access Profile",
-				"user": self.manager,
-				"categories": [{"category": "_Test Cash"}],
-			}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("DeployOps Equipment Access Profile", self.manager):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Access Profile",
+					"user": self.manager,
+					"categories": [{"category": "_Test Cash"}],
+				}
+			).insert(ignore_permissions=True)
 
 	def installation_job(self, serials=("JOB-CR-1", "JOB-CR-2")):
 		bundle = fx.make_bundle(self.cash, list(serials))
@@ -375,32 +376,43 @@ class TestWorkflowOverHttp(IntegrationTestCase):
 		fx.make_company()
 		cls.item = fx.make_item("_Wf CR-460")
 		cls.customer = fx.make_customer("_WfCust")
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Category",
-				"category_name": "_Wf Cash",
-				"items": [{"item_code": cls.item}],
-			}
-		).insert(ignore_permissions=True)
+		# Clean up any open jobs left by a previous crashed run holding WF-SN-1.
+		for job_name in frappe.db.sql(
+			"SELECT DISTINCT parent FROM `tabDeployOps Job Device` WHERE serial_no = 'WF-SN-1'",
+			pluck="parent",
+		):
+			if frappe.db.exists(JOB, job_name):
+				frappe.delete_doc(JOB, job_name, force=True, ignore_permissions=True, ignore_on_trash=True)
+		frappe.db.commit()  # nosemgrep
+		if not frappe.db.exists("DeployOps Equipment Category", "_Wf Cash"):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Category",
+					"category_name": "_Wf Cash",
+					"items": [{"item_code": cls.item}],
+				}
+			).insert(ignore_permissions=True)
 		cls.users = {}
 		for key, role in (("tech", TECHNICIAN), ("other", TECHNICIAN), ("sup", SUPERVISOR)):
 			email = f"wf-{key}@deployops.test"
-			frappe.get_doc(
-				{
-					"doctype": "User",
-					"email": email,
-					"first_name": key,
-					"send_welcome_email": 0,
-					"roles": [{"role": role}],
-				}
-			).insert(ignore_permissions=True)
-			frappe.get_doc(
-				{
-					"doctype": "DeployOps Equipment Access Profile",
-					"user": email,
-					"categories": [{"category": "_Wf Cash"}],
-				}
-			).insert(ignore_permissions=True)
+			if not frappe.db.exists("User", email):
+				frappe.get_doc(
+					{
+						"doctype": "User",
+						"email": email,
+						"first_name": key,
+						"send_welcome_email": 0,
+						"roles": [{"role": role}],
+					}
+				).insert(ignore_permissions=True)
+			if not frappe.db.exists("DeployOps Equipment Access Profile", email):
+				frappe.get_doc(
+					{
+						"doctype": "DeployOps Equipment Access Profile",
+						"user": email,
+						"categories": [{"category": "_Wf Cash"}],
+					}
+				).insert(ignore_permissions=True)
 			cls.users[key] = email
 		fx.make_serial("WF-SN-1", cls.item)
 		note = fx.make_delivery_note(cls.customer, [{"item_code": cls.item, "serial_no": "WF-SN-1"}]).name

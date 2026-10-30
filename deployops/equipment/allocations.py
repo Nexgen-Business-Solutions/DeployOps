@@ -313,20 +313,20 @@ def get_serial_history(serial_no: str, user: str | None = None) -> list[dict]:
 		entry = frappe.qb.DocType("Serial and Batch Entry")
 		bundle = frappe.qb.DocType("Serial and Batch Bundle")
 		for move in (
-		frappe.qb.from_(entry)
-		.join(bundle)
-		.on(entry.parent == bundle.name)
-		.select(
-			bundle.posting_datetime,
-			bundle.voucher_type,
-			bundle.voucher_no,
-			bundle.type_of_transaction,
-			bundle.warehouse,
-		)
-		.where(entry.serial_no == serial_no)
-		.where(bundle.is_cancelled == 0)
-		.where(bundle.docstatus == 1)
-		.run(as_dict=True)
+			frappe.qb.from_(entry)
+			.join(bundle)
+			.on(entry.parent == bundle.name)
+			.select(
+				bundle.posting_datetime,
+				bundle.voucher_type,
+				bundle.voucher_no,
+				bundle.type_of_transaction,
+				bundle.warehouse,
+			)
+			.where(entry.serial_no == serial_no)
+			.where(bundle.is_cancelled == 0)
+			.where(bundle.docstatus == 1)
+			.run(as_dict=True)
 		):
 			rows.append(
 				{

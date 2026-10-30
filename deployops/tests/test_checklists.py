@@ -22,6 +22,7 @@ MAINTENANCE = "DeployOps Cashmatic Maintenance"
 BELLABOT_INSTALL = "DeployOps BellaBot Installation"
 CATEGORY = "DeployOps Equipment Category"
 SIGNATURE = "data:image/png;base64,iVBORw0KGgo="
+VALID_SIGNATURE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 PHOTO = "DeployOps Checklist Photo"
 
 
@@ -31,6 +32,8 @@ class ChecklistTestCase(JobTestCase):
 		# Only the test categories decide product lines, whatever the site has configured.
 		frappe.db.set_value(CATEGORY, {"name": ["is", "set"]}, "product_line", None)
 		frappe.db.set_value(CATEGORY, "_Test Cash", "product_line", "Cashmatic")
+		if frappe.db.exists(CATEGORY, "_Test Robot"):
+			frappe.delete_doc(CATEGORY, "_Test Robot", force=True, ignore_permissions=True)
 		frappe.get_doc(
 			{
 				"doctype": CATEGORY,
@@ -53,6 +56,7 @@ class ChecklistTestCase(JobTestCase):
 					}
 				)
 			)
+			profile.categories = [row for row in profile.categories if row.category != "_Test Robot"]
 			profile.append("categories", {"category": "_Test Robot"})
 			profile.save(ignore_permissions=True)
 
@@ -135,7 +139,7 @@ class ChecklistTestCase(JobTestCase):
 			"Int": 70,
 			"Float": 2,
 			"Currency": 10,
-			"Signature": SIGNATURE,
+			"Signature": VALID_SIGNATURE,
 		}.get(df.fieldtype, "a@b.test" if df.options == "Email" else "Fine")
 
 	def complete_table(self, doc, df, required):
@@ -291,7 +295,7 @@ class TestFilling(ChecklistTestCase):
 			doc = self.complete(self.doc())
 			doc.keys_receiver_name = "Alice Keys"
 			doc.client_representative = "Bob Client"
-			doc.client_signature = SIGNATURE
+			doc.client_signature = VALID_SIGNATURE
 			doc.save()
 			record = {row.signature_field: row for row in doc.signatures}
 			self.assertEqual(
@@ -318,7 +322,7 @@ class TestFilling(ChecklistTestCase):
 	def test_a_signature_needs_the_signer_name(self):
 		with set_user(self.technician):
 			doc = self.complete(self.doc())
-			doc.client_signature = SIGNATURE
+			doc.client_signature = VALID_SIGNATURE
 			doc.client_representative = None
 			doc.save()
 			self.assertIn("Client representative signature: the signer's name is required.", doc.missing())
@@ -557,11 +561,10 @@ class TestSignatureValidation(ChecklistTestCase):
 		return frappe.get_doc(CASH_INSTALL, self.name)
 
 	def test_valid_png_signature_is_accepted(self):
-		"""A well-formed data:image/png;base64,... value with the correct PNG header passes."""
-		# SIGNATURE = "data:image/png;base64,iVBORw0KGgo=" which decodes to the 8-byte PNG magic.
+		"""A well-formed data:image/png;base64,... value with a real PNG passes."""
 		with set_user(self.technician):
 			doc = self.doc()
-			doc.keys_receiver_signature = SIGNATURE
+			doc.keys_receiver_signature = VALID_SIGNATURE
 			doc.save()  # must not raise
 
 	def test_bad_base64_signature_is_rejected(self):
@@ -588,7 +591,7 @@ class TestSignatureValidation(ChecklistTestCase):
 
 		buf = _io.BytesIO()
 		Image.new("RGB", (1, 1), color=(255, 255, 255)).save(buf, "PNG")
-		truncated = buf.getvalue()[:-20]  # lop off the tail so the PNG is incomplete
+		truncated = buf.getvalue()[:-30]  # lop off enough tail that PIL 12.3+ rejects on load()
 		bad_sig = "data:image/png;base64," + base64.b64encode(truncated).decode()
 		with set_user(self.technician), self.assertRaises(frappe.ValidationError):
 			doc = self.doc()
