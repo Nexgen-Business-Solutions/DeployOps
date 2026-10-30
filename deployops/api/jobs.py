@@ -150,6 +150,8 @@ def technician_link_query(
 	require_deployops_role()
 	filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
 	item_codes = set(filters.get("item_codes") or [])
+	if not item_codes:
+		return []
 
 	technicians = frappe.get_all(
 		"Has Role", filters={"role": TECHNICIAN, "parenttype": "User"}, pluck="parent", distinct=True

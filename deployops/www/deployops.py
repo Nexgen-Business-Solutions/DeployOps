@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
 
+from deployops.api.sources import require_deployops_role
+
 no_cache = 1
 APP_BASE = "/deployops"
 
@@ -27,6 +29,7 @@ def get_context():
 
 @frappe.whitelist(methods=["POST"])
 def get_context_for_dev():
+	require_deployops_role()
 	if not frappe.conf.developer_mode:
 		frappe.throw(_("This method is only meant for developer mode"))
 	return {"site_name": frappe.local.site}
