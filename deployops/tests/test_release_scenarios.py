@@ -15,11 +15,11 @@ from deployops.equipment import allocations
 from deployops.integrations import delivery_handoff
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_checklists import (
-	CASH_INSTALL,
-	ChecklistTestCase,
-	MAINTENANCE,
-	SIGNATURE,
-	VALID_SIGNATURE,
+    CASH_INSTALL,
+    MAINTENANCE,
+    SIGNATURE,
+    VALID_SIGNATURE,
+    ChecklistTestCase,
 )
 from deployops.tests.test_job import JOB, make_job
 
