@@ -215,6 +215,7 @@ def save_form(doctype: str, name: str, values: dict | str) -> dict:
 	require_deployops_role()
 	values = frappe.parse_json(values) if isinstance(values, str) else values or {}
 	doc = frappe.get_doc(form_doctype(doctype), name)
+	doc.check_permission("read")
 	for fieldname, value in values.items():
 		df = doc.meta.get_field(fieldname)
 		if not df or fieldname in layout.SKIPPED or df.read_only:
@@ -231,5 +232,6 @@ def save_form(doctype: str, name: str, values: dict | str) -> dict:
 def submit_form(doctype: str, name: str) -> dict:
 	require_deployops_role()
 	doc = frappe.get_doc(form_doctype(doctype), name)
+	doc.check_permission("read")
 	doc.submit()
 	return {"docstatus": doc.docstatus}

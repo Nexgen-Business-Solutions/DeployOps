@@ -23,6 +23,11 @@ WORKFLOW_FIELDS = (
 	"replaces",
 	"replaced_by",
 	"reserved_by_job",
+	"serial_no",
+	"source_name",
+	"source_doctype",
+	"allocation_type",
+	"company",
 )
 
 
