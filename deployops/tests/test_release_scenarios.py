@@ -14,7 +14,13 @@ from deployops.api import jobs as job_api
 from deployops.equipment import allocations
 from deployops.integrations import delivery_handoff
 from deployops.tests import erpnext_fixtures as fx
-from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, VALID_SIGNATURE, ChecklistTestCase
+from deployops.tests.test_checklists import (
+	CASH_INSTALL,
+	ChecklistTestCase,
+	MAINTENANCE,
+	SIGNATURE,
+	VALID_SIGNATURE,
+)
 from deployops.tests.test_job import JOB, make_job
 
 PRE_INSTALL = "DeployOps Cashmatic Pre-installation"
