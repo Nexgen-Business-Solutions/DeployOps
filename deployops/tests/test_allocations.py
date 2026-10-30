@@ -15,13 +15,14 @@ ALLOCATION = "DeployOps Equipment Allocation"
 class AllocationTestCase(JobTestCase):
 	def setUp(self):
 		super().setUp()
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Category",
-				"category_name": "_Test Robots",
-				"items": [{"item_code": self.robot}],
-			}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("DeployOps Equipment Category", "_Test Robots"):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Category",
+					"category_name": "_Test Robots",
+					"items": [{"item_code": self.robot}],
+				}
+			).insert(ignore_permissions=True)
 		self.manager = make_role_user(MANAGER)
 		self.admin = make_role_user(ADMINISTRATOR)
 		for user in (self.supervisor, self.manager, self.technician):
@@ -341,7 +342,7 @@ class TestAllocationIntegrityAndVisibility(AllocationTestCase):
 				"plans": [{"plan": "_Test Rental Plan", "qty": 1}],
 			}
 		).insert(ignore_permissions=True)
-		with set_user(self.admin):
+		with set_user(self.manager):
 			other_alloc = allocation_api.reserve("JOB-AWAY", "Subscription", other_sub.name)
 
 		add_user_permission("Company", fx.COMPANY, self.supervisor)

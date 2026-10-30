@@ -72,47 +72,50 @@ def make_customer(name: str, contact: str | None = None, address: str | None = N
 
 
 def make_contact(name: str) -> str:
-	db_insert(
-		{
-			"doctype": "Contact",
-			"name": name,
-			"first_name": name,
-			"full_name": name,
-			"email_id": f"{name.lower()}@example.com",
-		}
-	)
+	if not frappe.db.exists("Contact", name):
+		db_insert(
+			{
+				"doctype": "Contact",
+				"name": name,
+				"first_name": name,
+				"full_name": name,
+				"email_id": f"{name.lower()}@example.com",
+			}
+		)
 	return name
 
 
 def make_address(name: str) -> str:
-	db_insert(
-		{
-			"doctype": "Address",
-			"name": name,
-			"address_title": name,
-			"address_type": "Shipping",
-			"address_line1": "1 Test Street",
-			"city": "Douala",
-			"country": "Cameroon",
-		}
-	)
+	if not frappe.db.exists("Address", name):
+		db_insert(
+			{
+				"doctype": "Address",
+				"name": name,
+				"address_title": name,
+				"address_type": "Shipping",
+				"address_line1": "1 Test Street",
+				"city": "Douala",
+				"country": "Cameroon",
+			}
+		)
 	return name
 
 
 def make_serial(serial_no: str, item_code: str, company: str = COMPANY, customer: str | None = None) -> str:
 	"""In stock by default (Active, in a warehouse); delivered when a customer is given."""
-	db_insert(
-		{
-			"doctype": "Serial No",
-			"name": serial_no,
-			"serial_no": serial_no,
-			"item_code": item_code,
-			"company": company,
-			"status": "Delivered" if customer else "Active",
-			"warehouse": None if customer else "_Test Stores",
-			"customer": customer,
-		}
-	)
+	if not frappe.db.exists("Serial No", serial_no):
+		db_insert(
+			{
+				"doctype": "Serial No",
+				"name": serial_no,
+				"serial_no": serial_no,
+				"item_code": item_code,
+				"company": company,
+				"status": "Delivered" if customer else "Active",
+				"warehouse": None if customer else "_Test Stores",
+				"customer": customer,
+			}
+		)
 	return serial_no
 
 
@@ -163,7 +166,25 @@ def make_delivery_note(customer: str, rows: list[dict], docstatus: int = 1, is_r
 	)
 
 
+def make_subscription_plan(name: str = "_Test Rental Plan") -> str:
+	if not frappe.db.exists("Subscription Plan", name):
+		db_insert(
+			{
+				"doctype": "Subscription Plan",
+				"name": name,
+				"plan_name": name,
+				"billing_interval": "Monthly",
+				"billing_interval_count": 1,
+				"price_determination": "Fixed Rate",
+				"cost": 0,
+				"currency": "XAF",
+			}
+		)
+	return name
+
+
 def make_subscription(customer: str, status: str = "Active", party_type: str = "Customer"):
+	make_subscription_plan()
 	return db_insert(
 		{
 			"doctype": "Subscription",

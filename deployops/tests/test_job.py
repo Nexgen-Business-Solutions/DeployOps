@@ -41,6 +41,8 @@ class JobTestCase(IntegrationTestCase):
 		):
 			fx.make_serial(serial, item)
 
+		frappe.db.delete("DeployOps Equipment Category Item", {"parent": "_Test Cash"})
+		frappe.db.delete("DeployOps Equipment Category", {"name": "_Test Cash"})
 		frappe.get_doc(
 			{
 				"doctype": "DeployOps Equipment Category",
@@ -51,6 +53,9 @@ class JobTestCase(IntegrationTestCase):
 		self.technician = make_role_user(TECHNICIAN)
 		self.supervisor = make_role_user(SUPERVISOR)
 		for user in (self.technician, self.supervisor):
+			# frappe.delete_doc leaves child rows behind; delete them directly
+			frappe.db.delete("DeployOps Equipment Access Profile Category", {"parent": user})
+			frappe.db.delete("DeployOps Equipment Access Profile", {"name": user})
 			frappe.get_doc(
 				{
 					"doctype": "DeployOps Equipment Access Profile",
@@ -58,6 +63,8 @@ class JobTestCase(IntegrationTestCase):
 					"categories": [{"category": "_Test Cash"}],
 				}
 			).insert(ignore_permissions=True)
+			# DB rollback does not clear Redis; clear user_permissions cache after each test
+			self.addCleanup(frappe.cache.hdel, "user_permissions", user)
 
 	def delivery_note(self, rows=None):
 		rows = rows or [

@@ -39,6 +39,9 @@ def make_item(code: str, item_group: str = "Products", serialized: bool = True) 
 
 
 def make_category(name: str, items=(), item_groups=(), enabled: bool = True):
+	frappe.db.delete(f"{CATEGORY} Item", {"parent": name})
+	frappe.db.delete(f"{CATEGORY} Item Group", {"parent": name})
+	frappe.db.delete(CATEGORY, {"name": name})
 	return frappe.get_doc(
 		{
 			"doctype": CATEGORY,
@@ -63,6 +66,17 @@ def make_profile(user: str, categories=(), enabled: bool = True):
 
 class TestEquipmentAccess(IntegrationTestCase):
 	def setUp(self):
+		# Purge any profiles committed by crashed/interrupted previous runs before this test's
+		# transaction starts. All test users share the @deployops.test domain.
+		frappe.db.sql(
+			"DELETE FROM `tabDeployOps Equipment Access Profile Category` WHERE parent LIKE %s",
+			"%@deployops.test",
+		)
+		frappe.db.sql(
+			"DELETE FROM `tabDeployOps Equipment Access Profile` WHERE user LIKE %s",
+			"%@deployops.test",
+		)
+		frappe.db.commit()
 		# Each test starts clean: roll back its records and the Stock Setting below afterwards.
 		self.addCleanup(frappe.db.rollback)
 		# ERPNext v16 refuses serial-numbered Items unless this Stock Setting is on.

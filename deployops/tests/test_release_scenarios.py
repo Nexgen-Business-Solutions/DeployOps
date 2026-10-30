@@ -14,7 +14,7 @@ from deployops.api import jobs as job_api
 from deployops.equipment import allocations
 from deployops.integrations import delivery_handoff
 from deployops.tests import erpnext_fixtures as fx
-from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, ChecklistTestCase
+from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, VALID_SIGNATURE, ChecklistTestCase
 from deployops.tests.test_job import JOB, make_job
 
 PRE_INSTALL = "DeployOps Cashmatic Pre-installation"
@@ -213,7 +213,7 @@ class TestPermissionsAcrossTheFlow(ReleaseScenarioCase):
 		with set_user(self.technician):
 			form = frappe.get_doc(created["doctype"], created["name"])
 			form.append("installation_photos", {"image": photo})
-			form.keys_receiver_signature = SIGNATURE
+			form.keys_receiver_signature = VALID_SIGNATURE
 			form.save()
 
 		other = "_release-tech@deployops.test"

@@ -29,14 +29,15 @@ class TestWritesOverHttp(IntegrationTestCase):
 		cls.customer = fx.make_customer(f"_SecCust {PREFIX}")
 		for serial in ("SEC-SN-1", "SEC-SN-2"):
 			fx.make_serial(serial, cls.item)
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Category",
-				"category_name": CATEGORY,
-				"product_line": "Cashmatic",
-				"items": [{"item_code": cls.item}],
-			}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("DeployOps Equipment Category", CATEGORY):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Category",
+					"category_name": CATEGORY,
+					"product_line": "Cashmatic",
+					"items": [{"item_code": cls.item}],
+				}
+			).insert(ignore_permissions=True)
 
 		cls.users = {}
 		for key, role in (
@@ -66,6 +67,23 @@ class TestWritesOverHttp(IntegrationTestCase):
 				).insert(ignore_permissions=True)
 			cls.users[key] = email
 
+		# Clean up any open jobs left by a previous crashed run holding SEC-SN-1 or SEC-SN-2.
+		for job_name in frappe.db.sql(
+			"SELECT DISTINCT parent FROM `tabDeployOps Job Device` WHERE serial_no IN ('SEC-SN-1', 'SEC-SN-2')",
+			pluck="parent",
+		):
+			if frappe.db.exists(JOB, job_name):
+				for form_name in frappe.get_all(FORM, filters={"job": job_name}, pluck="name"):
+					for tbl in (
+						"DeployOps Checklist Photo",
+						"DeployOps Checklist Opening Hours",
+						"DeployOps Checklist Signature",
+					):
+						frappe.db.delete(tbl, {"parent": form_name})
+					frappe.db.delete(FORM, {"name": form_name})
+				frappe.db.delete(ALLOCATION, {"serial_no": ["in", ["SEC-SN-1", "SEC-SN-2"]]})
+				frappe.delete_doc(JOB, job_name, force=True, ignore_permissions=True, ignore_on_trash=True)
+		frappe.db.commit()  # nosemgrep
 		# A preparation job for two machines: one checklist left as a draft, one submitted.
 		cls.order = fx.make_sales_order(cls.customer, [cls.item, cls.item]).name
 		cls.job = (

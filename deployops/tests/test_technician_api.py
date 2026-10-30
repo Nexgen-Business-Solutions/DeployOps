@@ -5,7 +5,7 @@ from frappe.tests.classes.context_managers import set_user
 
 from deployops.api import technician as api
 from deployops.roles import TECHNICIAN
-from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, ChecklistTestCase
+from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, VALID_SIGNATURE, ChecklistTestCase
 
 CARD = "cashmatic-onsite"
 
@@ -164,7 +164,7 @@ class TestFormScreen(TechnicianApiTestCase):
 		self.save(
 			{
 				"installation_photos": [{"image": photo, "caption": "Front"}],
-				"keys_receiver_signature": SIGNATURE,
+				"keys_receiver_signature": VALID_SIGNATURE,
 			}
 		)
 		self.assertEqual(self.view()["values"]["installation_photos"][0]["image"], photo)

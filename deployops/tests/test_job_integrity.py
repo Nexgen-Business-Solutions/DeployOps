@@ -14,13 +14,14 @@ class IntegrityTestCase(JobTestCase):
 	def setUp(self):
 		super().setUp()
 		self.manager = make_role_user(MANAGER)
-		frappe.get_doc(
-			{
-				"doctype": "DeployOps Equipment Access Profile",
-				"user": self.manager,
-				"categories": [{"category": "_Test Cash"}],
-			}
-		).insert(ignore_permissions=True)
+		if not frappe.db.exists("DeployOps Equipment Access Profile", self.manager):
+			frappe.get_doc(
+				{
+					"doctype": "DeployOps Equipment Access Profile",
+					"user": self.manager,
+					"categories": [{"category": "_Test Cash"}],
+				}
+			).insert(ignore_permissions=True)
 
 	def note(self, serial):
 		bundle = fx.make_bundle(self.cash, [serial])

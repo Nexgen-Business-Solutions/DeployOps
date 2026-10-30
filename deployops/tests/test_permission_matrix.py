@@ -17,6 +17,12 @@ from deployops.tests.utils import make_role_user
 
 
 class TestRoles(IntegrationTestCase):
+	def setUp(self):
+		self.addCleanup(frappe.db.rollback)
+		from deployops.install import create_roles
+
+		create_roles()
+
 	def test_roles_exist_with_desk_access(self):
 		for role, desk_access in DESK_ACCESS.items():
 			with self.subTest(role=role):
@@ -46,6 +52,14 @@ class TestRoles(IntegrationTestCase):
 
 class TestRoleDrift(IntegrationTestCase):
 	def setUp(self):
+		# Ensure correct desk_access and user_type are committed before the test corrupts them;
+		# rollback then restores this committed state, not whatever crashed run left behind.
+		from deployops.install import create_roles
+
+		create_roles()
+		for role in DESK_ACCESS:
+			make_role_user(role)  # fixes user_type if a previous run committed it wrong
+		frappe.db.commit()  # nosemgrep
 		self.addCleanup(frappe.db.rollback)
 		self.addCleanup(frappe.clear_cache)
 
@@ -69,6 +83,14 @@ class TestRoleDrift(IntegrationTestCase):
 
 
 class TestPermissionMatrix(IntegrationTestCase):
+	def setUp(self):
+		# Clear permission cache and roll back so each test starts from the committed DB state.
+		# TestRoleDrift (runs just before this class) temporarily promotes roles; without this
+		# setUp its frappe.clear_cache cleanup still leaves role_permissions warm in frappe.local.
+		frappe.local.role_permissions = {}
+		self.addCleanup(frappe.db.rollback)
+		self.addCleanup(frappe.clear_cache)
+
 	def test_every_deployops_doctype_is_in_matrix(self):
 		doctypes = frappe.get_all("DocType", filters={"module": "DeployOps", "istable": 0}, pluck="name")
 		missing = sorted(set(doctypes) - set(DOCTYPE_MATRIX))
