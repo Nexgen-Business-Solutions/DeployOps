@@ -150,6 +150,11 @@ def make_sales_order(
 	)
 
 
+def make_preinstall_orders(customer: str, items: list[str], count: int = 1, **extra) -> list:
+	"""Create ``count`` submitted Sales Orders for Pre-installation, cycling through ``items``."""
+	return [make_sales_order(customer, [items[i % len(items)]], **extra) for i in range(count)]
+
+
 def make_delivery_note(customer: str, rows: list[dict], docstatus: int = 1, is_return: int = 0, **extra):
 	"""rows: [{"item_code": ..., "serial_no": "S1\\nS2"} or {"item_code": ..., "serial_and_batch_bundle": ...}]"""
 	return db_insert(

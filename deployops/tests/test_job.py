@@ -26,6 +26,7 @@ class JobTestCase(IntegrationTestCase):
 		fx.make_company()
 		fx.make_company(fx.OTHER_COMPANY)
 		self.cash = fx.make_item("_Test CR-460")
+		self.vp22 = fx.make_item("_Test VP-22")
 		self.robot = fx.make_item("_Test BB-PRO")
 		self.spare = fx.make_item("_Test Roll", serialized=False)
 		self.customer = fx.make_customer(
@@ -37,6 +38,11 @@ class JobTestCase(IntegrationTestCase):
 			("JOB-CR-1", self.cash),
 			("JOB-CR-2", self.cash),
 			("JOB-CR-3", self.cash),
+			("JOB-CR-4", self.cash),
+			("JOB-CR-5", self.cash),
+			("JOB-VP-1", self.vp22),
+			("JOB-VP-2", self.vp22),
+			("JOB-VP-3", self.vp22),
 			("JOB-BB-1", self.robot),
 		):
 			fx.make_serial(serial, item)
@@ -47,7 +53,7 @@ class JobTestCase(IntegrationTestCase):
 			{
 				"doctype": "DeployOps Equipment Category",
 				"category_name": "_Test Cash",
-				"items": [{"item_code": self.cash}],
+				"items": [{"item_code": self.cash}, {"item_code": self.vp22}],
 			}
 		).insert(ignore_permissions=True)
 		self.technician = make_role_user(TECHNICIAN)

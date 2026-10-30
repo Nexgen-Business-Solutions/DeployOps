@@ -5,7 +5,13 @@ from frappe.tests.classes.context_managers import set_user
 
 from deployops.api import technician as api
 from deployops.roles import TECHNICIAN
-from deployops.tests.test_checklists import CASH_INSTALL, MAINTENANCE, SIGNATURE, VALID_SIGNATURE, ChecklistTestCase
+from deployops.tests.test_checklists import (
+    CASH_INSTALL,
+    MAINTENANCE,
+    SIGNATURE,
+    VALID_SIGNATURE,
+    ChecklistTestCase,
+)
 
 CARD = "cashmatic-onsite"
 
