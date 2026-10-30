@@ -207,8 +207,34 @@ class TestBlockReturnCancel(WorkflowTestCase):
 			self.act(self.supervisor, job, "return", "Photo of the cash box missing"),
 			"Returned for Correction",
 		)
-		self.assertEqual(self.act(self.technician, job, "submit"), "Pending Review")
+		self.assertEqual(
+			self.act(self.technician, job, "submit", "Photo added"),
+			"Pending Review",
+		)
 		self.assertEqual(self.act(self.supervisor, job, "approve"), "Completed")
+
+	def test_resubmit_from_returned_requires_correction_note(self):
+		job = self.installation_job()
+		self.act(self.supervisor, job, "start")
+		self.act(self.technician, job, "arrive")
+		self.finish_machines(job)
+		self.act(self.technician, job, "submit")
+		self.act(self.supervisor, job, "return", "Photo of the cash box missing")
+		with self.assertRaises(frappe.ValidationError):
+			self.act(self.technician, job, "submit")  # no reason → must fail
+
+	def test_resubmit_reason_recorded_in_status_log(self):
+		job = self.installation_job()
+		self.act(self.supervisor, job, "start")
+		self.act(self.technician, job, "arrive")
+		self.finish_machines(job)
+		self.act(self.technician, job, "submit")
+		self.act(self.supervisor, job, "return", "Photo missing")
+		self.act(self.technician, job, "submit", "Photo added and checklist updated")
+		log = frappe.get_doc(JOB, job).status_log
+		resubmit = next((e for e in reversed(log) if e.action == "submit"), None)
+		self.assertIsNotNone(resubmit)
+		self.assertEqual(resubmit.reason, "Photo added and checklist updated")
 
 	def test_cancel_by_manager_or_admin_and_closed_jobs_are_locked(self):
 		job = self.installation_job()

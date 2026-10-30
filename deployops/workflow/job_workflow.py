@@ -32,6 +32,15 @@ WORKING = {"In Preparation", "On Site", "Returned for Correction"}  # machines c
 ACTIVE = {"In Preparation", "Ready for Deployment", "On Site", "Pending Review", "Returned for Correction"}
 REASON_REQUIRED = {"block", "return", "cancel"}
 
+
+def _reason_required(action: str, from_status: str) -> bool:
+	"""A reason is required for blocked/returned/cancelled transitions, and also when a technician
+	resubmits a job that was returned for correction (so the correction is recorded in the log)."""
+	if action == "submit" and from_status == "Returned for Correction":
+		return True
+	return action in REASON_REQUIRED
+
+
 TECHNICIAN_CAP, APPROVER_CAP, CANCELLER_CAP = "technician", "approver", "canceller"
 
 
@@ -123,7 +132,11 @@ def get_job_actions(job, user: str | None = None) -> list[dict]:
 	for action, rule in _job_rules(job).items():
 		if job.status in rule["from"] and caps & rule["who"]:
 			actions.append(
-				{"action": action, "label": rule["label"], "reason_required": action in REASON_REQUIRED}
+				{
+					"action": action,
+					"label": rule["label"],
+					"reason_required": _reason_required(action, job.status),
+				}
 			)
 	return actions
 
@@ -140,7 +153,7 @@ def apply_job_action(job_name: str, action: str, reason: str | None = None, user
 		frappe.throw(_("{0} is not possible while the job is {1}.").format(rule["label"], _(job.status)))
 	if not capacities(job, user) & rule["who"]:
 		frappe.throw(_("You are not allowed to {0} this job.").format(rule["label"]), frappe.PermissionError)
-	if action in REASON_REQUIRED and not (reason or "").strip():
+	if _reason_required(action, job.status) and not (reason or "").strip():
 		frappe.throw(_("A reason is required to {0}.").format(rule["label"]))
 
 	problem = _job_check(job, action)
