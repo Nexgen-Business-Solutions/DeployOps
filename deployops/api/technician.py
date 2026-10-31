@@ -99,7 +99,7 @@ def _machine(doc, row, device_actions) -> dict:
 		"actions": device_actions.get(row.name, []),
 		"checklist": {"doctype": form[0], "name": form[1], "submitted": form[2] == 1} if form else None,
 		"can_start_checklist": not form
-		and doc.status in job_workflow.WORKING
+		and doc.status in job_workflow.CHECKLIST_STATES
 		and row.device_status != "Cancelled"
 		and bool(card_for(doc.job_type, row.item_code)),
 	}

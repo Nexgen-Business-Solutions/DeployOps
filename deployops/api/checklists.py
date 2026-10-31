@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 
 from deployops.api.sources import require_deployops_role
-from deployops.checklists.cards import FORM_DOCTYPES, card_for
+from deployops.checklists.cards import FORM_DOCTYPES, card_for, form_for_device
 
 
 def form_doctype(doctype: str) -> str:
@@ -15,7 +15,7 @@ def form_doctype(doctype: str) -> str:
 
 @frappe.whitelist(methods=["POST"])
 def start_checklist(job: str, device: str) -> dict:
-	"""Create the checklist for one machine on a job; the form follows the job type and machine."""
+	"""The checklist of one machine on a job, created if it has none; the form follows the job type and machine."""
 	require_deployops_role()
 	job_doc = frappe.get_doc("DeployOps Job", job)
 	job_doc.check_permission("read")
@@ -29,6 +29,10 @@ def start_checklist(job: str, device: str) -> dict:
 				"No checklist is set up for {0} on a {1} job. Ask an administrator to set the checklist product line on its equipment category."
 			).format(row.item_code, _(job_doc.job_type))
 		)
+	frappe.has_permission(card["doctype"], "create", throw=True)
+	existing = form_for_device(job, device)
+	if existing:
+		return {"doctype": existing[0], "name": existing[1]}
 	doc = frappe.get_doc({"doctype": card["doctype"], "job": job, "job_device": device})
 	doc.insert()
 	return {"doctype": doc.doctype, "name": doc.name}

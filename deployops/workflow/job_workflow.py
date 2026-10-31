@@ -29,6 +29,7 @@ PATHS = {
 }
 CLOSED = {"Completed", "Cancelled"}
 WORKING = {"In Preparation", "On Site", "Returned for Correction"}  # machines can be worked on
+CHECKLIST_STATES = WORKING | {"Ready for Deployment"}  # a machine's checklist can be started
 ACTIVE = {"In Preparation", "Ready for Deployment", "On Site", "Pending Review", "Returned for Correction"}
 REASON_REQUIRED = {"block", "return", "cancel"}
 
@@ -173,7 +174,19 @@ def apply_job_action(job_name: str, action: str, reason: str | None = None, user
 	job.status = to
 	_log(job, user, action, before, to, reason)
 	_save(job)
+	if action == "start" and job.job_type == "Installation":
+		_create_checklists(job)
 	return job.status
+
+
+def _create_checklists(job):
+	"""Each machine of a started Installation job gets its checklist, whoever started the job."""
+	for row in job.devices:
+		card = card_for(job.job_type, row.item_code)
+		if card and row.device_status != "Cancelled" and not form_for_device(job.name, row.name):
+			frappe.get_doc({"doctype": card["doctype"], "job": job.name, "job_device": row.name}).insert(
+				ignore_permissions=True
+			)
 
 
 # ---------------------------------------------------------------------------------------------

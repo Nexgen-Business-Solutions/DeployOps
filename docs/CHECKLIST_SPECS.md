@@ -100,7 +100,7 @@ Submitted PDF has a completed status and signature event/time. Native Frappe mus
 Linked Sales Order/Subscription, customer, Contact, site Address, DeployOps Job, assigned Serial No, technician assignment, deployment planned date, status and reviewer outcome; per-step status including Blocked/NA; machine configuration amount fields and validation; required evidence for critical checks. These are **improvements**, not claims about the Jotform form.
 
 ## 2. Cashmatic On-site Installation — preliminary source headings
-Original: https://form.jotform.com/253064644317254. Previously identified areas: machine positioning, power and network, first refill, customer training, key handover, POS integration, installation photographs and customer acceptance/signature. **Full field-by-field list, options, conditions and mandatory flags unverified; obtain completed PDF or builder export.**
+Original: https://form.jotform.com/253064644317254. **Field mapping against the original Jotform:** [CASHMATIC_INSTALLATION_MAPPING.md](CASHMATIC_INSTALLATION_MAPPING.md) (#40, awaiting product-owner sign-off). Rules kept only in the Jotform builder remain unverified.
 
 Integration design: start from submitted Delivery Note (if sold), resolve customer/contact, Item and true serialized machine. Multi-machine deliveries have independent per-device outcomes. For rentals without Delivery Note, use linked deployment allocation and Subscription.
 

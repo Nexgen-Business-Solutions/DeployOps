@@ -717,7 +717,8 @@
   {
    "fieldname": "client_signature",
    "fieldtype": "Signature",
-   "label": "Client representative signature"
+   "label": "Client representative signature",
+   "reqd": 1
   },
   {
    "fieldname": "technician_signature",
@@ -766,7 +767,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-31 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Cashmatic Installation",

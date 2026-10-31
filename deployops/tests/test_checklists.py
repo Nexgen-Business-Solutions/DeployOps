@@ -196,9 +196,10 @@ class TestStartingAForm(ChecklistTestCase):
 		with set_user(self.technician):
 			with self.assertRaises(frappe.ValidationError):  # wrong form for a cash machine
 				frappe.get_doc({"doctype": BELLABOT_INSTALL, "job": job, "job_device": device}).insert()
-			checklist_api.start_checklist(job, device)
+			first = checklist_api.start_checklist(job, device)
+			self.assertEqual(checklist_api.start_checklist(job, device), first)
 			with self.assertRaises(frappe.ValidationError):  # one form per machine
-				checklist_api.start_checklist(job, device)
+				frappe.get_doc({"doctype": CASH_INSTALL, "job": job, "job_device": device}).insert()
 
 		draft = make_job(
 			"Delivery Note",
@@ -315,6 +316,8 @@ class TestFilling(ChecklistTestCase):
 			doc.client_signature = None
 			doc.save()
 			self.assertNotIn("client_signature", [row.signature_field for row in doc.signatures])
+			doc.client_signature = VALID_SIGNATURE
+			doc.save()
 			doc.submit()
 		snapshot = frappe.parse_json(frappe.db.get_value(CASH_INSTALL, self.name, "submission_snapshot"))
 		self.assertEqual(snapshot["signatures"]["keys_receiver_signature"]["signer_name"], "Alice Keys")
