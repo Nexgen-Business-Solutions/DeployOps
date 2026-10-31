@@ -68,7 +68,7 @@ class TestHomeAndJobs(TechnicianApiTestCase):
 			self.as_tech(api.my_jobs, "no-such-card")
 
 	def test_job_view(self):
-		job = self.working_job()
+		job = self.working_job("Maintenance")
 		view = self.as_tech(api.job_view, job)
 		self.assertEqual((view["status"], view["customer_name"]), ("On Site", "_TestJobCust Ltd"))
 		machine = view["machines"][0]

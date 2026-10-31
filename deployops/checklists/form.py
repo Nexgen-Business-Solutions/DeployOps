@@ -88,7 +88,7 @@ class ChecklistForm(Document):
 	def before_insert(self):
 		job = frappe.get_doc(JOB, self.job)
 		device = self.get_device(job)
-		if job.status not in job_workflow.WORKING:
+		if job.status not in job_workflow.CHECKLIST_STATES:
 			frappe.throw(_("A checklist can only be started while the job is being worked on."))
 		if device.device_status == "Cancelled":
 			frappe.throw(_("This machine was cancelled on the job."))
