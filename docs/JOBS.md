@@ -29,6 +29,7 @@ A **DeployOps Job** is one intervention (preparation, installation or maintenanc
 ## 2. Creating a job
 
 - **Desk:** DeployOps workspace → **Jobs → New**. Choose Job Type, Source Type and Source Document. **As soon as the source is picked**, the form fills in the company (if empty), customer, contact, site and the machines, using `deployops.api.jobs.get_source_details`. Review the rows, then save. The source picker only offers usable sources that hold your equipment.
+- **Checklists on a job:** once a form exists, it's listed under **Connections → Checklists** on the Desk job page. A form exists only after the technician starts it in the app, and that's possible only while the job is being worked on: for an Installation job, not until **Arrived on Site**.
 - **API:** `deployops.api.jobs.make_job(source_doctype, source_name, job_type, company=None, planned_date=None, assigned_technician=None, equipment_category=None)` (POST).
 
 **Devices come from the source** (in the form when the source is picked, and again on the first save if the table is still empty). Both use the same server function, `devices_from_source`:

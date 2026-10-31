@@ -33,6 +33,7 @@ PHOTO_SIZE = 1200  # longest side in the report, in pixels
 # submission snapshot; add a doctype here once its report layout is product-owner approved.
 REPORTABLE = (
 	"DeployOps Cashmatic Pre-installation",
+	"DeployOps Cashmatic Installation",
 	"DeployOps Cashmatic Maintenance",
 )
 

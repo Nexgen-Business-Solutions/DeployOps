@@ -25,6 +25,23 @@ BUNDLED_REFERENCES = (
 	("user-setup.pdf", "F2 user access configuration", "employee_checklist_section"),
 	("logo.png", "Massarie logo (machine labeling)", "employee_checklist_section"),
 )
+INSTALLATION = "DeployOps Cashmatic Installation"
+# The same, for the on-site Jotform.
+INSTALLATION_REFERENCES = (
+	(
+		"device-installation-guide.pdf",
+		"Cashmatic Device Installation Guide (CDIG)",
+		"machine_positioning_evaluation_section",
+	),
+	(
+		"device-installation-guide.pdf",
+		"Cashmatic Device Installation Guide (CDIG)",
+		"power_and_network_section",
+	),
+	("web-interface.pdf", "Web panel interface", "web_panel_explanation_section"),
+	("my-cashmatic-app.pdf", "My Cashmatic App", "web_panel_explanation_section"),
+	("warnings-precautions.pdf", "Warnings and precautions", "warnings_section"),
+)
 
 
 def install_reference_files():
@@ -38,7 +55,9 @@ def install_reference_files():
 		return
 	root = Path(frappe.get_app_path("deployops", "reference_files"))
 	uploaded: dict[str, str] = {}
-	for filename, title, section in BUNDLED_REFERENCES:
+	rows = [(PRE_INSTALLATION, *row) for row in BUNDLED_REFERENCES]
+	rows += [(INSTALLATION, *row) for row in INSTALLATION_REFERENCES]
+	for checklist, filename, title, section in rows:
 		path = root / filename
 		if not path.is_file():
 			continue
@@ -59,7 +78,7 @@ def install_reference_files():
 			)
 		settings.append(
 			"references",
-			{"title": title, "file": uploaded[filename], "checklist": PRE_INSTALLATION, "section": section},
+			{"title": title, "file": uploaded[filename], "checklist": checklist, "section": section},
 		)
 	if settings.references:
 		settings.save(ignore_permissions=True)

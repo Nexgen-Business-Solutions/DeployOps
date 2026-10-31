@@ -136,12 +136,14 @@ class TestBundledReferences(ReferenceTestCase):
 				install.install_reference_files()
 				settings = frappe.get_single(SETTINGS)
 				self.assertEqual(
-					[(r.title, r.section) for r in settings.references],
+					[(r.checklist, r.section) for r in settings.references],
 					[
-						("Cashmatic Device Installation Guide (CDIG)", "machine_configuration_steps_section"),
-						("Cashmatic Device Installation Guide (CDIG)", "machine_activation_steps_section"),
+						(PRE_INSTALLATION, "machine_configuration_steps_section"),
+						(PRE_INSTALLATION, "machine_activation_steps_section"),
+						(install.INSTALLATION, "machine_positioning_evaluation_section"),
+						(install.INSTALLATION, "power_and_network_section"),
 					],
 				)
-				self.assertEqual(len({r.file for r in settings.references}), 1)  # one upload, two places
+				self.assertEqual(len({r.file for r in settings.references}), 1)  # one upload, four places
 				install.install_reference_files()  # the administrator's list is never overwritten
-				self.assertEqual(len(frappe.get_single(SETTINGS).references), 2)
+				self.assertEqual(len(frappe.get_single(SETTINGS).references), 4)
