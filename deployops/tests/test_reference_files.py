@@ -128,6 +128,18 @@ class TestReferencesInTheChecklist(ReferenceTestCase):
 
 
 class TestBundledReferences(ReferenceTestCase):
+	def test_a_new_install_has_the_on_site_documents_from_the_app_folder(self):
+		self.set_references([])
+		install.install_reference_files()
+		rows = [r for r in frappe.get_single(SETTINGS).references if r.checklist == install.INSTALLATION]
+		self.assertEqual(
+			[(r.title, r.section) for r in rows],
+			[(title, section) for _filename, title, section in install.INSTALLATION_REFERENCES],
+		)
+		for row in rows:
+			with self.subTest(title=row.title, section=row.section):
+				self.assertTrue(frappe.db.get_value("File", {"file_url": row.file}, "is_private"))
+
 	def test_install_seeds_bundled_files_once_and_skips_missing_ones(self):
 		self.set_references([])
 		with tempfile.TemporaryDirectory() as folder:
