@@ -60,9 +60,9 @@ Source types are Jotform types. "Req" is the source's required flag. The `q` num
 Added on the DeployOps side (not in the source): the signature record, the submitted snapshot, the job's audit trail and the internal and customer PDF reports.
 
 ## 3. Reference files
-Each PDF embedded in the Jotform is listed in **DeployOps Reference Files** for this checklist and shown under its section. The list is seeded only on a fresh install, so a site that already has a list needs its administrator to add these rows and upload the two new PDF slots. `deployops/reference_files/README.md` has the file names.
+Each PDF embedded in the Jotform is listed in **DeployOps Reference Files** for this checklist and shown under its section. The list is seeded only on a fresh install, so a site that already has a list needs its administrator to add these rows and upload any missing PDFs. `deployops/reference_files/README.md` has the file names.
 
-The PDFs are not added to the repository by this change, because whether they may be committed is still open (pre-installation mapping, Q9).
+All four PDFs for this checklist are in `deployops/reference_files/`, by product-owner decision (2026-11-01), so a new install has them automatically.
 
 ## 4. Decisions needed from the product owner
 | Δ | Question | Current behaviour (proposal) |
