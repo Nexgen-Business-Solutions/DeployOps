@@ -42,6 +42,30 @@ INSTALLATION_REFERENCES = (
 	("my-cashmatic-app.pdf", "My Cashmatic App", "web_panel_explanation_section"),
 	("warnings-precautions.pdf", "Warnings and precautions", "warnings_section"),
 )
+BELLABOT_PRE_INSTALLATION = "DeployOps BellaBot Pre-installation"
+# The same, for the BellaBot pre-installation Jotform.
+BELLABOT_PRE_INSTALLATION_REFERENCES = (
+	(
+		"bellabot-deployment-manual.pdf",
+		"BellaBot Pro deployment manual",
+		"documents_shared_before_installation_section",
+	),
+	(
+		"bellabot-operation-guide.pdf",
+		"BellaBot Pro operation guide",
+		"documents_shared_before_installation_section",
+	),
+	(
+		"bellabot-product-introduction.pdf",
+		"BellaBot Pro product introduction",
+		"documents_shared_before_installation_section",
+	),
+	(
+		"bellabot-maintenance-and-care.png",
+		"BellaBot Pro maintenance and care",
+		"documents_shared_before_installation_section",
+	),
+)
 
 
 def install_reference_files():
@@ -57,6 +81,7 @@ def install_reference_files():
 	uploaded: dict[str, str] = {}
 	rows = [(PRE_INSTALLATION, *row) for row in BUNDLED_REFERENCES]
 	rows += [(INSTALLATION, *row) for row in INSTALLATION_REFERENCES]
+	rows += [(BELLABOT_PRE_INSTALLATION, *row) for row in BELLABOT_PRE_INSTALLATION_REFERENCES]
 	for checklist, filename, title, section in rows:
 		path = root / filename
 		if not path.is_file():

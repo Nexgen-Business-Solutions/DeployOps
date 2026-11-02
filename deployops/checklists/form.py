@@ -282,6 +282,9 @@ class ChecklistForm(Document):
 			)
 		self.submission_snapshot = self.snapshot()
 
+	def on_submit(self):
+		job_workflow.apply_checklist_decision(self)
+
 	def snapshot(self) -> str:
 		from deployops.checklists import layout  # layout imports this module
 

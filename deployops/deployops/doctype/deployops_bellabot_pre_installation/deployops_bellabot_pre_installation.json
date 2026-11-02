@@ -25,6 +25,7 @@
   "commercial_actions",
   "intended_customer_use_section",
   "intended_use",
+  "intended_use_other",
   "primary_functions_required_section",
   "step_deliver_items",
   "step_guide_customers",
@@ -32,6 +33,7 @@
   "step_play_audio_announcements",
   "step_collect_or_carry_materials",
   "step_provide_concierge_support",
+  "primary_functions_other",
   "site_environment_qualification_section",
   "site_indoors",
   "floors_dry",
@@ -47,6 +49,7 @@
   "stairs_on_route",
   "floor_and_navigation_hazards_section",
   "hazard_type",
+  "hazard_type_other",
   "surface_conditions_around_sensor_height_section",
   "step_black_surfaces",
   "step_polished_surfaces",
@@ -60,6 +63,7 @@
   "step_install_warning_signage",
   "step_adjust_route",
   "step_no_action_needed",
+  "corrective_actions_other",
   "corrective_notes",
   "route_definition_and_mapping_section",
   "route_map_files",
@@ -100,6 +104,7 @@
   "step_deployment_manual",
   "step_operating_guide",
   "step_product_introduction",
+  "documents_shared_other",
   "mandatory_site_photos_section",
   "operating_area_photos",
   "route_photos",
@@ -110,6 +115,7 @@
   "step_additional_labor_required",
   "step_lift_or_equipment_needed",
   "step_temporary_area_closure",
+  "special_requirements_other",
   "installation_constraints",
   "can_proceed",
   "unresolved_hazards_warnings_section",
@@ -119,6 +125,7 @@
   "step_charging_area_not_ready",
   "step_network_issue_unresolved",
   "step_access_delivery_issue",
+  "unresolved_hazards_other",
   "risk_notes",
   "pre_installation_decision_section",
   "final_decision",
@@ -258,8 +265,15 @@
    "fieldname": "intended_use",
    "fieldtype": "Select",
    "label": "Intended use case",
-   "options": "\nFood & beverage delivery\nHospitality room service\nRetail customer service\nReception / greeter\nAdvertising / promotional screen\nEvent / expo support\nEducation / campus support",
+   "options": "\nFood & beverage delivery\nHospitality room service\nRetail customer service\nReception / greeter\nAdvertising / promotional screen\nEvent / expo support\nEducation / campus support\nOther",
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.intended_use=='Other'",
+   "fieldname": "intended_use_other",
+   "fieldtype": "Data",
+   "label": "Other intended use",
+   "mandatory_depends_on": "eval:doc.intended_use=='Other'"
   },
   {
    "fieldname": "primary_functions_required_section",
@@ -295,6 +309,11 @@
    "fieldname": "step_provide_concierge_support",
    "fieldtype": "Check",
    "label": "Provide concierge support"
+  },
+  {
+   "fieldname": "primary_functions_other",
+   "fieldtype": "Data",
+   "label": "Other function"
   },
   {
    "fieldname": "site_environment_qualification_section",
@@ -387,8 +406,15 @@
    "fieldname": "hazard_type",
    "fieldtype": "Select",
    "label": "Hazard type",
-   "options": "\nNone\nLoose cables\nReflective surfaces\nTransparent glass / doors\nUneven flooring\nThresholds / ramps\nLow obstacles",
+   "options": "\nNone\nLoose cables\nReflective surfaces\nTransparent glass / doors\nUneven flooring\nThresholds / ramps\nLow obstacles\nOther",
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.hazard_type=='Other'",
+   "fieldname": "hazard_type_other",
+   "fieldtype": "Data",
+   "label": "Other hazard",
+   "mandatory_depends_on": "eval:doc.hazard_type=='Other'"
   },
   {
    "fieldname": "surface_conditions_around_sensor_height_section",
@@ -454,6 +480,11 @@
    "fieldname": "step_no_action_needed",
    "fieldtype": "Check",
    "label": "No action needed"
+  },
+  {
+   "fieldname": "corrective_actions_other",
+   "fieldtype": "Data",
+   "label": "Other corrective action"
   },
   {
    "fieldname": "corrective_notes",
@@ -676,6 +707,11 @@
    "label": "Product introduction"
   },
   {
+   "fieldname": "documents_shared_other",
+   "fieldtype": "Data",
+   "label": "Other document shared"
+  },
+  {
    "fieldname": "mandatory_site_photos_section",
    "fieldtype": "Section Break",
    "label": "Mandatory site photos"
@@ -730,6 +766,11 @@
    "label": "Temporary area closure"
   },
   {
+   "fieldname": "special_requirements_other",
+   "fieldtype": "Data",
+   "label": "Other special requirement"
+  },
+  {
    "fieldname": "installation_constraints",
    "fieldtype": "Small Text",
    "label": "Installation constraints or site notes"
@@ -775,6 +816,11 @@
    "fieldname": "step_access_delivery_issue",
    "fieldtype": "Check",
    "label": "Access / delivery issue"
+  },
+  {
+   "fieldname": "unresolved_hazards_other",
+   "fieldtype": "Data",
+   "label": "Other unresolved hazard"
   },
   {
    "fieldname": "risk_notes",
@@ -846,7 +892,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-11-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps BellaBot Pre-installation",

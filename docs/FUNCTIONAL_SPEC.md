@@ -68,7 +68,7 @@ Final states/transition rights, overrides, supervisor sign-off policy and schedu
 2. Two machines in same Delivery Note: independent serial and completion statuses.
 3. Wrong/nonmatching serial or already allocated serial rejected.
 4. Rental Subscription creates billing reference, but a specific robot serial is separately allocated, returned, swapped.
-5. BellaBot pre-install NO GO blocks deployment; GO WITH CONDITIONS requires documented resolution/approval rule.
+5. BellaBot pre-install NO GO blocks the machine until a Supervisor or Manager in scope clears it with a reason; GO WITH CONDITIONS needs remarks, and approval by a Supervisor or Manager in scope before the machine can complete (owner decision, 2026-11-01).
 6. Maintenance Visit -> component checklist -> traceable signed result.
 7. User without equipment profile or assigned job cannot list, open, update, print, export or access photos via direct endpoint.
 8. Existing trial Cashmatic Installation records untouched until audited/approved for retirement.
@@ -77,7 +77,7 @@ Final states/transition rights, overrides, supervisor sign-off policy and schedu
 ## 9. Items requiring owner confirmation before relevant features begin
 - Which confirmation/payment threshold authorizes new jobs.
 - When serial becomes compulsory for each checklist and which stock/inventory conditions permit assignment.
-- Who can override blocked or NO GO; whether approval always or only on exceptions.
+- Whether approval is always needed or only on exceptions. (Who clears a NO GO was decided: see §8 rule 5.)
 - Customer signature requirements, remote sign-off and employee signatures per form.
 - Exact Jotform conditional logic, field options and mandatory settings not recoverable solely from completed PDFs.
 - Desired rental return inventory process, Subscription-to-physical-Item mapping, device replacement process.
