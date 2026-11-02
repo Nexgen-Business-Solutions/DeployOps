@@ -107,10 +107,14 @@ def _form_for_device_locked(job: str, device: str) -> bool:
 	exists; ``False`` when the field is clear (and the gap lock is held).
 	"""
 	for doctype in FORM_DOCTYPES:
-		table = f"tab{doctype}"
-		rows = frappe.db.sql(
-			f"SELECT name FROM `{table}` WHERE job = %s AND job_device = %s AND docstatus != 2 LIMIT 1 FOR UPDATE",
-			(job, device),
+		form = frappe.qb.DocType(doctype)
+		rows = (
+			frappe.qb.from_(form)
+			.select(form.name)
+			.where((form.job == job) & (form.job_device == device) & (form.docstatus != 2))
+			.limit(1)
+			.for_update()
+			.run()
 		)
 		if rows:
 			return True

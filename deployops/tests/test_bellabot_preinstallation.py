@@ -315,6 +315,43 @@ class TestGoWithConditions(BellaBotTestCase):
 			self.act(self.technician, "complete")
 
 
+class TestReplacementForm(BellaBotTestCase):
+	"""A Manager cancels a submitted form on a machine that was already completed, and a new one follows."""
+
+	def replacement_after_completing(self):
+		self.submit(GO, None)
+		self.act(self.technician, "start")
+		self.act(self.technician, "complete")
+		with set_user(self.manager):
+			checklist_api.cancel_checklist(FORM, self.name, "Survey repeated")
+		with set_user(self.technician):
+			return checklist_api.start_checklist(self.job, self.row)["name"]
+
+	def test_no_go_blocks_a_completed_machine(self):
+		new = self.replacement_after_completing()
+		self.submit(NO_GO, "The route changed", name=new)
+		self.assertEqual(self.device().device_status, "Blocked")
+		log = self.log()
+		self.assertEqual((log.from_status, log.to_status), ("Completed", "Blocked"))
+
+	def test_conditions_reopen_a_completed_machine_until_approved(self):
+		new = self.replacement_after_completing()
+		self.submit(CONDITIONS, "Remove the loose cables first", name=new)
+		self.assertEqual(self.device().device_status, "In Progress")
+		log = self.log()
+		self.assertEqual((log.from_status, log.to_status), ("Completed", "In Progress"))
+		with self.assertRaisesRegex(frappe.ValidationError, "conditions"):
+			self.act(self.technician, "complete")
+		self.act(self.supervisor, "approve_conditions")
+		self.assertEqual(self.act(self.technician, "complete"), "Completed")
+
+	def test_cancelling_a_no_go_form_leaves_the_machine_blocked(self):
+		self.submit(NO_GO)
+		with set_user(self.manager):
+			checklist_api.cancel_checklist(FORM, self.name, "Survey repeated")
+		self.assertEqual(self.device().device_status, "Blocked")
+
+
 class TestTwoMachines(ChecklistTestCase):
 	def test_each_machine_has_its_own_outcome(self):
 		fx.make_serial("JOB-BB-2", self.robot)
