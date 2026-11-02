@@ -106,7 +106,7 @@ Integration design: start from submitted Delivery Note (if sold), resolve custom
 
 ## 3. BellaBot Pro Pre-installation — preliminary source headings
 Original: https://form.jotform.com/262743846222055. Previously identified areas: site assessment, route/passages measurements, navigation hazards, charging readiness, PUDU Cloud/account readiness, promotional content, mandatory photos and decision **GO / GO WITH CONDITIONS / NO GO**. **Verify all original fields and builder logic.**
-Design: NO GO should block deployment pending documented resolution and authorized override; GO WITH CONDITIONS needs documented conditional approval policy (not yet approved).
+Decided (owner, 2026-11-01): see [BELLABOT_PREINSTALLATION_MAPPING.md §5](BELLABOT_PREINSTALLATION_MAPPING.md).
 
 ## 4. BellaBot Pro On-site Installation — preliminary source headings
 Original: https://form.jotform.com/262743396548066. Previously identified areas: physical condition, Wi-Fi/PUDU Link, mapping, operating modes, functional/safety tests, client training, evidence and signed handover. **Field-level mapping pending sample/builder export.**

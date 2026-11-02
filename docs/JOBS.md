@@ -111,10 +111,11 @@ Approvers and cancellers come from the permission matrix (letters "a" and "x"). 
 | Start Machine | Pending | In Progress | assigned Technician |
 | Complete Machine | In Progress | Completed (needs a Serial No, and its checklist submitted when the machine has one) | assigned Technician |
 | Block Machine | Pending, In Progress | Blocked (**reason**) | assigned Technician, Supervisor, Manager |
-| Unblock Machine | Blocked | In Progress | Supervisor, Manager |
+| Unblock Machine | Blocked | In Progress | Supervisor, Manager (**reason** when clearing a NO GO) |
+| Approve Conditions | Pending, In Progress | unchanged; records who and when | Supervisor, Manager, only while a submitted GO WITH CONDITIONS waits |
 | Cancel Machine | Pending, In Progress, Blocked | Cancelled (**reason**) | Supervisor, Manager |
 
-**NO GO / critical findings:** a Blocked machine stops the job from being submitted or approved. The checklist GO / NO GO decision (BellaBot, #24) will plug into the same rule.
+**NO GO / critical findings:** a Blocked machine stops the job from being submitted or approved. Submitting a BellaBot pre-installation with NO GO blocks its machine, with the remarks as the reason. GO WITH CONDITIONS keeps the machine's status, and Complete Machine is refused until the conditions are approved; a replacement form needs a new approval (#24, [mapping §5](BELLABOT_PREINSTALLATION_MAPPING.md)).
 
 **Audit and integrity**
 - Every move is written to the job's **Status Log**: when, who, action, from, to, machine, reason.
@@ -133,6 +134,7 @@ Approvers and cancellers come from the permission matrix (letters "a" and "x"). 
 | `deployops/tests/test_permission_matrix.py`, `test_security_negative.py` | Job DocPerms match the matrix; Job API allowed and refused per the matrix |
 | `deployops/tests/test_job_integrity.py` | Status-log entries cannot be rewritten or removed (Technician, Supervisor); a new job ignores supplied statuses and history; source snapshot, company and source fixed; job type fixed once started; no more machines than ordered; a cancelled machine frees its serial; a Manager can cancel after the technician's access is revoked. In `test_checklists.py` / `test_allocations.py`: a machine with a checklist cannot change serial; a cancelled job stops checklist edits; a returned rental machine does not block cancelling its job |
 | `deployops/tests/test_order_serials.py` | A delivered order offers and accepts only its delivered serials; undelivered units may use stock; an undelivered order still picks from stock; a machine from a later delivery offers that delivery's serials; a subscription offers its allocated machines, not stock |
+| `deployops/tests/test_bellabot_preinstallation.py` | GO, NO GO and GO WITH CONDITIONS on the machine; who can clear or approve; two machines with separate outcomes |
 | `deployops/tests/test_job_workflow.py` | Installation, Pre-installation and Maintenance paths with the status log; closing the source later does not stop the job; start needs a technician; who may do what (Admin does not approve, Supervisor does not cancel, only the assigned Technician arrives and submits); actions must fit the state; reasons required; submit needs every machine done, none blocked, at least one completed; block and unblock back to the previous state; return for correction and resubmit; cancel and the lock on closed jobs; machines only updated while work is under way; status, machine status and log cannot be edited directly; an unassigned technician cannot act; available actions per user; a completed job cannot be cancelled; completed machines frozen; machines only removed in Draft; machine list frozen during review; over real HTTP: GET refused on state-changing methods, guest and other technician refused, 417 for a wrong state or missing reason, 403 for the wrong person, full path to Completed |
 | `deployops/tests/test_job_visibility.py` | Supervisor and Manager scoped by equipment (all machines; no-machine jobs by category); Admin sees all; Technician only assigned; document access matches the list; revocation is immediate; users without a DeployOps role see nothing; over HTTP: list, report view, get_list, link search, direct URL, `frappe.client.get`, form load, `get_value`, print and private attachments, each request checked to run as the intended user |
 

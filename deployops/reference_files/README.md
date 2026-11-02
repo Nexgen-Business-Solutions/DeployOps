@@ -14,6 +14,10 @@ do not create empty PDFs or images.
 | `user-setup.pdf` | F2 user setup reference |
 | `warnings-precautions.pdf` | Warnings and precautions (on-site installation) |
 | `logo.png` | Company logo / labeling image |
+| `bellabot-deployment-manual.pdf` | BellaBot Pro deployment manual |
+| `bellabot-operation-guide.pdf` | BellaBot Pro operation guide |
+| `bellabot-product-introduction.pdf` | BellaBot Pro product introduction |
+| `bellabot-maintenance-and-care.png` | BellaBot Pro maintenance and care (image in the Jotform) |
 
 These are filename placeholders, not verified source mappings. Rename/relabel as
 needed when the references are confirmed. Only include distribution-approved
@@ -35,4 +39,4 @@ and open it in the app's page-by-page viewer (see docs/FRONTEND.md). The files
 stay private: only users with a DeployOps role can open them.
 
 The mapping of each file to the original Jotforms is in
-docs/CASHMATIC_PREINSTALLATION_MAPPING.md §3 and docs/CASHMATIC_INSTALLATION_MAPPING.md §2.
+docs/CASHMATIC_PREINSTALLATION_MAPPING.md §3, docs/CASHMATIC_INSTALLATION_MAPPING.md §3 and docs/BELLABOT_PREINSTALLATION_MAPPING.md §3.

@@ -98,11 +98,11 @@ These differ from the Jotforms, either to keep a single source of truth or to fi
 - Cashmatic Pre-installation: the Jotform "Device" dropdown (Self Pay 460, Visual Pay 27 wall mounted, …) is now read-only and filled from the machine's Item. The mounting and option part of those choices (wall mounted, with stand, coins drawer) is not captured separately yet; "Special installation request" covers mounting.
 - Cashmatic Installation: "Type of network" and "IP" appeared three and two times; they are now once each. Unlabelled step groups were given the headings "Preparing the machine" and "Customer training". The typo "Codition" is fixed.
 - POS brand and API connector are shown and required only when POS integration = Yes. The Jotform has no logic; its label says "If Yes".
-- BellaBot Pre-installation: "Content types" is shown only when the promotional screen is used. "Scheduled shipping date" is a date and "Estimated shipping cost" is a currency; both were numbers in the Jotform.
+- BellaBot Pre-installation: see [BELLABOT_PREINSTALLATION_MAPPING.md](BELLABOT_PREINSTALLATION_MAPPING.md). "Content types" is shown only when the promotional screen is used. "Scheduled shipping date" is a date and "Estimated shipping cost" is a currency; both were numbers in the Jotform.
 - BellaBot Installation: the single-choice "Check" (power / Wi-Fi / PUDU Link) became three required ticks. Deployment types were translated to English, because the app is English only.
 - Maintenance: the section "B. Pelicano" lists banknote-recycler tasks, so it is named "B. Banknote recycler (NVS200)".
 - Jotform PDF manuals are named in section notes. The files themselves still need to be added.
-- There is **no automatic machine block** on a "bad" answer such as NO GO or a FAIL. Which answers should block a machine is a product decision; until then the technician uses Block Machine.
+- A checklist with a `final_decision` field drives its machine: NO GO blocks it, and GO WITH CONDITIONS needs approval (BellaBot Pre-installation, #24; see JOBS.md). No other answer, such as a FAIL, blocks a machine automatically; the technician uses Block Machine.
 
 ## 6. API
 
