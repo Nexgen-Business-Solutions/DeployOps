@@ -45,6 +45,10 @@ class OrderSerialsTestCase(JobTestCase):
 			doc.save()
 
 
+# Every cash machine that JobTestCase puts in stock.
+CASH_SERIALS = ["JOB-CR-1", "JOB-CR-2", "JOB-CR-3", "JOB-CR-4", "JOB-CR-5"]
+
+
 class TestSalesOrderSerials(OrderSerialsTestCase):
 	def test_a_delivered_order_offers_only_its_delivered_serials(self):
 		order = fx.make_sales_order(self.customer, [self.cash]).name
@@ -59,7 +63,7 @@ class TestSalesOrderSerials(OrderSerialsTestCase):
 		order = fx.make_sales_order(self.customer, [self.cash, self.cash]).name
 		self.deliver(order, ["JOB-CR-1"])
 		job = make_job("Sales Order", order, job_type="Pre-installation").name
-		self.assertEqual(self.picker(job), ["JOB-CR-1", "JOB-CR-2", "JOB-CR-3"])
+		self.assertEqual(self.picker(job), CASH_SERIALS)
 		self.set_serial(job, 1, "JOB-CR-2")  # the undelivered unit: a stock machine is fine
 		self.assertEqual([d.serial_no for d in frappe.get_doc(JOB, job).devices], ["JOB-CR-1", "JOB-CR-2"])
 		with self.assertRaisesRegex(frappe.ValidationError, "delivered"):
@@ -68,7 +72,7 @@ class TestSalesOrderSerials(OrderSerialsTestCase):
 	def test_an_undelivered_order_still_picks_from_stock(self):
 		order = fx.make_sales_order(self.customer, [self.cash]).name
 		job = make_job("Sales Order", order, job_type="Pre-installation").name
-		self.assertEqual(self.picker(job), ["JOB-CR-1", "JOB-CR-2", "JOB-CR-3"])
+		self.assertEqual(self.picker(job), CASH_SERIALS)
 
 
 class TestDeliveryAndRentalSerials(OrderSerialsTestCase):

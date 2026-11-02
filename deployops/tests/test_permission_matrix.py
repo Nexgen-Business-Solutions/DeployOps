@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import frappe
 from frappe.desk.desktop import Workspace
 from frappe.tests import IntegrationTestCase
@@ -62,17 +64,43 @@ class TestRoleDrift(IntegrationTestCase):
 		frappe.db.commit()  # nosemgrep
 		self.addCleanup(frappe.db.rollback)
 		self.addCleanup(frappe.clear_cache)
+		# Clearing a session commits, which would save the corrupted roles for every later test.
+		sessions = patch("frappe.core.doctype.user.user.clear_sessions")
+		sessions.start()
+		self.addCleanup(sessions.stop)
 
-	def test_migrate_sets_changed_desk_access_back(self):
-		"""#35 review: a Technician role given Desk access on a site is corrected by the next migrate."""
-		from deployops.install import create_roles
-
+	def drift(self) -> str:
+		"""Give the Technician role Desk access and save its user, as a site administrator might."""
 		technician = make_role_user(TECHNICIAN)
 		frappe.db.set_value("Role", TECHNICIAN, "desk_access", 1)
 		frappe.db.set_value("Role", SUPERVISOR, "desk_access", 0)
 		frappe.clear_cache()
 		frappe.get_doc("User", technician).save(ignore_permissions=True)
-		self.assertEqual(frappe.db.get_value("User", technician, "user_type"), "System User")  # the drift
+		return technician
+
+	def test_the_drift_never_outlives_the_test(self):
+		"""Saving a user whose type changed clears their sessions, and clearing a session commits. With
+		an open session, that used to leave the Technician with Desk access for the next test run."""
+		technician = make_role_user(TECHNICIAN)
+		frappe.qb.into("Sessions").columns("user", "sid", "lastupdate").insert(
+			technician, frappe.generate_hash(), frappe.utils.now_datetime()
+		).run()
+		frappe.db.commit()  # nosemgrep
+
+		self.drift()
+		frappe.db.rollback()
+
+		frappe.db.delete("Sessions", {"user": technician})
+		frappe.db.commit()  # nosemgrep
+		self.assertEqual(frappe.db.get_value("Role", TECHNICIAN, "desk_access"), 0)
+		self.assertEqual(frappe.db.get_value("User", technician, "user_type"), "Website User")
+
+	def test_migrate_sets_changed_desk_access_back(self):
+		"""#35 review: a Technician role given Desk access on a site is corrected by the next migrate."""
+		from deployops.install import create_roles
+
+		technician = self.drift()
+		self.assertEqual(frappe.db.get_value("User", technician, "user_type"), "System User")
 
 		create_roles()  # what before_migrate runs
 
