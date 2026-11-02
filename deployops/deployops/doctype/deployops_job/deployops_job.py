@@ -170,7 +170,16 @@ class DeployOpsJob(Document):
 			for row in frappe.get_all(
 				"DeployOps Job Device",
 				filters={"parent": self.name, "parenttype": "DeployOps Job"},
-				fields=["name", "item_code", "serial_no", "device_status", "delivery_note", "source_issue"],
+				fields=[
+					"name",
+					"item_code",
+					"serial_no",
+					"device_status",
+					"delivery_note",
+					"source_issue",
+					"conditions_approved_by",
+					"conditions_approved_on",
+				],
 			)
 		}
 		current = {row.name: row for row in self.devices if row.name}
@@ -187,9 +196,14 @@ class DeployOpsJob(Document):
 				if saved_status == "Pending Review":
 					frappe.throw(_("Machines cannot be added while the job is waiting for review."))
 				row.device_status = "Pending"
+				row.conditions_approved_by = row.conditions_approved_on = None
 				continue
 			if row.device_status != before.device_status:
 				frappe.throw(_("Machine status can only be changed through the job workflow."))
+			if (row.conditions_approved_by or None) != (before.conditions_approved_by or None) or str(
+				row.conditions_approved_on or ""
+			) != str(before.conditions_approved_on or ""):
+				frappe.throw(_("Approval of conditions can only be recorded through the job workflow."))
 			if not self.flags.delivery_handoff and (
 				(row.delivery_note or None) != (before.delivery_note or None)
 				or (row.source_issue or None) != (before.source_issue or None)

@@ -39,12 +39,12 @@ These walk a real job from its ERPNext source to approval through the public API
 | **Reference manuals (PDF) in checklists:** private, readable by DeployOps roles only, shown per section | `test_reference_files.py`, `src/lib/pdf.test.ts` | — | ✅ (in-app viewer checked by hand, see §4) |
 | **No secrets in checklists:** passwords, PINs, OTPs and pairing codes refused in text and table cells | `test_checklists.py` (`test_secrets_*`) | 32 | ✅ |
 | **Technician app (React):** session, guest shell, URLs under `/deployops`, API per screen | `test_technician_api.py`, `test_install.py`, `test_security_negative.py`, frontend unit tests | 02, 05, 31–33 | 🟡 No automated browser tests in CI; browser runs are manual (§4) |
-| **Printable reports / PDF output** (#27) | `test_reports.py`, `test_cashmatic_installation.py` (`TestReport`) | UAT U18, on-site U14 | 🟡 Cashmatic pre-installation, on-site and maintenance; the BellaBot checklists have none yet |
+| **Printable reports / PDF output** (#27) | `test_reports.py`, `test_cashmatic_installation.py` (`TestReport`), `test_bellabot_preinstallation.py` (`TestReport`) | UAT U18, on-site U14, BellaBot pre-installation U13 | 🟡 Cashmatic pre-installation, on-site and maintenance, and BellaBot pre-installation; BellaBot installation has none yet |
 | **Production rollout approval** | — | §5 below | 🟡 A release step, not code |
 
 ## 3. Known gaps to close before a production release
-1. **Printable reports (#27)** exist for the Cashmatic checklists only; the two BellaBot checklists have none yet.
-2. **Automatic no-go:** whether a NO GO or FAIL answer blocks a machine is an open product-owner decision. (A machine with a checklist already completes only once it's submitted.)
+1. **Printable reports (#27):** BellaBot installation has none yet.
+2. **Automatic no-go:** a BellaBot pre-installation NO GO blocks its machine (#24). Whether a FAIL answer on other checklists should is an open product-owner decision. (A machine with a checklist already completes only once it's submitted.)
 3. **Return for Correction:** which machines reopen is undefined (open with the product owner).
 4. **Field mapping sign-off (#40)** for all five checklists.
 5. **Maintenance Schedule** as a whole flow (#17).

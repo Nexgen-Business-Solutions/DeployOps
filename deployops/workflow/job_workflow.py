@@ -32,6 +32,10 @@ WORKING = {"In Preparation", "On Site", "Returned for Correction"}  # machines c
 CHECKLIST_STATES = WORKING | {"Ready for Deployment"}  # a machine's checklist can be started
 ACTIVE = {"In Preparation", "Ready for Deployment", "On Site", "Pending Review", "Returned for Correction"}
 REASON_REQUIRED = {"block", "return", "cancel"}
+# A checklist with this field drives its machine: NO GO blocks it, GO WITH CONDITIONS needs approval (#24).
+DECISION_FIELD, DECISION_REMARKS = "final_decision", "decision_remarks"
+NO_GO, WITH_CONDITIONS = "NO GO", "GO WITH CONDITIONS"
+APPROVE_CONDITIONS = "approve_conditions"
 
 
 def _reason_required(action: str, from_status: str) -> bool:
@@ -220,6 +224,12 @@ def _device_rules() -> dict:
 			"who": {APPROVER_CAP},
 			"label": _("Unblock Machine"),
 		},
+		APPROVE_CONDITIONS: {
+			"from": {"Pending", "In Progress"},
+			"to": None,  # the machine keeps its status; only the approval is recorded
+			"who": {APPROVER_CAP},
+			"label": _("Approve Conditions"),
+		},
 		"cancel": {
 			"from": {"Pending", "In Progress", "Blocked"},
 			"to": "Cancelled",
@@ -237,9 +247,15 @@ def get_device_actions(job, user: str | None = None) -> dict[str, list[dict]]:
 	out = {}
 	for row in job.devices:
 		allowed = [
-			{"action": action, "label": rule["label"], "reason_required": action in REASON_REQUIRED}
+			{
+				"action": action,
+				"label": rule["label"],
+				"reason_required": _device_reason_required(job, row, action),
+			}
 			for action, rule in _device_rules().items()
-			if row.device_status in rule["from"] and caps & rule["who"]
+			if row.device_status in rule["from"]
+			and caps & rule["who"]
+			and (action != APPROVE_CONDITIONS or _awaiting_approval(job, row))
 		]
 		if allowed:
 			out[row.name] = allowed
@@ -269,8 +285,10 @@ def apply_device_action(
 		)
 	if not capacities(job, user) & rule["who"]:
 		frappe.throw(_("You are not allowed to {0}.").format(rule["label"]), frappe.PermissionError)
-	if action in REASON_REQUIRED and not (reason or "").strip():
+	if _device_reason_required(job, row, action) and not (reason or "").strip():
 		frappe.throw(_("A reason is required to {0}.").format(rule["label"]))
+	if action == APPROVE_CONDITIONS and not _awaiting_approval(job, row):
+		frappe.throw(_("Machine {0} has no conditions waiting for approval.").format(_device_label(row)))
 	if action == "complete" and not row.serial_no:
 		frappe.throw(
 			_("Machine {0} needs a Serial No before it can be completed.").format(_device_label(row))
@@ -279,15 +297,71 @@ def apply_device_action(
 		frappe.throw(
 			_("Submit the checklist of machine {0} before completing it.").format(_device_label(row))
 		)
+	if action == "complete" and _awaiting_approval(job, row):
+		frappe.throw(
+			_("The conditions of machine {0} need a Supervisor or Manager's approval first.").format(
+				_device_label(row)
+			)
+		)
 
 	before = row.device_status
-	row.device_status = rule["to"]
+	row.device_status = rule["to"] or before
+	if action == APPROVE_CONDITIONS:
+		row.conditions_approved_by, row.conditions_approved_on = user, now_datetime()
 	_log(job, user, f"machine: {action}", before, row.device_status, reason, device=_device_label(row))
 	_save(job)
 	return row.device_status
 
 
+def apply_checklist_decision(form):
+	"""A submitted checklist's decision takes effect on its machine (#24). Each new form starts over,
+	so an approval given to an earlier, cancelled form never carries across."""
+	decision = form.get(DECISION_FIELD)
+	if not decision:
+		return
+	job = frappe.get_doc(JOB, form.job)
+	row = next(r for r in job.devices if r.name == form.job_device)
+	user, label = frappe.session.user, _device_label(row)
+	remarks = form.get(DECISION_REMARKS)
+	row.conditions_approved_by = row.conditions_approved_on = None
+	before = row.device_status
+	if decision == NO_GO and before not in ("Blocked", "Cancelled"):
+		row.device_status = "Blocked"
+		_log(job, user, "machine: block", before, "Blocked", f"{NO_GO}: {remarks}", device=label)
+	elif decision == WITH_CONDITIONS:
+		if before == "Completed":  # a replacement form on a machine that was already finished
+			row.device_status = "In Progress"
+		_log(
+			job,
+			user,
+			"machine: conditions submitted",
+			before,
+			row.device_status,
+			f"{WITH_CONDITIONS}: {remarks}",
+			device=label,
+		)
+	_save(job)
+
+
 # ---------------------------------------------------------------------------------------------
+
+
+def _submitted_decision(job, row) -> str | None:
+	form = form_for_device(job.name, row.name)
+	if not form or form[2] != 1 or not frappe.get_meta(form[0]).has_field(DECISION_FIELD):
+		return None
+	return frappe.db.get_value(form[0], form[1], DECISION_FIELD)
+
+
+def _awaiting_approval(job, row) -> bool:
+	return not row.conditions_approved_by and _submitted_decision(job, row) == WITH_CONDITIONS
+
+
+def _device_reason_required(job, row, action: str) -> bool:
+	"""Clearing a NO GO needs a reason; other unblocks don't."""
+	if action == "unblock":
+		return _submitted_decision(job, row) == NO_GO
+	return action in REASON_REQUIRED
 
 
 def _checklist_not_submitted(job, row) -> bool:
