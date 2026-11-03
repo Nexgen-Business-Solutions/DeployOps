@@ -12,7 +12,8 @@ from frappe.tests.classes.context_managers import set_user
 from deployops import install
 from deployops.api import checklists as checklist_api
 from deployops.api import jobs as job_api
-from deployops.checklists import report
+from deployops.checklists import layout, report
+from deployops.patches import flag_machines_blocked_by_checklist
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_checklists import ChecklistTestCase
 from deployops.tests.test_job import JOB, make_job
@@ -128,8 +129,9 @@ class TestDocumentsOnANewInstall(BellaBotTestCase):
 	def test_seeding_from_the_app_folder_lists_them_as_private_files(self):
 		settings = frappe.get_single("DeployOps Reference Files")
 		settings.set("references", [])
+		settings.seeded_references = None
 		settings.save(ignore_permissions=True)
-		install.install_reference_files()
+		install.sync_reference_files()
 		rows = [
 			row
 			for row in frappe.get_single("DeployOps Reference Files").references
@@ -142,6 +144,57 @@ class TestDocumentsOnANewInstall(BellaBotTestCase):
 		for row in rows:
 			with self.subTest(title=row.title):
 				self.assertTrue(frappe.db.get_value("File", {"file_url": row.file}, "is_private"))
+
+
+class TestNumberRanges(BellaBotTestCase):
+	"""The limits on the source form's number boxes; the 65 cm and 5° hints are guidance (mapping §4)."""
+
+	RANGES = {  # noqa: RUF012
+		"narrowest_passage_cm": 500,
+		"kitchen_entrance_cm": 500,
+		"max_dish_size_cm": 500,
+		"two_way_corridor_cm": 500,
+		"slope_degrees": 90,
+	}
+
+	def test_a_value_outside_the_source_range_stops_the_submit(self):
+		meta = frappe.get_meta(FORM)
+		for field, high in self.RANGES.items():
+			for value in (-1, high + 1):
+				with self.subTest(field=field, value=value):
+					doc = self.answered()
+					with set_user(self.technician):
+						doc.set(field, value)
+						doc.save()
+						self.assertEqual(
+							doc.missing(), [f"{meta.get_field(field).label}: must be between 0 and {high}."]
+						)
+						with self.assertRaises(frappe.ValidationError):
+							doc.submit()
+						doc.reload()
+						doc.set(field, 10)
+						doc.save()
+
+	def test_the_limits_themselves_are_accepted(self):
+		for field, high in self.RANGES.items():
+			for value in (0, high):
+				with self.subTest(field=field, value=value):
+					doc = self.answered()
+					with set_user(self.technician):
+						doc.set(field, value)
+						doc.save()
+					self.assertEqual(doc.missing(), [])
+
+	def test_the_guidance_hints_are_not_refusals(self):
+		doc = self.answered()
+		with set_user(self.technician):
+			doc.update({"narrowest_passage_cm": 50, "slope_degrees": 8})
+			doc.save()
+		self.assertEqual(doc.missing(), [])
+
+	def test_the_app_is_told_the_limits(self):
+		fields = {f["fieldname"]: f for s in layout.sections(self.doc()) for f in s["fields"]}
+		self.assertEqual(fields["slope_degrees"]["range"], {"min": 0, "max": 90})
 
 
 class TestDecisionRemarks(BellaBotTestCase):
@@ -350,6 +403,71 @@ class TestReplacementForm(BellaBotTestCase):
 		with set_user(self.manager):
 			checklist_api.cancel_checklist(FORM, self.name, "Survey repeated")
 		self.assertEqual(self.device().device_status, "Blocked")
+
+	def cancelled_no_go(self):
+		self.submit(NO_GO)
+		with set_user(self.manager):
+			checklist_api.cancel_checklist(FORM, self.name, "Survey repeated")
+
+	def assert_clearing_needs_a_reason(self):
+		job = frappe.get_doc(JOB, self.job)
+		with set_user(self.supervisor):
+			unblock = next(
+				a for a in job_workflow.get_device_actions(job)[self.row] if a["action"] == "unblock"
+			)
+		self.assertTrue(unblock["reason_required"])
+		with self.assertRaisesRegex(frappe.ValidationError, "reason is required"):
+			self.act(self.supervisor, "unblock")
+		self.assertEqual(self.act(self.supervisor, "unblock", "Customer widened the passage"), "In Progress")
+		self.assertEqual(self.log().reason, "Customer widened the passage")
+
+	def test_clearing_after_cancelling_with_no_replacement_needs_a_reason(self):
+		self.cancelled_no_go()
+		self.assert_clearing_needs_a_reason()
+
+	def test_clearing_with_a_replacement_draft_needs_a_reason(self):
+		self.cancelled_no_go()
+		with set_user(self.technician):
+			checklist_api.start_checklist(self.job, self.row)
+		self.assert_clearing_needs_a_reason()
+
+	def test_clearing_after_a_go_replacement_needs_a_reason(self):
+		self.cancelled_no_go()
+		with set_user(self.technician):
+			new = checklist_api.start_checklist(self.job, self.row)["name"]
+		self.submit(GO, None, name=new)
+		self.assertEqual(self.device().device_status, "Blocked")
+		self.assert_clearing_needs_a_reason()
+
+
+class TestBlockedFlagPatch(BellaBotTestCase):
+	"""Machines blocked by a NO GO before #25 have no flag; the patch sets it so clearing needs a reason."""
+
+	def run_patch_without_flag(self):
+		frappe.db.set_value("DeployOps Job Device", self.row, "blocked_by_checklist", 0)
+		flag_machines_blocked_by_checklist.execute()
+		return self.device().blocked_by_checklist
+
+	def test_a_no_go_block_gets_the_flag(self):
+		self.submit(NO_GO)
+		self.assertEqual(self.run_patch_without_flag(), 1)
+		with self.assertRaisesRegex(frappe.ValidationError, "reason is required"):
+			self.act(self.supervisor, "unblock")
+
+	def test_a_cancelled_no_go_block_gets_the_flag(self):
+		self.submit(NO_GO)
+		with set_user(self.manager):
+			checklist_api.cancel_checklist(FORM, self.name, "Survey repeated")
+		self.assertEqual(self.run_patch_without_flag(), 1)
+
+	def test_a_block_by_hand_does_not(self):
+		self.act(self.technician, "block", "Door locked")
+		self.assertEqual(self.run_patch_without_flag(), 0)
+
+	def test_a_go_form_does_not(self):
+		self.submit(GO)
+		self.act(self.technician, "block", "Door locked")
+		self.assertEqual(self.run_patch_without_flag(), 0)
 
 
 class TestTwoMachines(ChecklistTestCase):

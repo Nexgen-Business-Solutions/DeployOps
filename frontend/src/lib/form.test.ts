@@ -75,6 +75,72 @@ describe("findProblems", () => {
 	});
 });
 
+describe("an Other answer", () => {
+	const group: Section[] = [
+		{
+			name: "safety",
+			label: "Safety",
+			description: null,
+			any_of: true,
+			fields: [field("t1", "Check"), field("other", "Data", { any_of_other: true })],
+		},
+	];
+
+	it("counts as the group's tick once it has text", () => {
+		expect(findProblems(group, { other: "Ramp check" }).size).toBe(0);
+		expect(progress(group, { other: "Ramp check" })).toBe(1);
+	});
+
+	it("does not count when it is blank", () => {
+		expect(findProblems(group, { other: "  " }).has("safety")).toBe(true);
+		expect(progress(group, { other: "  " })).toBe(0);
+	});
+});
+
+describe("an answer that makes another required", () => {
+	const group: Section[] = [
+		{
+			name: "safety",
+			label: "Safety",
+			description: null,
+			any_of: false,
+			fields: [
+				field("result", "Select", { reqd: true, options: ["PASS", "FAIL"] }),
+				field("details", "Small Text", { required_when: [{ field: "result", value: "FAIL" }] }),
+			],
+		},
+	];
+
+	it("asks for it only with that answer", () => {
+		expect(findProblems(group, { result: "PASS" }).size).toBe(0);
+		expect([...findProblems(group, { result: "FAIL" }).keys()]).toEqual(["details"]);
+		expect(findProblems(group, { result: "FAIL", details: "Bumper" }).size).toBe(0);
+	});
+
+	it("shows it as required and counts it for progress", () => {
+		expect(visibleSections(group, { result: "FAIL" })[0].fields[1].reqd).toBe(true);
+		expect(progress(group, { result: "FAIL" })).toBe(0.5);
+	});
+});
+
+describe("a number with a range", () => {
+	const group: Section[] = [
+		{
+			name: "site",
+			label: "Site",
+			description: null,
+			any_of: false,
+			fields: [field("slope", "Float", { range: { min: 0, max: 90 } })],
+		},
+	];
+
+	it("is refused outside it, and accepted at its limits or when left empty", () => {
+		expect(findProblems(group, { slope: 91 }).get("slope")).toBe("Must be between 0 and 90.");
+		expect(findProblems(group, { slope: -1 }).has("slope")).toBe(true);
+		for (const slope of [0, 90, null]) expect(findProblems(group, { slope }).size).toBe(0);
+	});
+});
+
 describe("progress", () => {
 	it("counts required answers given", () => {
 		expect(progress(sections, {})).toBe(0);

@@ -36,6 +36,7 @@ REPORTABLE = (
 	"DeployOps Cashmatic Installation",
 	"DeployOps Cashmatic Maintenance",
 	"DeployOps BellaBot Pre-installation",
+	"DeployOps BellaBot Installation",
 )
 
 

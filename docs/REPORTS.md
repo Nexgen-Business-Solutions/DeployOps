@@ -1,6 +1,6 @@
 # Checklist reports (#27)
 
-A submitted checklist can be printed as a report or downloaded as a PDF. The **Cashmatic Pre-installation**, **Cashmatic Installation**, **Cashmatic Maintenance** and **BellaBot Pre-installation** checklists have one (`REPORTABLE` in `deployops/checklists/report.py`). BellaBot Installation doesn't yet.
+A submitted checklist can be printed as a report or downloaded as a PDF. The **Cashmatic Pre-installation**, **Cashmatic Installation**, **Cashmatic Maintenance**, **BellaBot Pre-installation** and **BellaBot Installation** checklists have one (`REPORTABLE` in `deployops/checklists/report.py`).
 
 ## What's in it
 | Part | Internal report | Customer copy |
@@ -17,7 +17,7 @@ Drafts have no report.
 
 ## Where to get it
 - **Technician app:** on a submitted checklist, **Report (PDF)** and **Customer copy (PDF)** under the "Submitted" banner.
-- **Desk:** open the checklist, **Print**, then pick the checklist's report: **Cashmatic Pre-installation Report**, **Cashmatic Installation Report** or **BellaBot Pre-installation Report**, each with a **(Customer)** version. Print from the browser to save as PDF. Cashmatic Maintenance has no Desk print formats yet; use the app or the API.
+- **Desk:** open the checklist, **Print**, then pick the checklist's report: **Cashmatic Pre-installation Report**, **Cashmatic Installation Report**, **BellaBot Pre-installation Report** or **BellaBot Installation Report**, each with a **(Customer)** version. Print from the browser to save as PDF. Cashmatic Maintenance has no Desk print formats yet; use the app or the API.
 - **API:** `GET /api/method/deployops.api.reports.checklist_pdf?doctype=…&name=…&audience=internal|customer`.
 
 ## Security

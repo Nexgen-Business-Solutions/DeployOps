@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.classes.context_managers import set_user
 
@@ -8,6 +10,7 @@ from deployops.roles import ADMINISTRATOR, MANAGER, SUPERVISOR
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.test_job import JOB, JobTestCase, make_job
 from deployops.tests.utils import make_role_user
+from deployops.workflow import job_workflow
 
 ALLOCATION = "DeployOps Equipment Allocation"
 
@@ -50,7 +53,8 @@ class AllocationTestCase(JobTestCase):
 		job = make_job("Subscription", self.subscription, assigned_technician=self.technician).name
 		frappe.db.set_value(JOB, job, "status", "Pending Review")
 		frappe.db.set_value("DeployOps Job Device", {"parent": job}, "device_status", "Completed")
-		with set_user(self.supervisor):
+		# A shortcut past the on-site work: the checklist rules are tested in test_bellabot_installation.
+		with set_user(self.supervisor), patch.object(job_workflow, "_checklist_not_submitted", return_value=False):
 			job_api.job_action(job, "approve")
 		return name, job
 

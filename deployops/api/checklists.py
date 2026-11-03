@@ -5,6 +5,7 @@ from frappe import _
 
 from deployops.api.sources import require_deployops_role
 from deployops.checklists.cards import FORM_DOCTYPES, card_for, form_for_device
+from deployops.workflow import job_workflow
 
 
 def form_doctype(doctype: str) -> str:
@@ -41,15 +42,23 @@ def start_checklist(job: str, device: str) -> dict:
 @frappe.whitelist(methods=["POST"])
 def cancel_checklist(doctype: str, name: str, reason: str) -> int:
 	"""Void a submitted checklist (Manager). Frappe's own cancel also needs write permission, which
-	the matrix deliberately does not give Managers, so the cancel right is checked here instead."""
+	the matrix deliberately does not give Managers, so the cancel right is checked here instead.
+
+	A draft started on an older form version can never be submitted, so it is discarded and the job's
+	log records it; the machine can then start a new form. Returns the form's status (2 = cancelled).
+	"""
 	require_deployops_role()
 	if not (reason or "").strip():
 		frappe.throw(_("A reason is required to cancel a checklist."))
 	doc = frappe.get_doc(form_doctype(doctype), name)
 	if not frappe.has_permission(doctype, "cancel", doc):
 		frappe.throw(_("You are not allowed to cancel this checklist."), frappe.PermissionError)
+	if doc.docstatus == 0 and doc.form_version != doc.FORM_VERSION:
+		job_workflow.record_discarded_draft(doc, reason.strip())
+		frappe.delete_doc(doc.doctype, doc.name, ignore_permissions=True)
+		return 2
 	if doc.docstatus != 1:
-		frappe.throw(_("Only a submitted checklist can be cancelled."))
+		frappe.throw(_("Only a submitted checklist or an outdated draft can be cancelled."))
 	doc.flags.ignore_permissions = True
 	doc.cancel()
 	doc.add_comment("Comment", _("Checklist cancelled: {0}").format(reason.strip()))

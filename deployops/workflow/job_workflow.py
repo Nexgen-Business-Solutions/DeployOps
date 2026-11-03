@@ -32,7 +32,8 @@ WORKING = {"In Preparation", "On Site", "Returned for Correction"}  # machines c
 CHECKLIST_STATES = WORKING | {"Ready for Deployment"}  # a machine's checklist can be started
 ACTIVE = {"In Preparation", "Ready for Deployment", "On Site", "Pending Review", "Returned for Correction"}
 REASON_REQUIRED = {"block", "return", "cancel"}
-# A checklist with this field drives its machine: NO GO blocks it, GO WITH CONDITIONS needs approval (#24).
+# A checklist's block_reason() blocks its machine. One with this field also has GO WITH CONDITIONS,
+# which needs approval (#24).
 DECISION_FIELD, DECISION_REMARKS = "final_decision", "decision_remarks"
 NO_GO, WITH_CONDITIONS = "NO GO", "GO WITH CONDITIONS"
 APPROVE_CONDITIONS = "approve_conditions"
@@ -127,6 +128,8 @@ def _job_check(job, action: str) -> str | None:
 				return _("machine {0} is not completed").format(_device_label(row))
 			if row.device_status == "Completed" and not row.serial_no:
 				return _("machine {0} has no Serial No").format(_device_label(row))
+			if row.device_status == "Completed" and _checklist_not_submitted(job, row):
+				return _("the checklist of machine {0} is not submitted").format(_device_label(row))
 	return None
 
 
@@ -308,6 +311,8 @@ def apply_device_action(
 	row.device_status = rule["to"] or before
 	if action == APPROVE_CONDITIONS:
 		row.conditions_approved_by, row.conditions_approved_on = user, now_datetime()
+	if action == "unblock":
+		row.blocked_by_checklist = 0
 	_log(job, user, f"machine: {action}", before, row.device_status, reason, device=_device_label(row))
 	_save(job)
 	return row.device_status
@@ -316,8 +321,8 @@ def apply_device_action(
 def apply_checklist_decision(form):
 	"""A submitted checklist's decision takes effect on its machine (#24). Each new form starts over,
 	so an approval given to an earlier, cancelled form never carries across."""
-	decision = form.get(DECISION_FIELD)
-	if not decision:
+	decision, blocked = form.get(DECISION_FIELD), form.block_reason()
+	if not decision and not blocked:
 		return
 	job = frappe.get_doc(JOB, form.job)
 	row = next(r for r in job.devices if r.name == form.job_device)
@@ -325,9 +330,9 @@ def apply_checklist_decision(form):
 	remarks = form.get(DECISION_REMARKS)
 	row.conditions_approved_by = row.conditions_approved_on = None
 	before = row.device_status
-	if decision == NO_GO and before not in ("Blocked", "Cancelled"):
-		row.device_status = "Blocked"
-		_log(job, user, "machine: block", before, "Blocked", f"{NO_GO}: {remarks}", device=label)
+	if blocked and before != "Cancelled":
+		row.device_status, row.blocked_by_checklist = "Blocked", 1
+		_log(job, user, "machine: block", before, "Blocked", blocked, device=label)
 	elif decision == WITH_CONDITIONS:
 		if before == "Completed":  # a replacement form on a machine that was already finished
 			row.device_status = "In Progress"
@@ -358,10 +363,28 @@ def _awaiting_approval(job, row) -> bool:
 
 
 def _device_reason_required(job, row, action: str) -> bool:
-	"""Clearing a NO GO needs a reason; other unblocks don't."""
+	"""Clearing a block that came from a checklist's answers needs a reason, even if that form was
+	cancelled or replaced since; other unblocks don't."""
 	if action == "unblock":
-		return _submitted_decision(job, row) == NO_GO
+		return bool(row.blocked_by_checklist)
 	return action in REASON_REQUIRED
+
+
+def record_discarded_draft(form, reason: str):
+	"""A draft removed because the form has a newer version: the job's log keeps who, when and why."""
+	job = frappe.get_doc(JOB, form.job)
+	row = next(r for r in job.devices if r.name == form.job_device)
+	text = _("{0} on form version {1}: {2}").format(form.name, form.form_version, reason)
+	_log(
+		job,
+		frappe.session.user,
+		"checklist: draft discarded",
+		row.device_status,
+		row.device_status,
+		text,
+		device=_device_label(row),
+	)
+	_save(job)
 
 
 def _checklist_not_submitted(job, row) -> bool:
