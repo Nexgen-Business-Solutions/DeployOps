@@ -124,12 +124,13 @@ export default function Form() {
 
 	return (
 		<>
-			<TopBar title={data?.title} back={data ? `/job/${encodeURIComponent(data.job)}` : "/"} right={editable && <SaveIndicator state={saveState} />} />
-			{editable && (
-				<div className="sticky top-14 z-10 h-0.5 bg-zinc-100" role="progressbar" aria-valuenow={Math.round(done * 100)} aria-valuemin={0} aria-valuemax={100}>
-					<div className="h-full bg-brand-500 transition-[width] duration-500" style={{ width: `${done * 100}%` }} />
-				</div>
-			)}
+			<TopBar
+				title={data?.title ?? "Checklist"}
+				subtitle={data ? [data.name, header.customer_name].filter(Boolean).join(" · ") : " "}
+				back={data ? `/job/${encodeURIComponent(data.job)}` : "/"}
+				right={editable && <SaveIndicator state={saveState} />}
+				progress={editable ? done : undefined}
+			/>
 
 			<Page className={editable ? "pb-36" : ""}>
 				{error && <Banner>{error.message}</Banner>}
@@ -227,7 +228,7 @@ export default function Form() {
 			</Page>
 
 			{editable && (
-				<footer className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-white via-white to-white/0 px-5 pb-[max(env(safe-area-inset-bottom),1rem)] pt-8">
+				<footer className="fixed bottom-0 left-(--shell-left) right-0 z-30 bg-gradient-to-t from-(--shell-bg) via-(--shell-bg) to-transparent px-5 pb-[max(env(safe-area-inset-bottom),1rem)] pt-8">
 					<div className="mx-auto flex max-w-[52rem] items-center gap-3">
 						<span className="w-16 text-sm tabular-nums text-muted">{Math.round(done * 100)}%</span>
 						<Button className="flex-1" onClick={() => void trySubmit()}>

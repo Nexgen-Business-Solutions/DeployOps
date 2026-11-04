@@ -75,7 +75,7 @@ export default function ChangePassword() {
 
 	return (
 		<>
-			<TopBar title="Change password" back="/" />
+			<TopBar title="Change password" subtitle="Your DeployOps account" back="/" />
 			<Page>
 				{done ? (
 					<div className="mx-auto max-w-sm space-y-6 pt-6">

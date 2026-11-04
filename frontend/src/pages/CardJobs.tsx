@@ -12,21 +12,14 @@ export default function CardJobs() {
 
 	return (
 		<>
-			<TopBar back="/" />
+			<TopBar back="/" title={data?.card.title ?? "My jobs"} subtitle={data ? `${data.card.subtitle} · ${data.jobs.length} open job${data.jobs.length === 1 ? "" : "s"}` : " "} />
 			<Page>
-				<p className="eyebrow">{data?.card.subtitle ?? " "}</p>
-				<h2 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight">{data?.card.title ?? "My jobs"}</h2>
-
-				{error && (
-					<div className="mt-6">
-						<Banner>{error.message}</Banner>
-					</div>
-				)}
-				{loading && !data && <Skeleton className="mt-8 h-40" />}
+				{error && <Banner>{error.message}</Banner>}
+				{loading && !data && <Skeleton className="h-40" />}
 				{data && data.jobs.length === 0 && <Empty title="Nothing to do here" text="Jobs assigned to you for this checklist appear here." />}
 
 				{data && data.jobs.length > 0 && (
-					<ul className="mt-8 divide-y divide-line border-y border-line">
+					<ul className="-my-2 divide-y divide-line">
 						{data.jobs.map((job) => (
 							<li key={job.name}>
 								<Link to={`/job/${encodeURIComponent(job.name)}`} className="group -mx-3 flex items-center gap-4 rounded-2xl px-3 py-4 hover:bg-zinc-50">

@@ -6,19 +6,36 @@ The React app at `/deployops` is where technicians do field work: pick a checkli
 | Decision | Choice |
 |---|---|
 | Language | English only |
-| Home | Five fixed checklists, defined in `deployops/checklists/cards.py` |
-| Stack | React 19, TypeScript, Tailwind 4, React Router 7, a small `fetch` wrapper (`frontend/src/lib/api.ts`), lucide icons, Inter font |
+| Home | Five fixed checklists, defined in `deployops/checklists/cards.py`. Standalone: a grid of them. With the TrixaPOS suite: a sidebar and an overview, see **Layouts** |
+| Stack | React 19, TypeScript, Tailwind 4, React Router 7, a small `fetch` wrapper (`frontend/src/lib/api.ts`), lucide icons, Poppins font (400–700, bundled with `@fontsource/poppins`) |
 | Connectivity | Online only. Unsaved answers stay queued while offline and are sent when the connection returns, as long as the page stays open. |
 | Look | "Clean mono": white background, near-black text, thin dividers, list rows instead of boxes. Blue `#2b7fff` (Tailwind blue-500) appears only on actions, selections and progress. Mobile first. |
 | Login | The app's own sign-in screen, not the Frappe `/login` page |
 | Forms | One long page split into numbered sections, with a progress bar under the top bar and a sticky Submit button |
+
+## Layouts
+Every screen except the standalone home has the shell, in the look of the TrixaPOS suite apps:
+
+- A header with the logo, **Deployments**, **Refresh** (reloads the counts and the current screen) and the user menu.
+- A sidebar with the five checklists and their open-job counts, shown in orange when jobs need attention. On screens narrower than 1024 px it is a drawer behind the ☰ button, and it closes on a link, on the backdrop or with Escape.
+- A full-width page bar under the header: a back button, the screen's title and subtitle, its actions (the form's save state), and the form's progress line along its bottom edge.
+- The content as white panels on a grey background.
+
+The landing screen follows the site, through `me.suite`:
+
+| Site | Landing screen (`/deployops`) | Sidebar's first link |
+|---|---|---|
+| DeployOps alone (no `trixapos_core`) | The full-page home grid: greeting, open job count, the five checklists as tiles | **Home**, back to the grid |
+| With the TrixaPOS suite (`trixapos_core` installed; every TrixaPOS app depends on it). TrixaPOS owns the home screen and opens `/deployops` from its app menu | **Overview** inside the shell: my open jobs, one tile per checklist, *Open jobs by checklist* as bars, and *Needs attention* (jobs in Draft or Returned for Correction), each linking to the checklist's jobs | **Overview** |
+
+The counts reload on every screen change. Sticky and fixed parts sit under the header and beside the sidebar through the CSS variables `--shell-top`, `--shell-left` and `--shell-bg` in `index.css`. The code is in `frontend/src/components/AppShell.tsx`, `frontend/src/pages/Overview.tsx` and `TopBar` in `frontend/src/components/ui.tsx`. Detection is only in `me` (`SUITE_APP` in `deployops/api/technician.py`).
 
 ## Screens
 All routes are under `/deployops` (the router's base); DeployOps leaves every other URL to Frappe and the other apps. The one exception is per user: a Technician's home page is the app (`role_home_page`), so a signed-in technician who opens `/` is sent to `/deployops` (302). Guests and Desk users keep Frappe's own `/`.
 
 | Route | Screen |
 |---|---|
-| `/deployops` | Sign in for guests; otherwise Home: greeting, open job count, the five checklists with counts |
+| `/deployops` | Sign in for guests; otherwise the home grid (standalone) or Overview (TrixaPOS suite), see **Layouts** |
 | `/deployops/c/{card}` | My open jobs for that checklist |
 | `/deployops/job/{name}` | Job: planned date, site (maps link), contact (call link), source, job actions; machines with Start / Continue checklist and machine actions |
 | `/deployops/form/{doctype}/{name}` | The checklist form; read only once submitted |
@@ -37,8 +54,8 @@ A card lists my open jobs of its job type that have a machine in its product lin
 ## API (`deployops/api/technician.py`)
 | Method | Use |
 |---|---|
-| `me` | Current user, role aliases, Desk access. Refused for guests and for users without a DeployOps role. |
-| `home` | The five cards with my open job counts |
+| `me` | Current user, role aliases, Desk access, and `suite` (true when `trixapos_core` is installed). Refused for guests and for users without a DeployOps role. |
+| `home` | The five cards with my open job counts and how many of them need attention (Draft or Returned for Correction) |
 | `my_jobs(card)` | Open jobs for a card |
 | `job_view(job)` | Job details, the actions allowed now, machines with their form (`{doctype, name, submitted}`) |
 | `form_view(doctype, name)` | Header, sections and fields read from the DocType itself, current values, whether I can edit |

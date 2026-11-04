@@ -21,6 +21,10 @@ from deployops.workflow import job_workflow
 
 JOB = "DeployOps Job"
 OPEN = ["not in", ["Completed", "Cancelled"]]
+# Installed with the TrixaPOS suite, which owns the home screen: the app shows a sidebar instead
+# of its own grid of checklists. Every TrixaPOS app depends on this one.
+SUITE_APP = "trixapos_core"
+WAITING = ("Draft", "Returned for Correction")
 
 
 @frappe.whitelist()
@@ -33,6 +37,7 @@ def me() -> dict:
 		"full_name": frappe.db.get_value("User", user, "full_name") or user,
 		"roles": roles,
 		"has_desk": frappe.db.get_value("User", user, "user_type") == "System User",
+		"suite": SUITE_APP in frappe.get_installed_apps(),
 	}
 
 
@@ -66,13 +71,8 @@ def home() -> list[dict]:
 	cards = []
 	for card in CARDS:
 		jobs = _jobs_for(card, lines.get(card["product_line"], set()))
-		cards.append(
-			{
-				**card,
-				"open_jobs": len(jobs),
-				"waiting": any(job.status in ("Draft", "Returned for Correction") for job in jobs),
-			}
-		)
+		attention = sum(1 for job in jobs if job.status in WAITING)
+		cards.append({**card, "open_jobs": len(jobs), "attention": attention, "waiting": bool(attention)})
 	return cards
 
 
