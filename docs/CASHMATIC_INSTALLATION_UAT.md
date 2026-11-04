@@ -9,7 +9,7 @@ Record each result as Pass / Fail with the date, the tester and, for a Fail, wha
 | # | Requirement | Steps | Expected | Automated test |
 |---|---|---|---|---|
 | U1 | Delivery-driven machines | Open the job | One row per delivered serial, each with its own status | `test_two_machines_on_one_delivery_have_separate_outcomes` |
-| U2 | Documents | As the technician, open `/deployops` → Cashmatic Installation → the job → machine 1 → Start → Start checklist | Before **Arrived on Site**, there's no Start checklist. After it, "Documents for this checklist" lists the CDIG, Web panel, My Cashmatic App and Warnings files, each also shown under its section. **Read** opens the viewer | `test_every_embedded_document_is_listed_in_a_real_section` |
+| U2 | Documents | As the technician, open `/deployops` → Cashmatic Installation → the job → machine 1 → Start → Start checklist | Before **Arrived on Site**, there's no Start checklist. After it, the **Documents** tab on the right lists the CDIG, Web panel, My Cashmatic App and Warnings files, each also shown under its section. **Read** opens the viewer | `test_every_embedded_document_is_listed_in_a_real_section` |
 | U3 | Positioning, power, network | Look at sections 1 and 2 | 8 and 5 steps; Type of network and IP address, once each | `test_every_source_step_is_in_its_section_with_the_right_rule` |
 | U4 | Every required step counts | Tick everything except one required step, fill the rest, Submit | Refused; the unticked step is marked | `test_each_unticked_required_step_stops_the_submit` |
 | U5 | Training lists | Untick everything under Firsthand training, Submit | Refused: "tick at least one". The same applies to Web panel, Problem solving and Warnings | `test_each_group_needs_at_least_one_tick` |

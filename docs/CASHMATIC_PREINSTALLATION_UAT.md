@@ -8,7 +8,7 @@ Record each result as Pass / Fail with the date, the tester and, for a Fail, wha
 
 | # | Requirement | Steps | Expected | Automated test |
 |---|---|---|---|---|
-| U1 | Documents to share before the visit | As the technician, open `/deployops` → Cashmatic Pre-installation → the job → machine 1 → Start → Start checklist | "Documents for this checklist" lists the manuals; section 1 shows 4 steps with the Web panel, Self Pay 460 manual and My Cashmatic App cards. **Read** opens the viewer; pages turn | `test_reference_manuals_are_bundled_for_real_sections_of_the_form`, `test_reference_files.py` |
+| U1 | Documents to share before the visit | As the technician, open `/deployops` → Cashmatic Pre-installation → the job → machine 1 → Start → Start checklist | the **Documents** tab on the right opens the list of manuals; section 1 shows 4 steps with the Web panel, Self Pay 460 manual and My Cashmatic App cards. **Read** opens the viewer; pages turn | `test_reference_manuals_are_bundled_for_real_sections_of_the_form`, `test_reference_files.py` |
 | U2 | Readiness, labeling, accessories | Look at section 2 | 12 steps, including logo and QR code, area clear, electrical plug, tablet/PC with Chrome, first refill email, wrap and protect, cables/keys/counter top accessories; F2 and logo cards | `test_every_source_step_is_a_required_tick_in_its_section` |
 | U3 | CDIG / F1 configuration: maximum, float, denominations, email and printed notifications | Look at section 3 | 7 steps with CDIG and F1 cards | same |
 | U4 | Activation | Look at section 4 | 9 steps with CDIG and SP460 parts cards; the section note says never to type passwords, OTPs, PINs or pairing codes | same |

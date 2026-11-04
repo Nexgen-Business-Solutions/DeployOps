@@ -1,10 +1,13 @@
 """The React technician app's API (deployops.api.technician)."""
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.classes.context_managers import set_user
 
 from deployops.api import technician as api
 from deployops.roles import TECHNICIAN
+from deployops.tests.test_job import JOB
 from deployops.tests.test_checklists import (
 	CASH_INSTALL,
 	MAINTENANCE,
@@ -46,6 +49,26 @@ class TestHomeAndJobs(TechnicianApiTestCase):
 		).insert(ignore_permissions=True)
 		with self.assertRaises(frappe.PermissionError):
 			self.as_tech(api.me, user=outsider)
+
+	def test_me_says_whether_the_trixapos_suite_is_installed(self):
+		apps = frappe.get_installed_apps()
+		with patch.object(api.frappe, "get_installed_apps", return_value=[*apps, "trixapos_core"]):
+			self.assertTrue(self.as_tech(api.me)["suite"])
+		with patch.object(
+			api.frappe, "get_installed_apps", return_value=[a for a in apps if a != "trixapos_core"]
+		):
+			self.assertFalse(self.as_tech(api.me)["suite"])
+		other = [*apps, "trixapos_inventory"]  # only trixapos_core counts: every suite app needs it
+		with patch.object(api.frappe, "get_installed_apps", return_value=other):
+			self.assertFalse(self.as_tech(api.me)["suite"])
+
+	def test_each_card_counts_the_jobs_needing_attention(self):
+		job = self.working_job()
+		cards = {card["id"]: card for card in self.as_tech(api.home)}
+		self.assertEqual((cards[CARD]["attention"], cards[CARD]["waiting"]), (0, False))
+		frappe.db.set_value(JOB, job, "status", "Returned for Correction")
+		cards = {card["id"]: card for card in self.as_tech(api.home)}
+		self.assertEqual((cards[CARD]["attention"], cards[CARD]["waiting"]), (1, True))
 
 	def test_five_cards_with_my_open_job_counts(self):
 		cards = self.as_tech(api.home)

@@ -21,7 +21,7 @@ export default function Job() {
 
 	return (
 		<>
-			<TopBar back="/" title={data?.name} />
+			<TopBar back="/" title={data?.name ?? "Job"} subtitle={data ? `${data.job_type} · ${data.customer_name}` : " "} />
 			<Page>
 				{error && <Banner>{error.message}</Banner>}
 				{loading && !data && <Skeleton className="h-64" />}

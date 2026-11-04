@@ -5,6 +5,8 @@ export type Me = {
 	full_name: string;
 	roles: string[];
 	has_desk: boolean;
+	/** Installed with the TrixaPOS suite (trixapos_core): sidebar layout instead of the home grid. */
+	suite: boolean;
 };
 
 export type Card = {
@@ -16,6 +18,8 @@ export type Card = {
 	doctype: string;
 	icon: string;
 	open_jobs: number;
+	/** Open jobs in Draft or Returned for Correction. */
+	attention: number;
 	waiting: boolean;
 };
 

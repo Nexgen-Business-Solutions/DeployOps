@@ -55,7 +55,7 @@ export function UserMenu({ onLogout }: { onLogout: () => void }) {
 					</div>
 					<div className="border-t border-line py-1">
 						<Item to="/" icon={<House className="size-4" />} onClick={close}>
-							My checklists
+							{me.suite ? "Overview" : "My checklists"}
 						</Item>
 						{me.has_desk && (
 							<Item href="/desk/deployops" icon={<LayoutGrid className="size-4" />}>

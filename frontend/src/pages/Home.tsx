@@ -1,20 +1,14 @@
-import { Bot, ClipboardCheck, Map, Settings, SlidersHorizontal, Wrench } from "lucide-react";
-import { type ComponentType, useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { Banner, Page, Skeleton, TopBar } from "../components/ui";
 import { UserMenu } from "../components/UserMenu";
+import { CardIcon } from "../components/CardIcon";
+import { CARD_COLORS, DEFAULT_COLOR } from "../lib/cards";
 import { useSession } from "../lib/session";
 import type { Card } from "../lib/types";
 import { useApi } from "../lib/useApi";
-
-const ICONS: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
-    "clipboard-check": ClipboardCheck,
-    wrench: Wrench,
-    map: Map,
-    bot: Bot,
-    settings: Settings,
-};
 
 function greeting(now: Date): string {
     const hour = now.getHours();
@@ -66,23 +60,14 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-const COLORS: Record<string, string> = {
-    "cashmatic-preinstall": "bg-blue-100/80 text-blue-600 ring-blue-200/60",
-    "cashmatic-onsite": "bg-emerald-100/80 text-emerald-600 ring-emerald-200/60",
-    "bellabot-preinstall": "bg-violet-100/80 text-violet-600 ring-violet-200/60",
-    "bellabot-onsite": "bg-amber-100/80 text-amber-600 ring-amber-200/60",
-    "cashmatic-maintenance": "bg-teal-100/80 text-teal-600 ring-teal-200/60",
-};
-
 function CardTile({ card }: { card: Card }) {
-    const Icon = ICONS[card.icon] ?? ClipboardCheck;
     return (
         <li>
             <Link to={`/c/${card.id}`} className="group flex flex-col items-center text-center">
                 <span
-                    className={`relative grid size-28 place-items-center rounded-2xl shadow-sm ring-1 transition group-hover:-translate-y-0.5 group-hover:shadow-md group-active:scale-95 md:size-32 ${COLORS[card.id] ?? "bg-zinc-100 text-ink ring-zinc-200"}`}
+                    className={`relative grid size-28 place-items-center rounded-2xl shadow-sm ring-1 transition group-hover:-translate-y-0.5 group-hover:shadow-md group-active:scale-95 md:size-32 ${CARD_COLORS[card.id] ?? DEFAULT_COLOR}`}
                 >
-                    <Icon className="size-10 md:size-12" strokeWidth={1.5} />
+                    <CardIcon card={card} className="size-10 md:size-12" strokeWidth={1.5} />
                     {card.open_jobs > 0 && (
                         <span
                             className={`absolute -right-2 -top-2 grid h-7 min-w-7 place-items-center rounded-full px-1.5 text-xs font-semibold bg-orange-500 text-white ring-2 ring-white`}

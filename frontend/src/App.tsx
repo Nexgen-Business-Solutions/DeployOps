@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
+import AppShell from "./components/AppShell";
 import { Banner } from "./components/ui";
 import { logout } from "./lib/api";
 import { SessionContext } from "./lib/session";
@@ -13,6 +14,7 @@ import Form from "./pages/Form";
 import Home from "./pages/Home";
 import Job from "./pages/Job";
 import Login from "./pages/Login";
+import Overview from "./pages/Overview";
 
 function sessionUser(): string | undefined {
     const match = document.cookie.match(/(?:^|;\s*)user_id=([^;]*)/);
@@ -53,12 +55,17 @@ export default function App() {
     return (
         <SessionContext.Provider value={me}>
             <BrowserRouter basename={APP_BASE}>
+                {/* Every screen has the header and sidebar. The landing screen is TrixaPOS-style Overview
+                    with the suite (trixapos_core installed); standalone it is the full-page home grid. */}
                 <Routes>
-                    <Route path="/" element={<Home onLogout={signOut} />} />
-                    <Route path="/c/:card" element={<CardJobs />} />
-                    <Route path="/job/:job" element={<Job />} />
-                    <Route path="/form/:doctype/:name" element={<Form />} />
-                    <Route path="/password" element={<ChangePassword />} />
+                    {!me.suite && <Route path="/" element={<Home onLogout={signOut} />} />}
+                    <Route element={<AppShell suite={me.suite} onLogout={signOut} />}>
+                        {me.suite && <Route index element={<Overview />} />}
+                        <Route path="/c/:card" element={<CardJobs />} />
+                        <Route path="/job/:job" element={<Job />} />
+                        <Route path="/form/:doctype/:name" element={<Form />} />
+                        <Route path="/password" element={<ChangePassword />} />
+                    </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </BrowserRouter>

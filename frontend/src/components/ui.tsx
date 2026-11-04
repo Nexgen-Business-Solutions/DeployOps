@@ -1,8 +1,10 @@
 // Small shared UI kit, "clean mono": white, near-black type, hairlines, blue for actions only.
 
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, Loader2 } from "lucide-react";
 import { type ButtonHTMLAttributes, type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
+
+import { useInShell } from "../lib/shell";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -45,7 +47,53 @@ export function Logo({ size = 36 }: { size?: number }) {
 	);
 }
 
-export function TopBar({ title, back, right }: { title?: string; back?: string; right?: ReactNode }) {
+/**
+ * The screen's bar. Inside the app shell: a full-width white bar under the header, with a back
+ * button, the title and a subtitle, and actions on the right. On the full-page home grid: the logo.
+ * `progress` (0 to 1) draws a progress line along its bottom edge.
+ */
+export function TopBar({
+	title,
+	subtitle,
+	back,
+	right,
+	progress,
+}: {
+	title?: ReactNode;
+	subtitle?: ReactNode;
+	back?: string;
+	right?: ReactNode;
+	progress?: number;
+}) {
+	const inShell = useInShell();
+	const line = progress !== undefined && (
+		<div className="absolute inset-x-0 bottom-0 h-0.5 bg-zinc-100" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+			<div className="h-full bg-brand-500 transition-[width] duration-500" style={{ width: `${progress * 100}%` }} />
+		</div>
+	);
+	if (inShell) {
+		return (
+			<header className="sticky top-(--shell-top) z-20 border-b border-slate-200 bg-white">
+				<div className="flex min-h-16 items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
+					{back && (
+						<Link
+							to={back}
+							className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+							aria-label="Back"
+						>
+							<ArrowLeft className="size-4" />
+						</Link>
+					)}
+					<div className="min-w-0 flex-1">
+						<h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">{title}</h1>
+						{subtitle && <p className="mt-0.5 truncate text-[13px] text-slate-500">{subtitle}</p>}
+					</div>
+					{right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
+				</div>
+				{line}
+			</header>
+		);
+	}
 	return (
 		<header className="sticky top-0 z-20 bg-white/85 backdrop-blur-xl">
 			<div className="mx-auto flex h-14 max-w-[52rem] items-center gap-1 px-2 sm:px-4">
@@ -61,11 +109,20 @@ export function TopBar({ title, back, right }: { title?: string; back?: string; 
 				<h1 className="min-w-0 flex-1 truncate px-1 text-[15px] font-semibold">{title}</h1>
 				{right}
 			</div>
+			{line}
 		</header>
 	);
 }
 
+/** A screen's content. Inside the app shell it is a white panel on the grey background. */
 export function Page({ children, className = "" }: { children: ReactNode; className?: string }) {
+	if (useInShell()) {
+		return (
+			<main className={`mx-auto max-w-[52rem] px-3 pb-16 pt-6 sm:px-6 ${className}`}>
+				<div className="rounded-2xl bg-white px-5 pb-8 pt-6 shadow-sm ring-1 ring-slate-200/70 sm:px-8">{children}</div>
+			</main>
+		);
+	}
 	return <main className={`mx-auto max-w-[52rem] px-5 pb-16 pt-4 sm:px-6 ${className}`}>{children}</main>;
 }
 
