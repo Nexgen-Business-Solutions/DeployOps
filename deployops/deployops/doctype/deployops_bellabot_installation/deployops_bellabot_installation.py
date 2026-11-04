@@ -2,11 +2,13 @@
 
 from typing import ClassVar
 
+from frappe import _
+
 from deployops.checklists.form import ChecklistForm
 
 
 class DeployOpsBellaBotInstallation(ChecklistForm):
-	FORM_VERSION = 1
+	FORM_VERSION = 2  # 2: the "Other" answers of the source form and the required explanations (#25)
 	SIGNERS: ClassVar[dict] = {
 		"customer_signature": "customer_signatory",
 		"technician_signature": "technician",
@@ -68,5 +70,34 @@ class DeployOpsBellaBotInstallation(ChecklistForm):
 			"step_i_confirm_the_site_is_ready_for_handover",
 		],
 	}
+	OTHER_ANSWERS: ClassVar[dict] = {
+		"localization_section": "localization_other",
+		"safety_section": "safety_other",
+		"advertising_section": "advertising_other",
+		"audio_section": "audio_other",
+		"training_topics_section": "training_topics_other",
+		"reminders_section": "reminders_other",
+		"advisories_section": "advisories_other",
+		"sign_off_section": "sign_off_other",
+	}
+	REQUIRED_WHEN: ClassVar[dict] = {
+		"damage_note": (("visible_damage", "Moderate damage"), ("visible_damage", "Severe damage")),
+		"test_notes": (
+			("delivery_status", "Fail"),
+			("cruise_status", "Fail"),
+			("recycle_status", "Fail"),
+			("birthday_status", "Fail"),
+		),
+		"safety_failure_details": (("safety_result", "FAIL"),),
+		"customer_remarks": (("handover_confirmed", "No"),),
+	}
 	MIN_ROWS: ClassVar[dict] = {"arrival_photos": 1, "trainees": 1, "installation_photos": 1}
 	INTRO = "BellaBot Pro on-site installation and commissioning (Massarie deployment standard)."
+
+	def block_reason(self) -> str | None:
+		reasons = []
+		if self.safety_result == "FAIL":
+			reasons.append(_("Safety test FAIL: {0}").format(self.safety_failure_details))
+		if self.handover_confirmed == "No":
+			reasons.append(_("Handover not confirmed: {0}").format(self.customer_remarks))
+		return "; ".join(reasons) or None

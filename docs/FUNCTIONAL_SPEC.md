@@ -68,7 +68,7 @@ Final states/transition rights, overrides, supervisor sign-off policy and schedu
 2. Two machines in same Delivery Note: independent serial and completion statuses.
 3. Wrong/nonmatching serial or already allocated serial rejected.
 4. Rental Subscription creates billing reference, but a specific robot serial is separately allocated, returned, swapped.
-5. BellaBot pre-install NO GO blocks the machine until a Supervisor or Manager in scope clears it with a reason; GO WITH CONDITIONS needs remarks, and approval by a Supervisor or Manager in scope before the machine can complete (owner decision, 2026-11-01).
+5. BellaBot pre-install NO GO blocks the machine until a Supervisor or Manager in scope clears it with a reason; GO WITH CONDITIONS needs remarks, and approval by a Supervisor or Manager in scope before the machine can complete (owner decision, 2026-11-01). BellaBot on-site safety FAIL or Handover = No blocks the machine the same way (owner decision, 2026-11-02).
 6. Maintenance Visit -> component checklist -> traceable signed result.
 7. User without equipment profile or assigned job cannot list, open, update, print, export or access photos via direct endpoint.
 8. Existing trial Cashmatic Installation records untouched until audited/approved for retirement.

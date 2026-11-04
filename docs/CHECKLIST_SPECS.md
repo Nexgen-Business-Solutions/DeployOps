@@ -109,7 +109,7 @@ Original: https://form.jotform.com/262743846222055. Previously identified areas:
 Decided (owner, 2026-11-01): see [BELLABOT_PREINSTALLATION_MAPPING.md §5](BELLABOT_PREINSTALLATION_MAPPING.md).
 
 ## 4. BellaBot Pro On-site Installation — preliminary source headings
-Original: https://form.jotform.com/262743396548066. Previously identified areas: physical condition, Wi-Fi/PUDU Link, mapping, operating modes, functional/safety tests, client training, evidence and signed handover. **Field-level mapping pending sample/builder export.**
+Original: https://form.jotform.com/262743396548066. Previously identified areas: physical condition, Wi-Fi/PUDU Link, mapping, operating modes, functional/safety tests, client training, evidence and signed handover. Mapping and decisions: [BELLABOT_INSTALLATION_MAPPING.md](BELLABOT_INSTALLATION_MAPPING.md).
 Resolve machine identity from delivered physical Item/Serial No or active rental equipment assignment; never infer serial from Subscription service item.
 
 ## 5. Cashmatic Maintenance — preliminary source headings

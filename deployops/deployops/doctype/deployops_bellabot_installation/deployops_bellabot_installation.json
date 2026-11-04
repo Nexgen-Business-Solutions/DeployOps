@@ -22,6 +22,7 @@
   "site_name",
   "installed_on",
   "deployment_type",
+  "deployment_type_other",
   "arrival_and_physical_condition_section",
   "visible_damage",
   "damage_note",
@@ -38,6 +39,7 @@
   "step_initial_localization",
   "step_re_localization_confirmed",
   "step_tag_marker_alignment_checked",
+  "localization_other",
   "map_notes",
   "modes_section",
   "step_delivery",
@@ -60,16 +62,19 @@
   "step_human_interaction_safety",
   "step_low_speed_stop_behavior",
   "step_audible_visual_warning_response",
+  "safety_other",
   "safety_result",
   "safety_failure_details",
   "advertising_section",
   "step_video_display",
   "step_image_slideshow",
   "step_promotional_banners",
+  "advertising_other",
   "audio_section",
   "step_greeting_announcements",
   "step_promotional_announcements",
   "step_alert_tones",
+  "audio_other",
   "validation_notes",
   "customer_training_section",
   "training_date",
@@ -86,16 +91,19 @@
   "step_pudu_link_app_installed_and_configured_on",
   "step_call_function_pager_via_the_pudu_link_app",
   "step_touch_sensors_and_voice_interaction",
+  "training_topics_other",
   "trainees",
   "reminders_section",
   "step_keep_the_robot_and_charging_contacts_clean",
   "step_inspect_wheels_brushes_and_sensors",
+  "reminders_other",
   "advisories_section",
   "step_daily_cleaning_guidance",
   "step_weekly_inspection_checklist",
   "step_battery_care_guidance",
   "step_safe_operating_area_guidance",
   "step_service_contact_information",
+  "advisories_other",
   "installation_evidence_section",
   "installation_photos",
   "other_evidence",
@@ -109,6 +117,7 @@
   "step_i_confirm_the_installation_and",
   "step_i_confirm_any_outstanding_issues_have_been",
   "step_i_confirm_the_site_is_ready_for_handover",
+  "sign_off_other",
   "technician_signature",
   "signed_off_on",
   "snapshot_section",
@@ -231,6 +240,13 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.deployment_type=='Other'",
+   "fieldname": "deployment_type_other",
+   "fieldtype": "Data",
+   "label": "Other deployment type",
+   "mandatory_depends_on": "eval:doc.deployment_type=='Other'"
+  },
+  {
    "fieldname": "arrival_and_physical_condition_section",
    "fieldtype": "Section Break",
    "label": "Arrival and physical condition"
@@ -319,6 +335,11 @@
    "fieldname": "step_tag_marker_alignment_checked",
    "fieldtype": "Check",
    "label": "Tag / marker alignment checked"
+  },
+  {
+   "fieldname": "localization_other",
+   "fieldtype": "Data",
+   "label": "Other localization check"
   },
   {
    "fieldname": "map_notes",
@@ -440,6 +461,11 @@
    "label": "Audible / visual warning response"
   },
   {
+   "fieldname": "safety_other",
+   "fieldtype": "Data",
+   "label": "Other safety test"
+  },
+  {
    "fieldname": "safety_result",
    "fieldtype": "Select",
    "label": "Safety test overall result",
@@ -472,6 +498,11 @@
    "label": "Promotional banners"
   },
   {
+   "fieldname": "advertising_other",
+   "fieldtype": "Data",
+   "label": "Other advertising feature"
+  },
+  {
    "fieldname": "audio_section",
    "fieldtype": "Section Break",
    "label": "Audio announcement validation"
@@ -490,6 +521,11 @@
    "fieldname": "step_alert_tones",
    "fieldtype": "Check",
    "label": "Alert tones"
+  },
+  {
+   "fieldname": "audio_other",
+   "fieldtype": "Data",
+   "label": "Other audio announcement"
   },
   {
    "fieldname": "validation_notes",
@@ -573,6 +609,11 @@
    "label": "Touch sensors and voice interaction"
   },
   {
+   "fieldname": "training_topics_other",
+   "fieldtype": "Data",
+   "label": "Other training topic"
+  },
+  {
    "fieldname": "trainees",
    "fieldtype": "Table",
    "label": "Trainees attending",
@@ -593,6 +634,11 @@
    "fieldname": "step_inspect_wheels_brushes_and_sensors",
    "fieldtype": "Check",
    "label": "Inspect wheels, brushes and sensors regularly"
+  },
+  {
+   "fieldname": "reminders_other",
+   "fieldtype": "Data",
+   "label": "Other maintenance reminder"
   },
   {
    "fieldname": "advisories_section",
@@ -623,6 +669,11 @@
    "fieldname": "step_service_contact_information",
    "fieldtype": "Check",
    "label": "Service contact information"
+  },
+  {
+   "fieldname": "advisories_other",
+   "fieldtype": "Data",
+   "label": "Other customer advisory"
   },
   {
    "fieldname": "installation_evidence_section",
@@ -698,6 +749,11 @@
    "label": "I confirm the site is ready for handover"
   },
   {
+   "fieldname": "sign_off_other",
+   "fieldtype": "Data",
+   "label": "Other confirmation"
+  },
+  {
    "fieldname": "technician_signature",
    "fieldtype": "Signature",
    "label": "Technician signature",
@@ -746,7 +802,7 @@
  "icon": "list",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-11-02 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps BellaBot Installation",

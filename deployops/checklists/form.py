@@ -4,10 +4,14 @@ Each form is a native DocType whose fields come from its source Jotform. Drafts 
 (autosave); everything required is checked on submit. Each controller only declares its extra rules:
 
 - ``ANY_OF``: section → Check fields, at least one visible box must be ticked;
+- ``OTHER_ANSWERS``: section of ``ANY_OF`` → text field; filling it counts as ticking a box;
+- ``REQUIRED_WHEN``: field → (field, value) pairs; any of those answers makes it required, here and in the app;
+- ``NUMBER_RANGES``: field → (lowest, highest) accepted, here and in the app;
 - ``MIN_ROWS``: table → minimum rows (e.g. three installation photos);
 - ``FIXED_ROWS``: table → (column, labels), rows created with the form and never changed;
 - ``FORM_VERSION``: bump it whenever the DocType's questions change (see CHECKLIST_ARCHITECTURE.md);
-- ``SIGNERS``: Signature field → the field holding the signer's name ("technician" = the job's technician).
+- ``SIGNERS``: Signature field → the field holding the signer's name ("technician" = the job's technician);
+- ``block_reason()``: why submitting these answers blocks the machine, if they do.
 
 Each form records the version it was started on, and on submit keeps a snapshot of every question
 and answer, so a submitted checklist always shows what was actually asked.
@@ -25,7 +29,7 @@ import frappe
 from frappe import _
 from frappe.model import no_value_fields
 from frappe.model.document import Document
-from frappe.utils import now_datetime
+from frappe.utils import flt, now_datetime
 
 from deployops.checklists.cards import _form_for_device_locked, card_for, form_for_device
 from deployops.workflow import job_workflow
@@ -79,6 +83,9 @@ def is_empty(value) -> bool:
 
 class ChecklistForm(Document):
 	ANY_OF: ClassVar[dict[str, list[str]]] = {}
+	OTHER_ANSWERS: ClassVar[dict[str, str]] = {}
+	REQUIRED_WHEN: ClassVar[dict[str, tuple[tuple[str, str], ...]]] = {}
+	NUMBER_RANGES: ClassVar[dict[str, tuple[float, float]]] = {}
 	MIN_ROWS: ClassVar[dict[str, int]] = {}
 	FIXED_ROWS: ClassVar[dict[str, tuple[str, tuple[str, ...]]]] = {}
 	FORM_VERSION = 1
@@ -282,6 +289,10 @@ class ChecklistForm(Document):
 			)
 		self.submission_snapshot = self.snapshot()
 
+	def block_reason(self) -> str | None:
+		"""Why the submitted answers block the machine; a Supervisor or Manager clears it with a reason."""
+		return None
+
 	def on_submit(self):
 		job_workflow.apply_checklist_decision(self)
 
@@ -316,12 +327,20 @@ class ChecklistForm(Document):
 			if df.fieldtype == "Section Break" and df.fieldname in self.ANY_OF:
 				boxes = [self.meta.get_field(name) for name in self.ANY_OF[df.fieldname]]
 				visible = [box for box in boxes if self.is_visible(box)]
-				if visible and not any(self.get(box.fieldname) for box in visible):
+				other = self.OTHER_ANSWERS.get(df.fieldname)
+				answered = any(self.get(box.fieldname) for box in visible) or (
+					other and not is_empty(self.get(other))
+				)
+				if visible and not answered:
 					problems.append(_("{0}: tick at least one.").format(label))
 				continue
 			if df.fieldtype in no_value_fields and df.fieldtype != "Table":
 				continue
-			required = df.reqd or (df.mandatory_depends_on and condition_met(self, df.mandatory_depends_on))
+			required = (
+				df.reqd
+				or (df.mandatory_depends_on and condition_met(self, df.mandatory_depends_on))
+				or any(self.get(field) == value for field, value in self.REQUIRED_WHEN.get(df.fieldname, ()))
+			)
 			if df.fieldtype == "Check":
 				if required and df.fieldname not in any_of_fields and not self.get(df.fieldname):
 					problems.append(_("{0}: not ticked.").format(label))
@@ -329,6 +348,10 @@ class ChecklistForm(Document):
 				problems.extend(self.missing_rows(df, required))
 			elif required and is_empty(self.get(df.fieldname)):
 				problems.append(_("{0}: required.").format(label))
+			elif df.fieldname in self.NUMBER_RANGES and not is_empty(self.get(df.fieldname)):
+				low, high = self.NUMBER_RANGES[df.fieldname]
+				if not low <= flt(self.get(df.fieldname)) <= high:
+					problems.append(_("{0}: must be between {1} and {2}.").format(label, low, high))
 		return problems
 
 	def missing_rows(self, df, required) -> list[str]:

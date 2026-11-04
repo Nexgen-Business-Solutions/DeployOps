@@ -28,9 +28,9 @@ Customer, address, machine, serial number, technician and company come from the 
 | 13, 14, 15 | Indoors, floors dry, humid or wet area | yes | `site_indoors`, `floors_dry`, `humid_area` | = |
 | 16 | Site environment comments | no | `site_environment_comments` | = |
 | 18 | Two-way traffic planned | yes | `two_way_traffic` | = |
-| 19, 20 | Narrowest passage, kitchen entrance (cm; hint "minimum 65 cm") | yes | `narrowest_passage_cm`, `kitchen_entrance_cm` | = hint only, see §4 |
-| 118, 21 | Maximum dish size, two-way corridor width (cm) | no | `max_dish_size_cm`, `two_way_corridor_cm` | = |
-| 22 | Slope (degrees) - MAX 5 | yes | `slope_degrees` | = the source accepts 0 to 90, see §4 |
+| 19, 20 | Narrowest passage, kitchen entrance (cm; hint "minimum 65 cm") | yes | `narrowest_passage_cm`, `kitchen_entrance_cm` | = 0 to 500 enforced as in the source; the hint is guidance, see §4 |
+| 118, 21 | Maximum dish size, two-way corridor width (cm) | no | `max_dish_size_cm`, `two_way_corridor_cm` | = 0 to 500 enforced as in the source |
+| 22 | Slope (degrees) - MAX 5 | yes | `slope_degrees` | = 0 to 90 enforced as in the source; the 5° is guidance, see §4 |
 | 24 | Stairs on the route | yes | `stairs_on_route` | = |
 | 26 | Hazard Type + Other | yes | `hazard_type`, `hazard_type_other` | = single choice as in the source |
 | 27 | Surface conditions around sensor height | no | 5 ticks | = |
@@ -67,7 +67,7 @@ The page also holds leftover translations for fields that aren't on the publishe
 Added on the DeployOps side: the signature record, the submitted snapshot, the job's audit trail, and the internal and customer PDF reports.
 
 ## 3. Reference files
-Listed in **DeployOps Reference Files** under *Documents shared before installation*, and in `deployops/reference_files/`, so a new install has them automatically. The list is seeded only on a fresh install, so a site that already has a list needs its administrator to add them.
+Listed in **DeployOps Reference Files** under *Documents shared before installation*, and in `deployops/reference_files/`, so every site gets them automatically: on install, or on the next migrate for a site that already has the app.
 
 | File | Source |
 |---|---|
