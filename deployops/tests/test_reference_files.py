@@ -54,6 +54,7 @@ class ReferenceTestCase(ChecklistTestCase):
 	def set_references(self, rows):
 		settings = frappe.get_single(SETTINGS)
 		settings.set("references", rows)
+		settings.seeded_references = None  # as on a site where nothing was seeded yet
 		settings.save(ignore_permissions=True)
 		return settings
 
@@ -127,10 +128,84 @@ class TestReferencesInTheChecklist(ReferenceTestCase):
 				self.assertEqual(bool(frappe.has_permission("File", "read", file, user=user)), allowed)
 
 
+class TestReferencesOnMigrate(ReferenceTestCase):
+	"""Sites that already have the app get new bundled references on migrate; deletions stick."""
+
+	def sync_from(self, *filenames):
+		with tempfile.TemporaryDirectory() as folder:
+			for filename in filenames:
+				(Path(folder) / filename).write_bytes(blank_pdf())
+			with patch.object(install.frappe, "get_app_path", return_value=folder):
+				install.sync_reference_files()
+		return frappe.get_single(SETTINGS).references
+
+	def keys(self, rows):
+		return [(r.checklist, r.section, r.title) for r in rows]
+
+	def test_it_runs_after_install_and_after_every_migrate(self):
+		hooks = frappe.get_hooks()
+		self.assertIn("deployops.install.sync_reference_files", hooks.get("after_install"))
+		self.assertIn("deployops.install.sync_reference_files_after_migrate", hooks.get("after_migrate"))
+
+	def test_a_broken_row_never_stops_the_migrate(self):
+		self.set_references([self.row(self.upload())])
+		broken = frappe.get_single(SETTINGS).references[0].name
+		frappe.db.set_value("DeployOps Reference File", broken, "section", "no_such_section")
+		errors = frappe.db.count("Error Log")
+		files = frappe.db.count("File", {"attached_to_doctype": SETTINGS})
+		with tempfile.TemporaryDirectory() as folder:
+			(Path(folder) / "web-interface.pdf").write_bytes(blank_pdf())
+			with patch.object(install.frappe, "get_app_path", return_value=folder):
+				install.sync_reference_files_after_migrate()  # does not raise
+		settings = frappe.get_single(SETTINGS)
+		self.assertEqual([r.name for r in settings.references], [broken])  # nothing half added
+		self.assertFalse(settings.seeded_references)  # so the next migrate tries again
+		self.assertEqual(frappe.db.count("File", {"attached_to_doctype": SETTINGS}), files)
+		self.assertEqual(frappe.db.count("Error Log"), errors + 1)
+
+	def test_an_installed_site_gets_the_new_references_and_keeps_its_own(self):
+		own = self.row(self.upload(), title="Our own guide")
+		self.set_references([own])
+		rows = self.sync_from("warnings-precautions.pdf")
+		self.assertEqual(rows[0].title, "Our own guide")
+		self.assertEqual(
+			self.keys(rows[1:]),
+			[
+				(install.INSTALLATION, section, title)
+				for filename, title, section in install.INSTALLATION_REFERENCES
+				if filename == "warnings-precautions.pdf"
+			],
+		)
+
+	def test_a_reference_the_administrator_deleted_is_not_added_again(self):
+		self.set_references([])
+		rows = self.sync_from("device-installation-guide.pdf")
+		self.assertTrue(rows)
+		settings = frappe.get_single(SETTINGS)
+		deleted = (settings.references[0].checklist, settings.references[0].section)
+		settings.references = settings.references[1:]
+		settings.save(ignore_permissions=True)
+		rows = self.sync_from("device-installation-guide.pdf")
+		self.assertNotIn(deleted, [(r.checklist, r.section) for r in rows])
+		self.assertEqual(len(rows), len(settings.references))
+
+	def test_a_reference_already_listed_is_not_duplicated(self):
+		_filename, title, section = install.BUNDLED_REFERENCES[1]  # web-interface.pdf
+		self.set_references([self.row(self.upload(), PRE_INSTALLATION, section, title)])
+		rows = self.sync_from("web-interface.pdf")
+		listed = [key for key in self.keys(rows) if key[0] == PRE_INSTALLATION]
+		self.assertEqual(listed, [(PRE_INSTALLATION, section, title)])
+
+	def test_a_file_bundled_later_is_added_on_a_later_migrate(self):
+		self.set_references([])
+		self.assertEqual(len(self.sync_from()), 0)
+		self.assertTrue(self.sync_from("web-interface.pdf"))
+
+
 class TestBundledReferences(ReferenceTestCase):
 	def test_a_new_install_has_the_on_site_documents_from_the_app_folder(self):
 		self.set_references([])
-		install.install_reference_files()
+		install.sync_reference_files()
 		rows = [r for r in frappe.get_single(SETTINGS).references if r.checklist == install.INSTALLATION]
 		self.assertEqual(
 			[(r.title, r.section) for r in rows],
@@ -145,7 +220,7 @@ class TestBundledReferences(ReferenceTestCase):
 		with tempfile.TemporaryDirectory() as folder:
 			(Path(folder) / "device-installation-guide.pdf").write_bytes(blank_pdf())
 			with patch.object(install.frappe, "get_app_path", return_value=folder):
-				install.install_reference_files()
+				install.sync_reference_files()
 				settings = frappe.get_single(SETTINGS)
 				self.assertEqual(
 					[(r.checklist, r.section) for r in settings.references],
@@ -157,5 +232,5 @@ class TestBundledReferences(ReferenceTestCase):
 					],
 				)
 				self.assertEqual(len({r.file for r in settings.references}), 1)  # one upload, four places
-				install.install_reference_files()  # the administrator's list is never overwritten
+				install.sync_reference_files()  # the administrator's list is never overwritten
 				self.assertEqual(len(frappe.get_single(SETTINGS).references), 4)

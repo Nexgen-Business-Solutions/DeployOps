@@ -97,7 +97,8 @@ jinja = {"methods": ["deployops.checklists.report.checklist_report_html"]}
 # Roles must exist before DocTypes and the workspace that reference them are synced.
 before_install = "deployops.install.create_roles"
 before_migrate = "deployops.install.create_roles"
-after_install = "deployops.install.install_reference_files"
+after_install = "deployops.install.sync_reference_files"
+after_migrate = "deployops.install.sync_reference_files_after_migrate"
 
 # Uninstallation
 # ------------
