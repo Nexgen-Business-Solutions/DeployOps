@@ -55,7 +55,7 @@ Source types: *checkbox*, *textbox*, *dropdown* and so on are Jotform types. "Re
 Added on the DeployOps side (not in the source): Submitted snapshot (answers, labels, form version, signature records) and the job's audit trail. They replace the Jotform audit page (PDF p. 5) without recording IP/network details.
 
 ## 3. Reference files
-The PDFs embedded in the Jotform are listed in **DeployOps Reference Files** and shown under their section and in "Documents for this checklist". The bundled names are in `deployops/reference_files/README.md`. The PDFs themselves are **not** committed: they are Cashmatic/Massarie material, and whether they may be put in the repository is open (Q9). An administrator uploads them on the site.
+The PDFs embedded in the Jotform are listed in **DeployOps Reference Files** and shown under their section and in the form's **Documents** panel. The bundled names are in `deployops/reference_files/README.md`. The PDFs themselves are **not** committed: they are Cashmatic/Massarie material, and whether they may be put in the repository is open (Q9). An administrator uploads them on the site.
 
 The Massarie logo (machine labeling, Employee checklist step 1) is a DeployOps addition; it's not embedded in the source.
 

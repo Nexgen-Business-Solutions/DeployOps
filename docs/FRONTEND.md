@@ -88,7 +88,7 @@ The app renders whatever the DocType defines, so changing a field in the DocType
 | HTML | Grey note |
 
 **Reference documents (#42).** The manuals an administrator lists in **DeployOps Reference Files** show up in two places:
-- a **"Documents for this checklist"** block at the top of the form, listing each document once with the sections that use it;
+- a **Documents** tab on the right edge of the form. It opens a side panel listing each document once, with the sections that use it, and **Read** and **Download** buttons. It is kept out of the way so the checklist stays in focus;
 - a card under each section that needs one.
 
 Each card has a first-page preview and the page count. **Read** opens a full-screen, page-by-page viewer, with a download button and arrow keys and Escape on a keyboard. Images open as they are.
