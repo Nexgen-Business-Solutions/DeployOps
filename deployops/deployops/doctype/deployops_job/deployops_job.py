@@ -179,6 +179,7 @@ class DeployOpsJob(Document):
 					"source_issue",
 					"conditions_approved_by",
 					"conditions_approved_on",
+					"blocked_by_checklist",
 				],
 			)
 		}
@@ -197,6 +198,7 @@ class DeployOpsJob(Document):
 					frappe.throw(_("Machines cannot be added while the job is waiting for review."))
 				row.device_status = "Pending"
 				row.conditions_approved_by = row.conditions_approved_on = None
+				row.blocked_by_checklist = 0
 				continue
 			if row.device_status != before.device_status:
 				frappe.throw(_("Machine status can only be changed through the job workflow."))
@@ -204,6 +206,8 @@ class DeployOpsJob(Document):
 				row.conditions_approved_on or ""
 			) != str(before.conditions_approved_on or ""):
 				frappe.throw(_("Approval of conditions can only be recorded through the job workflow."))
+			if bool(row.blocked_by_checklist) != bool(before.blocked_by_checklist):
+				frappe.throw(_("Machine status can only be changed through the job workflow."))
 			if not self.flags.delivery_handoff and (
 				(row.delivery_note or None) != (before.delivery_note or None)
 				or (row.source_issue or None) != (before.source_issue or None)

@@ -22,6 +22,12 @@ function counts(section: Section, field: Field): boolean {
 	return field.reqd && !NO_VALUE.has(field.fieldtype) && !(section.any_of && field.fieldtype === "Check");
 }
 
+/** Whether a tick group has an answer: a ticked box, or its "Other" text filled in. */
+function answersGroup(field: Field, values: Values): boolean {
+	if (field.any_of_other) return !isEmpty(values[field.fieldname]);
+	return field.fieldtype === "Check" && Boolean(values[field.fieldname]);
+}
+
 function rowProblem(field: Field, row: Row): string | null {
 	const table = field.table;
 	if (!table) return null;
@@ -44,6 +50,9 @@ function fieldProblem(section: Section, field: Field, values: Values): string | 
 		}
 		return null;
 	}
+	if (field.range && !isEmpty(value) && (Number(value) < field.range.min || Number(value) > field.range.max)) {
+		return `Must be between ${field.range.min} and ${field.range.max}.`;
+	}
 	if (!counts(section, field)) return null;
 	if (field.fieldtype === "Check") return value ? null : "Tick to confirm.";
 	return isEmpty(value) ? "Required." : null;
@@ -52,7 +61,12 @@ function fieldProblem(section: Section, field: Field, values: Values): string | 
 export function visibleSections(sections: Section[], values: Values): Section[] {
 	return sections
 		.filter((section) => conditionMet(section.show, values))
-		.map((section) => ({ ...section, fields: section.fields.filter((f) => conditionMet(f.show, values)) }))
+		.map((section) => ({
+			...section,
+			fields: section.fields
+				.filter((f) => conditionMet(f.show, values))
+				.map((f) => (f.required_when?.some((c) => conditionMet(c, values)) ? { ...f, reqd: true } : f)),
+		}))
 		.filter((section) => section.fields.length);
 }
 
@@ -61,7 +75,7 @@ export function findProblems(sections: Section[], values: Values): Map<string, s
 	const problems = new Map<string, string>();
 	for (const section of visibleSections(sections, values)) {
 		const boxes = section.fields.filter((f) => f.fieldtype === "Check");
-		if (section.any_of && boxes.length && !boxes.some((f) => values[f.fieldname])) {
+		if (section.any_of && boxes.length && !section.fields.some((f) => answersGroup(f, values))) {
 			problems.set(section.name, "Tick at least one.");
 		}
 		for (const field of section.fields) {
@@ -79,7 +93,7 @@ export function progress(sections: Section[], values: Values): number {
 	for (const section of visibleSections(sections, values)) {
 		if (section.any_of) {
 			total += 1;
-			if (section.fields.some((f) => f.fieldtype === "Check" && values[f.fieldname])) done += 1;
+			if (section.fields.some((f) => answersGroup(f, values))) done += 1;
 		}
 		for (const field of section.fields) {
 			const table = field.fieldtype === "Table" && field.table && field.table.min_rows > 0;

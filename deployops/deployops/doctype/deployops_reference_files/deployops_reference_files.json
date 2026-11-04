@@ -5,7 +5,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "references"
+  "references",
+  "seeded_references"
  ],
  "fields": [
   {
@@ -14,11 +15,20 @@
    "fieldtype": "Table",
    "label": "Reference files",
    "options": "DeployOps Reference File"
+  },
+  {
+   "description": "Bundled reference files already added to this site, so a row an administrator deletes is not added again.",
+   "fieldname": "seeded_references",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Seeded references",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-24 10:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DeployOps",
  "name": "DeployOps Reference Files",

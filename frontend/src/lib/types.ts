@@ -87,6 +87,9 @@ export type Field = {
 	options?: string[];
 	text?: string;
 	table?: TableInfo;
+	any_of_other?: boolean;
+	range?: { min: number; max: number };
+	required_when?: { field: string; value: string }[];
 };
 
 export type Section = {

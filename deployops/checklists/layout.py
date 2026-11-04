@@ -43,6 +43,15 @@ def _field(controller, df) -> dict:
 		"read_only": bool(df.read_only),
 		"show": _condition(df.depends_on),
 	}
+	if df.fieldname in controller.REQUIRED_WHEN:
+		field["required_when"] = [
+			{"field": name, "value": value} for name, value in controller.REQUIRED_WHEN[df.fieldname]
+		]
+	if df.fieldname in controller.NUMBER_RANGES:
+		low, high = controller.NUMBER_RANGES[df.fieldname]
+		field["range"] = {"min": low, "max": high}
+	if df.fieldname in controller.OTHER_ANSWERS.values():
+		field["any_of_other"] = True
 	if df.fieldtype == "Select":
 		field["options"] = _options(df)
 	elif df.fieldtype == "HTML":

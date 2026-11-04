@@ -165,7 +165,7 @@ function update_machine_dialog(frm, devices) {
 			{
 				fieldname: "reason",
 				fieldtype: "Small Text",
-				label: __("Reason (required to block, cancel or clear a NO GO)"),
+				label: __("Reason (required to block, cancel or clear a block from a checklist)"),
 			},
 		],
 		primary_action_label: __("Apply"),
