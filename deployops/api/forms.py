@@ -1,13 +1,16 @@
-"""Machine forms API (v2 Plan 3): a machine's forms on a job, start one, override, discard, cancel."""
+"""Machine forms API (v2 Plan 3): a machine's forms on a job, start one, override, discard, cancel;
+form cards, a form's jobs and the Supervisor report."""
 
 import frappe
+from forms_core.reports import schema
 from forms_core.submissions import start
 from frappe import _
+from frappe.utils import cint
 
 from deployops.api.sources import require_deployops_role
 from deployops.forms import machine_forms as device_forms
 from deployops.forms.provider import JobFormProvider, _letters
-from deployops.roles import MANAGER
+from deployops.roles import ADMINISTRATOR, MANAGER, SUPERVISOR
 from deployops.workflow.job_workflow import APPROVER_CAP, CLOSED, _device_label, _log, _save, capacities
 
 JOB = "DeployOps Job"
@@ -217,3 +220,172 @@ def cancel_machine_form(submission: str, reason: str) -> int:
 	finally:
 		frappe.flags.pop("deployops_form_cancel", None)
 	return doc.docstatus
+
+
+# ---------------------------------------------------------------------------------------------
+# Cards, a form's jobs and the Supervisor report.
+
+RULE = "DeployOps Form Rule"
+DEVICE = "DeployOps Job Device"
+REPORT_ROLES = {SUPERVISOR, MANAGER, ADMINISTRATOR}
+MAX_PAGE_LENGTH = 200
+SKIPPED_FIELDTYPES = set(frappe.model.no_value_fields)  # tables and layout fields
+
+
+def _carded_forms() -> list[dict]:
+	"""Published, non-archived Forms with an active Form Rule, by their lowest rule order, then title."""
+	rules = frappe.get_all(RULE, filters={"active": 1}, fields=["form", "job_type", "sort_order"])
+	if not rules:
+		return []
+	forms = frappe.get_all(
+		"Form",
+		filters={
+			"name": ["in", list({rule.form for rule in rules})],
+			"status": ["!=", "Archived"],
+			"current_version": ["is", "set"],
+		},
+		fields=["name", "title", "subtitle", "icon", "color"],
+	)
+	cards = []
+	for form in forms:
+		own = [rule for rule in rules if rule.form == form.name]
+		cards.append(
+			{
+				"form": form.name,
+				"title": form.title,
+				"subtitle": form.subtitle or None,
+				"icon": form.icon or None,
+				"color": form.color or None,
+				"job_types": sorted({rule.job_type for rule in own}),
+				"order": min(rule.sort_order or 0 for rule in own),
+			}
+		)
+	return sorted(cards, key=lambda card: (card.pop("order"), card["title"] or ""))
+
+
+def _job_form_rows(forms: list[str]) -> list[dict]:
+	"""The active rows of `forms` on the user's visible open jobs, on machines that are not Cancelled:
+	`[{"job", "form", "device", "outstanding", "flagged"}]`."""
+	jobs = frappe.get_list(JOB, filters={"status": ["not in", list(CLOSED)]}, pluck="name")
+	if not jobs or not forms:
+		return []
+	return frappe.db.sql(
+		f"""
+		select jdf.parent as job, jdf.form, jdf.device,
+			(jdf.required = 1 and ifnull(fs.docstatus, 0) != 1) as outstanding, jdf.flagged
+		from `tab{FORM_ROW}` jdf
+		join `tab{DEVICE}` jd on jd.name = jdf.device and jd.parent = jdf.parent and jd.parenttype = %(job)s
+		left join `tab{SUBMISSION}` fs on fs.name = jdf.submission
+		where jdf.parenttype = %(job)s and jdf.parent in %(jobs)s and jdf.form in %(forms)s
+			and jdf.removed = 0 and jd.device_status != 'Cancelled'
+		""",
+		{"job": JOB, "jobs": tuple(jobs), "forms": tuple(forms)},
+		as_dict=True,
+	)
+
+
+def _with_counts(card: dict, rows: list[dict]) -> dict:
+	own = [row for row in rows if row.form == card["form"]]
+	outstanding = {row.job for row in own if row.outstanding}
+	flagged = {row.job for row in own if row.flagged}
+	attention = len(outstanding | flagged)
+	return {
+		**card,
+		"open_jobs": len({row.job for row in own}),
+		"outstanding": len(outstanding),
+		"flagged": len(flagged),
+		"attention": attention,
+		"waiting": attention > 0,
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def form_cards() -> list[dict]:
+	"""One card per form that Form Rules plan, with counts over the user's visible open jobs."""
+	require_deployops_role()
+	cards = _carded_forms()
+	rows = _job_form_rows([card["form"] for card in cards])
+	return [_with_counts(card, rows) for card in cards]
+
+
+@frappe.whitelist(methods=["GET"])
+def form_jobs(form: str) -> dict:
+	"""The form's card and the user's visible open jobs that have it on a machine."""
+	require_deployops_role()
+	card = next((card for card in _carded_forms() if card["form"] == form), None)
+	if card is None:
+		frappe.throw(_("Form {0} is not planned by any Form Rule.").format(form), frappe.DoesNotExistError)
+	rows = _job_form_rows([form])
+	by_job: dict[str, list] = {}
+	for row in rows:
+		by_job.setdefault(row.job, []).append(row)
+	jobs = frappe.get_all(
+		JOB,
+		filters={"name": ["in", list(by_job) or [""]]},
+		fields=["name", "job_type", "customer_name", "address_display", "planned_date", "status"],
+		order_by="planned_date asc, modified desc",
+	)
+	for job in jobs:
+		own = by_job[job.name]
+		job.update(
+			{
+				"machines": len({row.device for row in own}),
+				"outstanding": sum(1 for row in own if row.outstanding),
+				"flagged": sum(1 for row in own if row.flagged),
+			}
+		)
+	return {"card": _with_counts(card, rows), "jobs": jobs}
+
+
+def _report_columns(parts: list[str]) -> list[dict]:
+	"""Each part's visible value fields, in part order; later parts' `submission` link is left out."""
+	columns, seen = [], set()
+	for part in parts:
+		for field in frappe.get_meta(part).fields:
+			if field.hidden or field.fieldtype in SKIPPED_FIELDTYPES or field.fieldname in seen:
+				continue
+			seen.add(field.fieldname)
+			columns.append({"fieldname": field.fieldname, "label": field.label, "fieldtype": field.fieldtype})
+	return columns
+
+
+@frappe.whitelist(methods=["GET"])
+def report_rows(form: str, job: str | None = None, start: int = 0, page_length: int = 50) -> dict:
+	"""The form's report rows (submitted and cancelled) on the jobs the user can see. Supervisor and
+	up. Repeating tables are not included."""
+	require_deployops_role()
+	if not REPORT_ROLES & set(frappe.get_roles()):
+		frappe.throw(_("You are not allowed to see form reports."), frappe.PermissionError)
+	if frappe.db.get_value("Form", form, "context_doctype") != JOB:
+		frappe.throw(_("Form {0} is not a job form.").format(form), frappe.DoesNotExistError)
+	start = max(cint(start), 0)
+	page_length = min(max(cint(page_length), 1), MAX_PAGE_LENGTH)
+	filters = {"form": form, "context_doctype": JOB, "docstatus": ["in", [1, 2]]}
+	if job:
+		filters["context_name"] = job
+	names = frappe.get_list(
+		SUBMISSION,
+		filters=filters,
+		pluck="name",
+		order_by="submitted_on desc",
+		limit_start=start,
+		limit_page_length=page_length,
+	)
+	total = len(frappe.get_list(SUBMISSION, filters=filters, pluck="name", limit_page_length=0))
+	parts = schema.report_doctypes(form)["parts"]
+	columns = _report_columns(parts)
+	merged: dict[str, dict] = {name: {"name": name} for name in names}
+	if names:
+		wanted = {column["fieldname"] for column in columns}
+		for part in parts:
+			fields = ["name", *(f.fieldname for f in frappe.get_meta(part).fields if f.fieldname in wanted)]
+			for row in frappe.get_all(part, filters={"name": ["in", names]}, fields=fields):
+				merged[row.name].update(row)
+	return {
+		"status": frappe.db.get_value("Form Report", form, "status") or "Not built",
+		"columns": columns,
+		"rows": [merged[name] for name in names],
+		"total": total,
+		"start": start,
+		"page_length": page_length,
+	}

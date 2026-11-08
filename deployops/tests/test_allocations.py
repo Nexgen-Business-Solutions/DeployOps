@@ -54,7 +54,10 @@ class AllocationTestCase(JobTestCase):
 		frappe.db.set_value(JOB, job, "status", "Pending Review")
 		frappe.db.set_value("DeployOps Job Device", {"parent": job}, "device_status", "Completed")
 		# A shortcut past the on-site work: the checklist rules are tested in test_bellabot_installation.
-		with set_user(self.supervisor), patch.object(job_workflow, "_checklist_not_submitted", return_value=False):
+		with (
+			set_user(self.supervisor),
+			patch.object(job_workflow, "_checklist_not_submitted", return_value=False),
+		):
 			job_api.job_action(job, "approve")
 		return name, job
 

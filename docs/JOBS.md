@@ -153,3 +153,50 @@ Approvers and cancellers come from the permission matrix (letters "a" and "x"). 
    - tech@test.local: `POST …job_action` with `action=submit` → Pending Review.
    - sup@test.local: **Actions → Return for Correction** (reason); tech submits again; sup **Actions → Approve** → Completed.
    - Open **Status History**: every step with who, when and the reason. Try to edit the completed job: refused.
+
+## 8. Machine forms (v2)
+
+**Code:** [`deployops/forms/`](../deployops/forms/) (rules, machine forms, the job provider), [`deployops/api/forms.py`](../deployops/api/forms.py). **Plan:** `docs/superpowers/plans/2026-11-08-v2-plan-3-job-connection.md`.
+
+v2 forms come from `forms_core`. Each job keeps its machines' planned forms in the **Job Device Form** table (`device_forms`): one row per machine and form, with *required*, *origin* (Rule or Override), *removed*, the linked *submission* and *flagged*.
+
+**Form Rules.** A **DeployOps Form Rule** says: on a job of this type, a machine whose Item is in this equipment category gets this form, required or optional, at this sort order. Only active rules count, and only published, non-archived forms.
+- **Union rule:** a machine gets every form any matching rule plans. A form planned by several rules is listed once: required if any of those rules requires it, at the lowest sort order.
+- Saving or deleting a rule resyncs every job of that type that is not yet Pending Review, Completed or Cancelled, whoever saves it.
+
+**When rows stop following the rules.** A machine's rows follow the rules until any of these is true; after that only overrides change them:
+- a form was started for the machine (draft, submitted or cancelled);
+- the job is Pending Review, Completed or Cancelled;
+- the machine is Completed or Cancelled;
+- the machine has a v1 checklist.
+
+One exception: if the machine's Item changes while it only has cancelled forms, its rows are planned again from the new Item. An Item change is refused while it has a draft or submitted form.
+
+**Overrides** (`override_machine_forms`). An approver (Supervisor or Manager) adds or removes a machine's forms. An Admin cannot.
+- Not on a Pending Review, Completed or Cancelled job, nor on a Completed or Cancelled machine.
+- Removing a **required** form needs a Manager and a reason.
+- A form with a draft or submitted submission cannot be removed: cancel or discard it first.
+- Forms cannot be added to a machine that has a v1 checklist.
+- A removed row is kept with `removed = 1`, so a rule resync does not bring it back. Added forms get origin Override.
+- Every change is logged (`forms: add`, `forms: remove`). It is all or nothing: one bad form changes nothing.
+- A Manager can **discard** a draft (`discard_machine_form`, reason, not on a closed job) and **cancel** a submitted form (`cancel_machine_form`, reason). Starting the form again after a cancel amends the cancelled one.
+
+**v1 and v2 together.**
+- A machine **uses forms** when it has a Job Device Form row that isn't removed. It is judged only by its forms.
+- Any other machine is judged by v1 as before (its checklist card).
+- A machine with a v1 checklist never gets rows from rules. v1 `start_checklist` is refused on a machine that uses forms, and starting the job does not create a v1 checklist for it.
+
+**Outcomes and required forms.**
+- A machine cannot be completed, and the job cannot be submitted, while a required form is not submitted.
+- A submitted form's `block_machine` outcome blocks the machine (`machine: block`). Unblocking then needs a reason, even after the form is cancelled.
+- `flag_for_review` flags the form row and logs `machine: flagged for review`. It doesn't block. Flagged forms count in the cards' *attention*.
+- Cancelling a form clears its flag but keeps a block. Cancelling a required form on a Completed machine puts the machine back to In Progress (`machine: reopened`).
+
+**API** (`deployops.api.forms`). The exact shapes are in the plan, Task 5 and Task 6.
+- `machine_forms(job, row)` (GET): the machine's active forms and what the user may do with each.
+- `start_machine_form`, `override_machine_forms`, `discard_machine_form`, `cancel_machine_form` (POST).
+- `form_cards()` (GET): one card per form that a rule plans, with counts over the user's visible open jobs: *open_jobs*, *outstanding* (a required form not submitted), *flagged*, *attention* (either) and *waiting*. Cancelled machines are not counted.
+- `form_jobs(form)` (GET): the card, and the visible open jobs that have the form, with machines, outstanding and flagged per job.
+- `report_rows(form, job, start, page_length)` (GET): the **Supervisor report**. Supervisor, Manager and Admin only. Submitted and cancelled forms on the jobs the user can see, newest first, at most 200 a page. Repeating tables are not included yet.
+
+**Tests:** `test_forms_rules.py`, `test_forms_machine.py`, `test_forms_provider.py`, `test_forms_workflow.py`, `test_forms_api.py`, `test_forms_cards.py`.

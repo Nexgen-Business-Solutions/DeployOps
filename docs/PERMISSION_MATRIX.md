@@ -30,6 +30,8 @@ The roles ship with the app. They are created automatically on `install-app` and
 | DeployOps Job Device (#16, #18) | R W (assigned) | R C W | R C W X | R C W X |
 | The five checklist forms (#41): Cashmatic Pre-installation, Cashmatic Installation, BellaBot Pre-installation, BellaBot Installation, Cashmatic Maintenance | R C W S P (own jobs) | R A P | R X A P E | R P E |
 | DeployOps Reference Files (#42) | R | R | R | R W |
+| DeployOps Form Rule (v2) | — | R | R C W D | R C W D |
+| Form Submission on a job (v2 forms) | R C W S P (assigned jobs) | R P | R X P E | R P E |
 | DeployOps Equipment Category (#11) | — | R | R | R C W D |
 | DeployOps Equipment Access Profile (#11) | — | R | R | R C W D |
 | DeployOps Equipment Allocation (#14) | R (own jobs) | R C W | R C W X E | R E |
@@ -48,6 +50,12 @@ The roles ship with the app. They are created automatically on `install-app` and
 - job assignment (#12) limits *which jobs*.
 
 **"A" (approve/return)** is a workflow transition, enforced in #19, not a DocType permission.
+
+**v2 job forms (Form Submission).** The letters are `FORM_LETTERS` in `matrix.py`: the checklist row without A, because approving is a workflow move. Form Submission's DocPerm is role `All`, so this row isn't a DocPerm row. The job provider (`deployops/forms/provider.py`) enforces it on every form, list, API call and attached file:
+- A form is visible exactly when its job is (§4 of [JOBS.md](JOBS.md)).
+- C, W and S count only for the Technician the job is assigned to.
+- A submitted form is final (no W). X needs a reason (`cancel_machine_form`).
+- The Supervisor report (`report_rows`) is for Supervisor, Manager and Admin, and lists only forms on jobs they can see.
 
 **DocType names** are the candidates from `docs/ARCHITECTURE.md`. When #18 / #20 fix the final names, rename the rows in `matrix.py`. A test fails if any DeployOps DocType is missing from the matrix.
 

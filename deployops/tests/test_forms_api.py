@@ -277,7 +277,7 @@ class TestFormsApi(FormJobCase):
 		self.assertNotIn("forms: add", [action for action, _reason in self.log()])
 
 	def test_override_refuses_bad_form_lists(self):
-		for bad in ('{"a": 1}', "5", "not json", '[1]'):
+		for bad in ('{"a": 1}', "5", "not json", "[1]"):
 			with self.assertRaisesRegex(frappe.ValidationError, "list of form names"):
 				self.override(self.supervisor, add=bad)
 
