@@ -107,6 +107,12 @@ class JobFormProvider(ContextProvider):
 		]
 
 	def can_start(self, context_name: str, context_row: str | None, form: str) -> str | None:
+		# forms_core asks before its create check: tell a user outside the job nothing about it, and
+		# take no lock for them.
+		if not frappe.db.exists(JOB, context_name) or not job_in_scope(
+			frappe.get_doc(JOB, context_name), frappe.session.user
+		):
+			return _("This job does not exist.")
 		# Lock the job so two starts for the same machine and form cannot both pass the checks.
 		status = frappe.db.get_value(JOB, context_name, "status", for_update=True)
 		if status is None:
@@ -145,6 +151,11 @@ class JobFormProvider(ContextProvider):
 			return False
 		job = frappe.get_doc(JOB, job_name)  # the saved job, so its assignee and status are the stored ones
 		if not job_in_scope(job, user) or letter not in _letters(job.assigned_technician, user):
+			return False
+		if ptype == "write" and submission.get("docstatus") == 1:
+			# A submitted form, its photos and signatures are final: Frappe judges an attached file's
+			# write, create and delete by write on this submission. A cancelled one (docstatus 2)
+			# stays writable because forms_core checks an amend as write on the cancelled original.
 			return False
 		if ptype in FILLING:
 			device_status = _device_status(job_name, submission.get("context_row"))

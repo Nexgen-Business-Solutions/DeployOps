@@ -107,7 +107,17 @@ class TestJobFormProvider(FormJobCase):
 		with patch("deployops.forms.provider.frappe.db.get_value", wraps=frappe.db.get_value) as get_value:
 			self.assertIsNone(self.can_start())
 		get_value.assert_any_call(JOB, self.job, "status", for_update=True)
-		self.assertEqual(get_value.call_args_list[0].kwargs, {"for_update": True})
+
+	def test_outsider_start_tells_nothing_and_takes_no_lock(self):
+		self.start()
+		outsider = make_user("_outsider-tech@deployops.test", TECHNICIAN)
+		with (
+			patch("deployops.forms.provider.frappe.db.get_value", wraps=frappe.db.get_value) as get_value,
+			set_user(outsider),
+			self.assertRaisesRegex(frappe.ValidationError, "^This job does not exist.$"),
+		):
+			api.start_submission(self.form_a["form"], JOB, self.job, self.device)
+		self.assertFalse([c for c in get_value.call_args_list if c.kwargs.get("for_update")])
 
 	def test_supervisor_reads_cannot_write_or_start(self):
 		name = self.start()
@@ -162,7 +172,8 @@ class TestJobFormProvider(FormJobCase):
 		with set_user(outsider):
 			with self.assertRaises(frappe.PermissionError):
 				api.get_submission(name)
-			with self.assertRaises(frappe.PermissionError):
+			# can_start runs before forms_core's create check and hides the job from outsiders.
+			with self.assertRaisesRegex(frappe.ValidationError, "^This job does not exist.$"):
 				api.start_submission(self.form_b["form"], JOB, self.job, self.device)
 			with self.assertRaises(frappe.PermissionError):
 				api.save_answers(name, {self.form_a["note"]: "x"})
@@ -179,6 +190,44 @@ class TestJobFormProvider(FormJobCase):
 				self.assertEqual(name in frappe.get_list(SUBMISSION, pluck="name"), sees)
 		self.assertEqual(self.provider.query_conditions(self.admin), "1=1")
 		self.assertIn("`tabForm Submission`.`context_name` in (", self.provider.query_conditions(blind))
+
+	def submit_as_technician(self, name: str):
+		with set_user(self.technician):
+			api.save_answers(name, {self.form_a["note"]: "Fitted", self.form_a["safe"]: "Yes"})
+			api.submit(name)
+
+	def test_amend_links_new_submission_to_form_row(self):
+		name = self.start()
+		self.submit_as_technician(name)
+		with set_user("Administrator"):
+			frappe.get_doc(SUBMISSION, name).cancel()
+		with set_user(self.technician):
+			amended = frappe.copy_doc(frappe.get_doc(SUBMISSION, name))
+			amended.docstatus = 0
+			amended.amended_from = name
+			amended.insert()
+		row = {"parent": self.job, "device": self.device, "form": self.form_a["form"]}
+		self.assertEqual(frappe.db.get_value(FORM_ROW, row, "submission"), amended.name)
+
+	def test_attachments_are_final_once_submitted(self):
+		name = self.start()
+		with set_user("Administrator"):
+			file_doc = frappe.get_doc(
+				{
+					"doctype": "File",
+					"file_name": "signature.txt",
+					"content": b"signed",
+					"is_private": 1,
+					"attached_to_doctype": SUBMISSION,
+					"attached_to_name": name,
+				}
+			).insert(ignore_permissions=True)
+		for ptype in ("write", "delete"):
+			self.assertTrue(frappe.has_permission("File", ptype, file_doc, user=self.technician), ptype)
+		self.submit_as_technician(name)
+		for ptype in ("write", "delete", "create"):
+			self.assertFalse(frappe.has_permission("File", ptype, file_doc, user=self.technician), ptype)
+		self.assertTrue(frappe.has_permission("File", "read", file_doc, user=self.technician))
 
 	def test_attached_file_follows_job(self):
 		name = self.start()
