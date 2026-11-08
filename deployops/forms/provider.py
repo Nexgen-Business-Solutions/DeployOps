@@ -6,8 +6,31 @@ import frappe
 from forms_core.context import ContextProvider
 from frappe import _
 
+from deployops.roles import TECHNICIAN
+from deployops.security.job_permissions import job_in_scope, job_query_conditions
+from deployops.security.matrix import FORM_LETTERS
+from deployops.workflow.job_workflow import CHECKLIST_STATES, CLOSED
+
 JOB = "DeployOps Job"
 DEVICE = "DeployOps Job Device"
+FORM_ROW = "DeployOps Job Device Form"
+SUBMISSION = "Form Submission"
+
+# Frappe permission type -> Form Submission letter (FORM_LETTERS). Any other type is denied.
+PTYPE_LETTERS = {
+	"read": "r",
+	"select": "r",
+	"report": "r",
+	"email": "r",
+	"print": "p",
+	"export": "e",
+	"create": "c",
+	"write": "w",  # an amend arrives as write
+	"submit": "s",
+	"cancel": "x",
+}
+ASSIGNEE_LETTERS = set("cws")  # count only from the Technician role, for the job's assignee
+FILLING = {"create", "write", "submit"}
 
 # Values a job form can fill from, as (value, label, forms_core field type).
 VALUES = (
@@ -82,3 +105,77 @@ class JobFormProvider(ContextProvider):
 			{"effect": "block_machine", "label": _("Block the machine")},
 			{"effect": "flag_for_review", "label": _("Flag for review")},
 		]
+
+	def can_start(self, context_name: str, context_row: str | None, form: str) -> str | None:
+		# Lock the job so two starts for the same machine and form cannot both pass the checks.
+		status = frappe.db.get_value(JOB, context_name, "status", for_update=True)
+		if status is None:
+			return _("This job does not exist.")
+		if status not in CHECKLIST_STATES:
+			return _("A form can only be started while the job is being worked on.")
+		device_status = _device_status(context_name, context_row)
+		if device_status is None:
+			return _("That machine is not on job {0}.").format(context_name)
+		if device_status == "Cancelled":
+			return _("This machine was cancelled on the job.")
+		planned = {
+			"parent": context_name,
+			"parenttype": JOB,
+			"device": context_row,
+			"form": form,
+			"removed": 0,
+		}
+		if not frappe.db.exists(FORM_ROW, planned):
+			return _("This form is not planned for this machine.")
+		started = {
+			"context_doctype": JOB,
+			"context_name": context_name,
+			"context_row": context_row,
+			"form": form,
+			"docstatus": ["in", [0, 1]],
+		}
+		if frappe.db.exists(SUBMISSION, started):
+			return _("This machine already has this form on this job.")
+		return None
+
+	def has_permission(self, submission, user: str, ptype: str) -> bool:
+		letter = PTYPE_LETTERS.get(ptype)
+		job_name = submission.get("context_name")
+		if not letter or not job_name or not frappe.db.exists(JOB, job_name):
+			return False
+		job = frappe.get_doc(JOB, job_name)  # the saved job, so its assignee and status are the stored ones
+		if not job_in_scope(job, user) or letter not in _letters(job.assigned_technician, user):
+			return False
+		if ptype in FILLING:
+			device_status = _device_status(job_name, submission.get("context_row"))
+			return job.status in CHECKLIST_STATES and device_status not in (None, "Cancelled")
+		if ptype == "cancel":
+			return job.status not in CLOSED and bool(frappe.flags.deployops_form_cancel)
+		return True
+
+	def query_conditions(self, user: str) -> str:
+		condition = job_query_conditions(user)
+		if not condition:
+			return "1=1"  # unrestricted; forms_core reads an empty condition as deny
+		return (
+			"`tabForm Submission`.`context_name` in "
+			f"(select `tabDeployOps Job`.`name` from `tabDeployOps Job` where {condition})"
+		)
+
+
+def _device_status(job: str, device: str | None) -> str | None:
+	"""The machine's status on the job, or None when the row is not on it."""
+	if not device:
+		return None
+	return frappe.db.get_value(DEVICE, {"name": device, "parent": job, "parenttype": JOB}, "device_status")
+
+
+def _letters(assignee: str | None, user: str) -> set[str]:
+	"""The user's Form Submission letters on a job with this saved assignee."""
+	letters: set[str] = set()
+	for role in frappe.get_roles(user):
+		granted = set(FORM_LETTERS.get(role, ""))
+		if role != TECHNICIAN or assignee != user:
+			granted -= ASSIGNEE_LETTERS
+		letters |= granted
+	return letters

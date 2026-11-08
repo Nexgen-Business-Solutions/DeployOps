@@ -114,4 +114,20 @@ def uses_forms(job_doc, device: str) -> bool:
 
 
 def on_submission_insert(doc, method=None) -> None:
-	"""Form Submission `after_insert` hook. Task 3 links the submission to its machine's form row."""
+	"""Form Submission `after_insert` hook: link a new job submission (a start or an amend) to the
+	machine's active form row."""
+	if doc.context_doctype != JOB:
+		return
+	row = frappe.db.get_value(
+		FORM_ROW,
+		{
+			"parent": doc.context_name,
+			"parenttype": JOB,
+			"device": doc.context_row,
+			"form": doc.form,
+			"removed": 0,
+		},
+		"name",
+	)
+	if row:
+		frappe.db.set_value(FORM_ROW, row, "submission", doc.name)
