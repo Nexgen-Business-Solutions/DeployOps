@@ -278,6 +278,39 @@ def live_submission(job: str, device: str, form: str) -> str | None:
 	)
 
 
+def latest_submission(job: str, device: str, form: str) -> str | None:
+	"""The submission a form row should link: the live one, else the latest cancelled one (so the
+	next start amends it), else None."""
+	live = live_submission(job, device, form)
+	if live:
+		return live
+	cancelled = frappe.get_all(
+		SUBMISSION,
+		filters={
+			"context_doctype": JOB,
+			"context_name": job,
+			"context_row": device,
+			"form": form,
+			"docstatus": 2,
+		},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
+	)
+	return cancelled[0] if cancelled else None
+
+
+def add_problem(job_doc, device) -> str | None:
+	"""Why the session user cannot add forms to this machine now, or None. A machine with a v1
+	checklist is governed by v1."""
+	problem = override_problem(job_doc, device)
+	if problem:
+		return problem
+	if form_for_device(job_doc.name, device.name) is not None:
+		return _("This machine has a checklist, so forms cannot be added to it.")
+	return None
+
+
 def override_problem(job_doc, device) -> str | None:
 	"""Why the session user cannot add or remove this machine's forms now, or None."""
 	if APPROVER_CAP not in capacities(job_doc, frappe.session.user):
@@ -287,6 +320,10 @@ def override_problem(job_doc, device) -> str | None:
 	if device.device_status in CLOSED:
 		return _("Forms cannot be changed on a {0} machine.").format(_(device.device_status))
 	return None
+
+
+def _form_title(form: str) -> str:
+	return frappe.db.get_value("Form", form, "title") or form
 
 
 def addable_forms() -> list[dict]:
@@ -309,15 +346,23 @@ def override(job_doc, device, add: list[str], remove: list[str], required: bool,
 	reason = (reason or "").strip()
 	rows = {row.form: row for row in job_doc.device_forms if row.device == device.name}
 	addable = {entry["form"]: entry["title"] for entry in addable_forms()}
+	if add:
+		problem = add_problem(job_doc, device)
+		if problem:
+			frappe.throw(problem)
 	for form in add:
 		if form not in addable:
-			frappe.throw(_("Form {0} cannot be used on a job.").format(form))
+			frappe.throw(_("Form {0} cannot be used on a job.").format(_form_title(form)))
 		if form in rows and not rows[form].removed:
 			frappe.throw(_("Form {0} is already planned for this machine.").format(addable[form]))
 	for form in remove:
 		row = rows.get(form)
 		if row is None or row.removed:
-			frappe.throw(_("Form {0} is not planned for this machine.").format(form))
+			frappe.throw(
+				_("Form {0} is not planned for this machine.").format(
+					row.form_title if row else _form_title(form)
+				)
+			)
 		if live_submission(job_doc.name, device.name, form):
 			frappe.throw(_("Cancel or discard form {0} first.").format(row.form_title))
 		if row.required:
@@ -333,7 +378,8 @@ def override(job_doc, device, add: list[str], remove: list[str], required: bool,
 			"removed": 0,
 			"origin": "Override",
 			"required": int(bool(required)),
-			"submission": live_submission(job_doc.name, device.name, form),  # a draft kept on a removed row
+			# a draft kept on a removed row, or the cancelled one the next start amends
+			"submission": latest_submission(job_doc.name, device.name, form),
 		}
 		if form in rows:
 			rows[form].update(values)

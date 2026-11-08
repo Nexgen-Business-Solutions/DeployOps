@@ -1,6 +1,7 @@
 """v2 Plan 3 Task 5: the machine forms API (list, start, override, discard, cancel)."""
 
 import json
+from unittest.mock import patch
 
 import frappe
 from forms_core import api
@@ -266,6 +267,39 @@ class TestFormsApi(FormJobCase):
 		self.assertEqual(self.rows(), before)
 		self.assertNotIn("forms: add", [action for action, _reason in self.log()])
 
+		# A bad remove after valid adds changes nothing either.
+		unplanned = publish_job_form("job-form-unplanned")
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "Form Job form job-form-unplanned is not planned for this machine."
+		):
+			self.override(self.supervisor, add=[extra["form"]], remove=[unplanned["form"]])
+		self.assertEqual(self.rows(), before)
+		self.assertNotIn("forms: add", [action for action, _reason in self.log()])
+
+	def test_override_refuses_bad_form_lists(self):
+		for bad in ('{"a": 1}', "5", "not json", '[1]'):
+			with self.assertRaisesRegex(frappe.ValidationError, "list of form names"):
+				self.override(self.supervisor, add=bad)
+
+	def test_add_refused_on_machine_with_v1_checklist(self):
+		extra = publish_job_form("job-form-extra")
+		with patch("deployops.forms.machine_forms.form_for_device", return_value=("X", "X-1", 0)):
+			self.assertFalse(self.listing(self.supervisor)["can_add"])
+			with self.assertRaisesRegex(frappe.ValidationError, "has a checklist"):
+				self.override(self.supervisor, add=[extra["form"]])
+		self.assertNotIn(extra["form"], [form for form, *_rest in self.rows()])
+
+	def test_restore_keeps_cancelled_link_and_next_start_amends(self):
+		name = self.start(self.form_b)["submission"]
+		self.fill(name, self.form_b)
+		self.cancel(name)
+		self.override(self.supervisor, remove=[self.form_b["form"]])
+		self.override(self.supervisor, add=[self.form_b["form"]])
+		entry = self.entry(self.form_b)
+		self.assertEqual((entry["status"], entry["submission"]), ("Not started", name))
+		again = self.start(self.form_b)["submission"]
+		self.assertEqual(frappe.db.get_value(SUBMISSION, again, "amended_from"), name)
+
 	def test_override_refused_on_completed_machine(self):
 		extra = publish_job_form("job-form-extra")
 		frappe.db.set_value("DeployOps Job Device", self.row, "device_status", "Completed")
@@ -296,6 +330,28 @@ class TestFormsApi(FormJobCase):
 		self.assertEqual(
 			(entry["status"], entry["submission"], entry["can_start"]), ("Not started", None, True)
 		)
+
+	def test_discard_amendment_relinks_cancelled_original(self):
+		name = self.start(self.form_a)["submission"]
+		self.fill(name, self.form_a)
+		self.cancel(name)
+		amendment = self.start(self.form_a)["submission"]
+		with set_user(self.manager):
+			forms_api.discard_machine_form(amendment, "Started by mistake")
+		self.assertFalse(frappe.db.exists(SUBMISSION, amendment))
+		entry = self.entry(self.form_a)
+		self.assertEqual(
+			(entry["status"], entry["submission"], entry["can_start"]), ("Not started", name, True)
+		)
+		again = self.start(self.form_a)["submission"]
+		self.assertEqual(frappe.db.get_value(SUBMISSION, again, "amended_from"), name)
+
+	def test_discard_refused_on_closed_job(self):
+		name = self.start(self.form_b)["submission"]
+		frappe.db.set_value(JOB, self.job, "status", "Cancelled")
+		with set_user(self.manager), self.assertRaisesRegex(frappe.ValidationError, "Cancelled job"):
+			forms_api.discard_machine_form(name, "Too late")
+		self.assertTrue(frappe.db.exists(SUBMISSION, name))
 
 	def test_discard_refused_on_submitted_form(self):
 		name = self.start(self.form_a)["submission"]

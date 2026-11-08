@@ -8,7 +8,7 @@ from deployops.api.sources import require_deployops_role
 from deployops.forms import machine_forms as device_forms
 from deployops.forms.provider import JobFormProvider, _letters
 from deployops.roles import MANAGER
-from deployops.workflow.job_workflow import APPROVER_CAP, _device_label, _log, _save, capacities
+from deployops.workflow.job_workflow import APPROVER_CAP, CLOSED, _device_label, _log, _save, capacities
 
 JOB = "DeployOps Job"
 SUBMISSION = "Form Submission"
@@ -30,9 +30,12 @@ def _forms_list(value) -> list[str]:
 	if not value:
 		return []
 	if isinstance(value, str):
-		value = frappe.parse_json(value)
-	if isinstance(value, str):
-		value = [value]
+		try:
+			value = frappe.parse_json(value)
+		except ValueError:
+			value = None
+	if not isinstance(value, list) or not all(isinstance(form, str) and form for form in value):
+		frappe.throw(_("Forms must be given as a list of form names."))
 	return list(dict.fromkeys(value))
 
 
@@ -44,7 +47,7 @@ def _submission_info(name: str | None) -> dict:
 	)
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["GET"])
 def machine_forms(job: str, row: str) -> dict:
 	"""The machine's active forms on the job, with what the session user may do with each."""
 	require_deployops_role()
@@ -96,7 +99,7 @@ def machine_forms(job: str, row: str) -> dict:
 			}
 		)
 	active_forms = {r.form for r in active}
-	can_add = blocked is None
+	can_add = device_forms.add_problem(job_doc, device) is None
 	return {
 		"job": job_doc.name,
 		"row": row,
@@ -171,6 +174,8 @@ def discard_machine_form(submission: str, reason: str) -> None:
 		frappe.throw(_("You are not allowed to discard this form."), frappe.PermissionError)
 	if doc.docstatus != 0:
 		frappe.throw(_("Only a draft form can be discarded."))
+	if job_doc.status in CLOSED:
+		frappe.throw(_("Forms cannot be discarded on a {0} job.").format(_(job_doc.status)))
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("A reason is required to discard a form."))
@@ -188,9 +193,10 @@ def discard_machine_form(submission: str, reason: str) -> None:
 		device=_device_label(device) if device else None,
 	)
 	_save(job_doc)
-	# The row links the draft: clear it first, or the delete is refused as linked.
+	# The row links the draft: point it back at the cancelled original (so the next start amends
+	# it again), or clear it, before the delete, which is refused while the draft is linked.
 	if form_row is not None:
-		frappe.db.set_value(FORM_ROW, form_row.name, "submission", None)
+		frappe.db.set_value(FORM_ROW, form_row.name, "submission", doc.amended_from or None)
 	frappe.delete_doc(SUBMISSION, doc.name, ignore_permissions=True)
 
 
