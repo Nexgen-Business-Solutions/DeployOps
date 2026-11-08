@@ -1,4 +1,4 @@
-"""Each machine's planned forms on a job (v2 Plan 3). Tasks 2 to 4 fill this module in.
+"""Each machine's planned forms on a job (v2 Plan 3).
 
 A job's `device_forms` rows say which forms each machine needs. Form Rules set them until the
 machine's first form is started; after that they only change through overrides. A submitted form's
@@ -8,10 +8,12 @@ outcomes act on its machine, and cancelling a required form reopens a completed 
 import frappe
 from forms_core.definition import field_index
 from forms_core.submissions import triggered_outcomes, version_definition
+from frappe import _
 
 from deployops.checklists.cards import form_for_device
 from deployops.forms.rules import plan_rows, planned_forms
-from deployops.workflow.job_workflow import CLOSED, _device_label, _log, _save
+from deployops.roles import MANAGER
+from deployops.workflow.job_workflow import APPROVER_CAP, CLOSED, _device_label, _log, _save, capacities
 
 JOB = "DeployOps Job"
 SUBMISSION = "Form Submission"
@@ -39,13 +41,15 @@ def frozen(job: str, device: str) -> bool:
 
 
 def row_values(row) -> dict:
-	"""A form row as a plain dict of its DocType fields (and its name, when it has one)."""
+	"""A form row as a plain dict of its DocType fields (and its name, when it is saved)."""
 	values = {field: row.get(field) for field in ROW_FIELDS}
 	for field in NUMERIC_FIELDS:
 		values[field] = int(values[field] or 0)
 	for field in set(ROW_FIELDS) - NUMERIC_FIELDS:
 		values[field] = values[field] or None
-	if row.get("name"):
+	# Frappe names a new row before validate; carrying that name would make the save update a row
+	# that is not in the database yet, and the row would be lost.
+	if row.get("name") and not row.get("__islocal"):
 		values["name"] = row.get("name")
 	return values
 
@@ -253,3 +257,111 @@ def on_form_cancel(submission) -> None:
 			device.device_status = "In Progress"
 			_log(job, user, "machine: reopened", status, "In Progress", title, device=label)
 	_save(job)
+
+
+# ---------------------------------------------------------------------------------------------
+# Overrides: an approver adds or removes a machine's forms by hand.
+
+
+def live_submission(job: str, device: str, form: str) -> str | None:
+	"""The machine's draft or submitted submission of this form on the job, if any."""
+	return frappe.db.get_value(
+		SUBMISSION,
+		{
+			"context_doctype": JOB,
+			"context_name": job,
+			"context_row": device,
+			"form": form,
+			"docstatus": ["in", [0, 1]],
+		},
+		"name",
+	)
+
+
+def override_problem(job_doc, device) -> str | None:
+	"""Why the session user cannot add or remove this machine's forms now, or None."""
+	if APPROVER_CAP not in capacities(job_doc, frappe.session.user):
+		return _("You are not allowed to change the forms of this machine.")
+	if job_doc.status in FROZEN_JOB_STATUSES:
+		return _("Forms cannot be changed on a {0} job.").format(_(job_doc.status))
+	if device.device_status in CLOSED:
+		return _("Forms cannot be changed on a {0} machine.").format(_(device.device_status))
+	return None
+
+
+def addable_forms() -> list[dict]:
+	"""Published, non-archived job forms: `[{"form", "title"}]` by title."""
+	forms = frappe.get_all(
+		"Form",
+		filters={"context_doctype": JOB, "status": ["!=", "Archived"], "current_version": ["is", "set"]},
+		fields=["name", "title"],
+		order_by="title asc",
+	)
+	return [{"form": form.name, "title": form.title} for form in forms]
+
+
+def override(job_doc, device, add: list[str], remove: list[str], required: bool, reason: str | None):
+	"""Add and remove the machine's forms, all or nothing, logged per form; saves the job.
+
+	The caller has checked `override_problem`. An added form gets an Override row (a removed row is
+	restored as one); a removed form's row is kept with `removed = 1`, so rule resyncs leave it out.
+	"""
+	reason = (reason or "").strip()
+	rows = {row.form: row for row in job_doc.device_forms if row.device == device.name}
+	addable = {entry["form"]: entry["title"] for entry in addable_forms()}
+	for form in add:
+		if form not in addable:
+			frappe.throw(_("Form {0} cannot be used on a job.").format(form))
+		if form in rows and not rows[form].removed:
+			frappe.throw(_("Form {0} is already planned for this machine.").format(addable[form]))
+	for form in remove:
+		row = rows.get(form)
+		if row is None or row.removed:
+			frappe.throw(_("Form {0} is not planned for this machine.").format(form))
+		if live_submission(job_doc.name, device.name, form):
+			frappe.throw(_("Cancel or discard form {0} first.").format(row.form_title))
+		if row.required:
+			if MANAGER not in frappe.get_roles():
+				frappe.throw(_("Only a manager can remove a required form."), frappe.PermissionError)
+			if not reason:
+				frappe.throw(_("A reason is required to remove a required form."))
+
+	user, label, status = frappe.session.user, _device_label(device), device.device_status
+	next_order = max((row.sort_order or 0 for row in rows.values()), default=-1) + 1
+	for form in add:
+		values = {
+			"removed": 0,
+			"origin": "Override",
+			"required": int(bool(required)),
+			"submission": live_submission(job_doc.name, device.name, form),  # a draft kept on a removed row
+		}
+		if form in rows:
+			rows[form].update(values)
+		else:
+			job_doc.append(
+				"device_forms",
+				{
+					"device": device.name,
+					"form": form,
+					"form_title": addable[form],
+					"sort_order": next_order,
+					"flagged": 0,
+					**values,
+				},
+			)
+			next_order += 1
+		text = f"{addable[form]}: {reason}" if reason else addable[form]
+		_log(job_doc, user, "forms: add", status, status, text, device=label)
+	for form in remove:
+		rows[form].removed = 1
+		title = rows[form].form_title
+		_log(
+			job_doc,
+			user,
+			"forms: remove",
+			status,
+			status,
+			f"{title}: {reason}" if reason else title,
+			device=label,
+		)
+	_save(job_doc)

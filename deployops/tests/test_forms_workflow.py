@@ -5,6 +5,7 @@ from forms_core import api
 from frappe.tests.classes.context_managers import set_user
 
 from deployops.api import checklists as checklist_api
+from deployops.api import forms as forms_api
 from deployops.api import jobs as job_api
 from deployops.api import technician as technician_api
 from deployops.checklists.cards import form_for_device
@@ -65,14 +66,8 @@ class TestFormsWorkflow(FormJobCase):
 			return job_api.device_action(job, self.device_of(job), "complete")
 
 	def cancel_form(self, name: str, reason: str):
-		"""Cancel as the Manager, the way Task 5's cancel_machine_form will."""
-		frappe.flags.deployops_form_cancel = reason
 		with set_user(self.manager):
-			doc = frappe.get_doc(SUBMISSION, name)
-			self.assertTrue(doc.has_permission("cancel"))
-			doc.flags.ignore_permissions = True  # Frappe's cancel also checks write, final once submitted
-			doc.cancel()
-		frappe.flags.pop("deployops_form_cancel", None)
+			self.assertEqual(forms_api.cancel_machine_form(name, reason), 2)
 
 	def device(self, job: str):
 		return frappe.get_doc(JOB, job).devices[0]
