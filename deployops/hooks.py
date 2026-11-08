@@ -8,7 +8,11 @@ app_license = "mit"
 # Apps
 # ------------------
 
-required_apps = ["erpnext"]
+required_apps = ["erpnext", "forms_core"]
+
+# v2 forms (forms_core): jobs are a form context, and Managers and Administrators design forms.
+forms_core_context_providers = {"DeployOps Job": "deployops.forms.provider.JobFormProvider"}
+forms_core_designer_roles = ["DeployOps Manager", "DeployOps Administrator"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -322,6 +326,7 @@ PRINT_CHECKED = (
 	"DeployOps Equipment Access Profile",
 	"DeployOps Reference Files",
 	"DeployOps Equipment Allocation",
+	"DeployOps Form Rule",
 )
 
 doc_events = {
@@ -329,6 +334,7 @@ doc_events = {
 		doctype: {"before_print": "deployops.security.print_permissions.check_print_permission"}
 		for doctype in PRINT_CHECKED
 	},
+	"Form Submission": {"after_insert": "deployops.forms.machine_forms.on_submission_insert"},
 	"Delivery Note": {
 		"on_submit": [
 			"deployops.equipment.allocations.on_delivery_note_submit",

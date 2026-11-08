@@ -45,7 +45,13 @@ DOCTYPE_MATRIX = {
 		MANAGER: "rcwxe",
 		ADMINISTRATOR: "re",
 	},
+	# v2 Form Rules: which forms each machine gets. Supervisors read, Managers maintain.
+	"DeployOps Form Rule": {TECHNICIAN: "", SUPERVISOR: "r", MANAGER: "rcwd", ADMINISTRATOR: "rcwd"},
 }
+
+# v2 Form Submission rights on job forms. Not a DOCTYPE_MATRIX row: Form Submission's DocPerm is role
+# "All" and the job provider enforces these. The checklist row without "a" (approve is a workflow move).
+FORM_LETTERS: dict[str, str] = {TECHNICIAN: "rcwsp", SUPERVISOR: "rp", MANAGER: "rxpe", ADMINISTRATOR: "rpe"}
 
 # ERPNext records are reached only through DeployOps APIs with their own checks (#13 / #37).
 # DeployOps roles get no direct permission on them.
