@@ -13,6 +13,7 @@ from deployops.roles import MANAGER
 from deployops.tests import erpnext_fixtures as fx
 from deployops.tests.forms_utils import JOB, RULE, FormJobCase, add_rule, publish_job_form
 from deployops.tests.test_forms_provider import make_user
+from deployops.tests.test_forms_rules import make_category
 from deployops.tests.test_job import make_job
 from deployops.tests.utils import make_role_user
 
@@ -271,6 +272,46 @@ class TestFormsWorkflow(FormJobCase):
 		):
 			job_doc.save()
 		self.assertTrue(machine_forms.has_live_submission(job, self.device_of(job)))
+
+	def test_item_change_after_cancel_replans_rows(self):
+		make_category("_Test Robots", [self.robot])
+		robot_form = publish_job_form("job-form-robot")
+		add_rule("Installation", "_Test Robots", robot_form["form"])
+		make_user(self.technician, "DeployOps Technician", categories=("_Test Cash", "_Test Robots"))
+		rows = [
+			{"item_code": self.cash, "serial_and_batch_bundle": fx.make_bundle(self.cash, ["JOB-CR-1"])},
+			{"item_code": self.robot, "serial_no": "JOB-BB-1"},
+		]
+		job = self.working_job(devices=[{"item_code": self.cash, "serial_no": "JOB-CR-1"}], rows=rows)
+		name = self.start(job, self.form_a)
+		self.fill(name, self.form_a)
+		self.cancel_form(name, "Wrong machine")
+		self.assertFalse(machine_forms.has_live_submission(job, self.device_of(job)))
+
+		job_doc = frappe.get_doc(JOB, job)
+		job_doc.devices[0].item_code, job_doc.devices[0].serial_no = self.robot, "JOB-BB-1"
+		job_doc.save()
+
+		job_doc.reload()
+		self.assertEqual([(r.form, r.required) for r in job_doc.device_forms], [(robot_form["form"], 1)])
+		self.assertEqual(
+			machine_forms.missing_required(job_doc, self.device_of(job)), ["Job form job-form-robot"]
+		)
+		started = self.start(job, robot_form)
+		self.assertEqual(frappe.db.get_value(SUBMISSION, started, "context_row"), self.device_of(job))
+		self.assertEqual(self.form_row(job, robot_form).submission, started)
+
+	def test_block_on_blocked_machine_logs_once(self):
+		block = publish_job_form("job-form-block", outcome="block_machine")
+		add_rule("Installation", "_Test Cash", block["form"], required=False, sort_order=2)
+		job = self.working_job()
+		with set_user(self.technician):
+			job_api.device_action(job, self.device_of(job), "block", "Wall not ready")
+		self.assertFalse(self.device(job).blocked_by_checklist)
+		self.fill(self.start(job, block), block, safe="No")
+		self.assertTrue(self.device(job).blocked_by_checklist)
+		blocks = [action for action, _reason in self.log(job) if action == "machine: block"]
+		self.assertEqual(len(blocks), 1)  # the manual block only
 
 	# -- v1 coexistence -------------------------------------------------------------------------
 

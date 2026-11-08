@@ -50,12 +50,31 @@ def row_values(row) -> dict:
 	return values
 
 
-def _leave_alone(job_doc, device) -> bool:
-	return (
+def _leave_alone(job_doc, device, saved_items: dict) -> bool:
+	if (
 		job_doc.status in FROZEN_JOB_STATUSES
 		or device.device_status in CLOSED
 		or form_for_device(job_doc.name, device.name) is not None
-		or frozen(job_doc.name, device.name)
+	):
+		return True
+	if not frozen(job_doc.name, device.name):
+		return False
+	# A machine whose item changed once only cancelled forms were left follows its new item.
+	changed_item = device.name in saved_items and saved_items[device.name] != device.item_code
+	return not changed_item or has_live_submission(job_doc.name, device.name)
+
+
+def _saved_items(job_doc) -> dict[str, str]:
+	"""Each saved machine row's item, before this save."""
+	if job_doc.is_new():
+		return {}
+	return dict(
+		frappe.get_all(
+			"DeployOps Job Device",
+			filters={"parent": job_doc.name, "parenttype": JOB},
+			fields=["name", "item_code"],
+			as_list=True,
+		)
 	)
 
 
@@ -66,10 +85,11 @@ def sync_job(job_doc) -> None:
 			device.name = frappe.generate_hash(length=10)
 
 	existing = [row_values(row) for row in job_doc.device_forms]
+	saved_items = _saved_items(job_doc)
 	titles: dict[str, str] = {}
 	rows: list[dict] = []
 	for device in job_doc.devices:
-		if _leave_alone(job_doc, device):
+		if _leave_alone(job_doc, device, saved_items):
 			rows += [row for row in existing if row["device"] == device.name]
 			continue
 		planned = planned_forms(job_doc.job_type, device.item_code)
@@ -200,9 +220,11 @@ def apply_outcomes(submission) -> None:
 		reason = f"{title}: {fields.get(outcome['field'], {}).get('label') or outcome['field']}"
 		status = device.device_status
 		if outcome["effect"] == "block_machine" and status != "Cancelled":
+			if status != "Blocked":  # one log line per block, not per firing field
+				_log(job, user, "machine: block", status, "Blocked", reason, device=label)
+			# Already blocked by hand: the form's block still means unblocking needs a reason.
+			changed = changed or status != "Blocked" or not device.blocked_by_checklist
 			device.device_status, device.blocked_by_checklist = "Blocked", 1
-			_log(job, user, "machine: block", status, "Blocked", reason, device=label)
-			changed = True
 		elif outcome["effect"] == "flag_for_review":
 			_log(job, user, "machine: flagged for review", status, status, reason, device=label)
 			changed = True

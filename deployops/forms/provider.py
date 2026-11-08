@@ -159,9 +159,9 @@ class JobFormProvider(ContextProvider):
 			# stays writable because forms_core checks an amend as write on the cancelled original.
 			return False
 		if ptype in FILLING:
-			device_status = _device_status(job_name, submission.get("context_row"))
 			if ptype == "submit" and not _planned(job_name, submission):
 				return False  # the form was removed from this machine after it was started
+			device_status = _device_status(job_name, submission.get("context_row"))
 			return job.status in CHECKLIST_STATES and device_status not in (None, "Cancelled")
 		if ptype == "cancel":
 			return job.status not in CLOSED and bool(frappe.flags.deployops_form_cancel)
