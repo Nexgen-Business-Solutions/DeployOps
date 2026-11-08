@@ -13,13 +13,16 @@ JOB = "DeployOps Job"
 RULE = "DeployOps Form Rule"
 
 
-def publish_job_form(key: str | None = None, outcome: str | None = None) -> dict:
-	"""Publish, as Administrator, a job form with a locked serial, a required note and a yes/no."""
+def publish_job_form(key: str | None = None, outcome: str | tuple[str, ...] | None = None) -> dict:
+	"""Publish, as Administrator, a job form with a locked serial, a required note and a yes/no.
+	`outcome` (one effect or several) fires when the yes/no is answered No."""
 	key = key or "job-" + new_id("k")[2:]
 	section, serial, note, safe = new_id("s"), new_id("f"), new_id("f"), new_id("f")
 	safe_field = {"id": safe, "key": "safe", "type": "yes_no", "label": "Safe"}
 	if outcome:
-		safe_field["outcomes"] = [{"when": {"field": safe, "op": "eq", "value": "No"}, "effect": outcome}]
+		effects = (outcome,) if isinstance(outcome, str) else outcome
+		when = {"field": safe, "op": "eq", "value": "No"}
+		safe_field["outcomes"] = [{"when": when, "effect": effect} for effect in effects]
 	definition = {
 		"schema": 1,
 		"sections": [

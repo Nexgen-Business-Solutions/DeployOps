@@ -16,6 +16,7 @@ from deployops.checklists import layout, report
 from deployops.checklists.cards import CARDS, CARDS_BY_ID, card_for, form_for_device, items_by_product_line
 from deployops.checklists.form import HEADER_FIELDS
 from deployops.deployops.doctype.deployops_reference_files.deployops_reference_files import references_for
+from deployops.forms import machine_forms
 from deployops.roles import ALIASES, ALL_ROLES
 from deployops.workflow import job_workflow
 
@@ -88,6 +89,7 @@ def my_jobs(card: str) -> dict:
 
 def _machine(doc, row, device_actions) -> dict:
 	form = form_for_device(doc.name, row.name)
+	uses_forms = machine_forms.uses_forms(doc, row.name)
 	return {
 		"row": row.name,
 		"item_code": row.item_code,
@@ -98,7 +100,9 @@ def _machine(doc, row, device_actions) -> dict:
 		"issue": row.source_issue,
 		"actions": device_actions.get(row.name, []),
 		"checklist": {"doctype": form[0], "name": form[1], "submitted": form[2] == 1} if form else None,
+		"uses_forms": uses_forms,
 		"can_start_checklist": not form
+		and not uses_forms
 		and doc.status in job_workflow.CHECKLIST_STATES
 		and row.device_status != "Cancelled"
 		and bool(card_for(doc.job_type, row.item_code)),

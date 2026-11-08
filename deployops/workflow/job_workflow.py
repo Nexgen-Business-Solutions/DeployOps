@@ -128,8 +128,25 @@ def _job_check(job, action: str) -> str | None:
 				return _("machine {0} is not completed").format(_device_label(row))
 			if row.device_status == "Completed" and not row.serial_no:
 				return _("machine {0} has no Serial No").format(_device_label(row))
-			if row.device_status == "Completed" and _checklist_not_submitted(job, row):
-				return _("the checklist of machine {0} is not submitted").format(_device_label(row))
+			problem = _forms_problem(job, row) if row.device_status == "Completed" else None
+			if problem:
+				return problem
+	return None
+
+
+def _forms_problem(job, row) -> str | None:
+	"""Why a completed machine's forms (v2) or checklist (v1) stop the job, or None."""
+	from deployops.forms import machine_forms
+
+	if machine_forms.uses_forms(job, row.name):
+		missing = machine_forms.missing_required(job, row.name)
+		if missing:
+			return _("the required form {0} of machine {1} is not submitted").format(
+				missing[0], _device_label(row)
+			)
+		return None
+	if _checklist_not_submitted(job, row):
+		return _("the checklist of machine {0} is not submitted").format(_device_label(row))
 	return None
 
 
@@ -188,7 +205,11 @@ def apply_job_action(job_name: str, action: str, reason: str | None = None, user
 
 def _create_checklists(job):
 	"""Each machine of a started Installation job gets its checklist, whoever started the job."""
+	from deployops.forms import machine_forms
+
 	for row in job.devices:
+		if machine_forms.uses_forms(job, row.name):
+			continue  # judged by its forms from the form builder
 		card = card_for(job.job_type, row.item_code)
 		if card and row.device_status != "Cancelled" and not form_for_device(job.name, row.name):
 			frappe.get_doc({"doctype": card["doctype"], "job": job.name, "job_device": row.name}).insert(
@@ -296,10 +317,8 @@ def apply_device_action(
 		frappe.throw(
 			_("Machine {0} needs a Serial No before it can be completed.").format(_device_label(row))
 		)
-	if action == "complete" and _checklist_not_submitted(job, row):
-		frappe.throw(
-			_("Submit the checklist of machine {0} before completing it.").format(_device_label(row))
-		)
+	if action == "complete":
+		_check_forms_submitted(job, row)
 	if action == "complete" and _awaiting_approval(job, row):
 		frappe.throw(
 			_("The conditions of machine {0} need a Supervisor or Manager's approval first.").format(
@@ -316,6 +335,24 @@ def apply_device_action(
 	_log(job, user, f"machine: {action}", before, row.device_status, reason, device=_device_label(row))
 	_save(job)
 	return row.device_status
+
+
+def _check_forms_submitted(job, row):
+	"""A machine is completed only once its required forms (v2) or its checklist (v1) are submitted."""
+	from deployops.forms import machine_forms
+
+	if machine_forms.uses_forms(job, row.name):
+		missing = machine_forms.missing_required(job, row.name)
+		if missing:
+			frappe.throw(
+				_("Submit the required form {0} of machine {1} before completing it.").format(
+					missing[0], _device_label(row)
+				)
+			)
+	elif _checklist_not_submitted(job, row):
+		frappe.throw(
+			_("Submit the checklist of machine {0} before completing it.").format(_device_label(row))
+		)
 
 
 def apply_checklist_decision(form):

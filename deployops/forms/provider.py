@@ -6,6 +6,7 @@ import frappe
 from forms_core.context import ContextProvider
 from frappe import _
 
+from deployops.forms import machine_forms
 from deployops.roles import TECHNICIAN
 from deployops.security.job_permissions import job_in_scope, job_query_conditions
 from deployops.security.matrix import FORM_LETTERS
@@ -159,10 +160,18 @@ class JobFormProvider(ContextProvider):
 			return False
 		if ptype in FILLING:
 			device_status = _device_status(job_name, submission.get("context_row"))
+			if ptype == "submit" and not _planned(job_name, submission):
+				return False  # the form was removed from this machine after it was started
 			return job.status in CHECKLIST_STATES and device_status not in (None, "Cancelled")
 		if ptype == "cancel":
 			return job.status not in CLOSED and bool(frappe.flags.deployops_form_cancel)
 		return True
+
+	def on_submit(self, submission) -> None:
+		machine_forms.apply_outcomes(submission)
+
+	def on_cancel(self, submission) -> None:
+		machine_forms.on_form_cancel(submission)
 
 	def query_conditions(self, user: str) -> str:
 		condition = job_query_conditions(user)
@@ -179,6 +188,22 @@ def _device_status(job: str, device: str | None) -> str | None:
 	if not device:
 		return None
 	return frappe.db.get_value(DEVICE, {"name": device, "parent": job, "parenttype": JOB}, "device_status")
+
+
+def _planned(job: str, submission) -> bool:
+	"""True while the submission's form is still planned (not removed) for its machine."""
+	return bool(
+		frappe.db.exists(
+			FORM_ROW,
+			{
+				"parent": job,
+				"parenttype": JOB,
+				"device": submission.get("context_row"),
+				"form": submission.get("form"),
+				"removed": 0,
+			},
+		)
+	)
 
 
 def _letters(assignee: str | None, user: str) -> set[str]:

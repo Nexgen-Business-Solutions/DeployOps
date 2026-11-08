@@ -236,6 +236,12 @@ class DeployOpsJob(Document):
 			):
 				frappe.throw(_("Row #{0}: the delivery details are set by the system.").format(row.idx))
 			changed = (row.item_code, row.serial_no or None) != (before.item_code, before.serial_no or None)
+			if row.item_code != before.item_code and machine_forms.has_live_submission(self.name, row.name):
+				frappe.throw(
+					_(
+						"Row #{0}: this machine has forms; a manager must cancel or discard them before the machine can be changed."
+					).format(row.idx)
+				)
 			form = form_for_device(self.name, row.name) if changed else None
 			first_serial_on_draft = (
 				form and form[2] == 0 and row.item_code == before.item_code and not before.serial_no

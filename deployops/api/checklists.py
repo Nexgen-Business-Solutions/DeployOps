@@ -5,6 +5,7 @@ from frappe import _
 
 from deployops.api.sources import require_deployops_role
 from deployops.checklists.cards import FORM_DOCTYPES, card_for, form_for_device
+from deployops.forms import machine_forms
 from deployops.workflow import job_workflow
 
 
@@ -23,6 +24,8 @@ def start_checklist(job: str, device: str) -> dict:
 	row = next((r for r in job_doc.devices if r.name == device), None)
 	if not row:
 		frappe.throw(_("That machine is not on job {0}.").format(job))
+	if machine_forms.uses_forms(job_doc, device):
+		frappe.throw(_("This machine uses forms from the form builder."))
 	card = card_for(job_doc.job_type, row.item_code)
 	if not card:
 		frappe.throw(
