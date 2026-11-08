@@ -1,11 +1,10 @@
 """A Form Rule plans a form for every machine of an equipment category on jobs of one type (v2)."""
 
-import importlib
-import importlib.util
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
+
+from deployops.forms import machine_forms
 
 JOB = "DeployOps Job"
 
@@ -41,14 +40,10 @@ class DeployOpsFormRule(Document):
 		if before and before.job_type != self.job_type:
 			_resync(before.job_type)
 
-	def on_trash(self):
+	def after_delete(self):
+		# After the delete, so the resync no longer sees this rule.
 		_resync(self.job_type)
 
 
 def _resync(job_type: str) -> None:
-	# machine_forms arrives in Task 2 of v2 Plan 3, which removes this guard.
-	if not importlib.util.find_spec("deployops.forms.machine_forms"):
-		return
-	machine_forms = importlib.import_module("deployops.forms.machine_forms")
-	if hasattr(machine_forms, "resync_job_type"):
-		machine_forms.resync_job_type(job_type)
+	machine_forms.resync_job_type(job_type)

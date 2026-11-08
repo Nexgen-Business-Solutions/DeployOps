@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from deployops.api.sources import visible_lines
 from deployops.checklists.cards import form_for_device
 from deployops.equipment import allocations
+from deployops.forms import machine_forms
 from deployops.integrations import erpnext_sources
 from deployops.roles import TECHNICIAN
 from deployops.security.equipment_access import get_allowed_items, get_category_items, is_unrestricted
@@ -56,6 +57,7 @@ class DeployOpsJob(Document):
 			self.status = "Draft"
 			self.previous_status = None
 			self.set("status_log", [])
+			self.set("device_forms", [])  # only form rules and overrides write these
 			self.set_source_details(snapshot)
 			if not self.devices:
 				for device in devices_from_source(source, snapshot):
@@ -69,6 +71,7 @@ class DeployOpsJob(Document):
 			self.validate_fixed_fields()
 			self.validate_workflow_fields_unchanged()
 			self.validate_log_unchanged()
+			self.validate_device_forms_unchanged()
 
 		for row in self.devices:
 			# Rows added during validate miss Frappe's field defaults.
@@ -81,6 +84,7 @@ class DeployOpsJob(Document):
 		self.validate_equipment_category()
 		self.validate_no_double_booking()
 		self.validate_assigned_technician()
+		machine_forms.sync_job(self)
 
 	def on_update(self):
 		# Reserve, release or deploy machines to match the job (#14).
@@ -144,6 +148,24 @@ class DeployOpsJob(Document):
 		added = [row for row in self.status_log if row.name not in saved]
 		if added and not self.flags.allow_status_change:
 			frappe.throw(_("The status log can only be written by the job workflow."))
+
+	def validate_device_forms_unchanged(self):
+		"""Machine form rows are written by form rules and overrides only, never by a plain save."""
+		if self.flags.allow_status_change or self.flags.device_forms_sync:
+			return
+		# The title is fetched from the form on every save, so a renamed form is not an edit.
+		fields = [f for f in machine_forms.ROW_FIELDS if f != "form_title"]
+		saved = frappe.get_all(
+			machine_forms.FORM_ROW,
+			filters={"parent": self.name, "parenttype": JOB, "parentfield": "device_forms"},
+			fields=fields,
+			order_by="idx",
+		)
+		current = [machine_forms.row_values(row) for row in self.device_forms]
+		if [[machine_forms.row_values(row)[f] for f in fields] for row in saved] != [
+			[row[f] for f in fields] for row in current
+		]:
+			frappe.throw(_("Machine forms are set by form rules and overrides."))
 
 	def changed_rows(self) -> list:
 		"""Machine rows that are new, or whose Item or serial differs from the saved job."""
@@ -375,8 +397,10 @@ class DeployOpsJob(Document):
 
 	def validate_equipment_access(self):
 		user = frappe.session.user
-		if self.flags.delivery_handoff or is_unrestricted(user):
-			return  # the system adding delivered machines; the technician is still checked below
+		if self.flags.delivery_handoff or self.flags.device_forms_sync or is_unrestricted(user):
+			# The system adding delivered machines or resyncing form rows; the technician is still
+			# checked below.
+			return
 
 		allowed = get_allowed_items(user)
 		for row in self.devices:

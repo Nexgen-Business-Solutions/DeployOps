@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "creation": "2026-11-08 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "device",
+  "form",
+  "form_title",
+  "required",
+  "sort_order",
+  "origin",
+  "removed",
+  "submission",
+  "flagged"
+ ],
+ "fields": [
+  {
+   "description": "The DeployOps Job Device row this form belongs to.",
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Machine",
+   "reqd": 1
+  },
+  {
+   "fieldname": "form",
+   "fieldtype": "Link",
+   "label": "Form",
+   "options": "Form",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "form.title",
+   "fieldname": "form_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Form Title",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Required",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Origin",
+   "options": "Rule\nOverride",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "removed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Removed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submission",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Submission",
+   "options": "Form Submission",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "flagged",
+   "fieldtype": "Check",
+   "label": "Flagged",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-08 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DeployOps",
+ "name": "DeployOps Job Device Form",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
