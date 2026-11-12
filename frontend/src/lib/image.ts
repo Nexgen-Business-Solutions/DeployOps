@@ -24,3 +24,10 @@ export async function resizeImage(file: File, maxSide = 1600, quality = 0.85): P
 		URL.revokeObjectURL(url);
 	}
 }
+
+/** Decode the signature canvas without sending its data URL to the server. */
+export function dataUrlToBlob(dataUrl: string): Blob {
+	const [header, encoded] = dataUrl.split(",");
+	const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+	return new Blob([bytes], {type: header.match(/^data:([^;]+)/)?.[1] ?? "image/png"});
+}

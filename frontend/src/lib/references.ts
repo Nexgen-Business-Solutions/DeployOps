@@ -1,7 +1,7 @@
-import type { Reference, Section } from "./types";
+import type { Reference } from "./types";
 
 /** Each document once, with the sections that use it. */
-export function uniqueDocuments(references: Reference[], sections: Section[]): { reference: Reference; places: string[] }[] {
+export function uniqueDocuments(references: Reference[], sections: {name: string; label: string}[]): { reference: Reference; places: string[] }[] {
 	const labels = new Map(sections.map((s) => [s.name, s.label]));
 	const documents = new Map<string, { reference: Reference; places: string[] }>();
 	for (const reference of references) {

@@ -3,6 +3,7 @@ import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { ActionButtons } from "../components/Actions";
+import { MachineForms } from "../components/MachineForms";
 import { Banner, Button, Page, Skeleton, Status, TopBar } from "../components/ui";
 import { ApiError, plainText, post } from "../lib/api";
 import { formPath } from "../lib/form";
@@ -98,6 +99,7 @@ function MachineRow({ job, machine, onChange }: { job: string; machine: Machine;
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const form = machine.checklist;
+	const [usesForms, setUsesForms] = useState(false);
 
 	async function start() {
 		setBusy(true);
@@ -127,6 +129,8 @@ function MachineRow({ job, machine, onChange }: { job: string; machine: Machine;
 				</div>
 			)}
 
+			<MachineForms job={job} row={machine.row} onLoaded={setUsesForms} />
+
 			{form ? (
 				<Link
 					to={formPath(form.doctype, form.name)}
@@ -139,7 +143,7 @@ function MachineRow({ job, machine, onChange }: { job: string; machine: Machine;
 					<ChevronRight className="size-[18px] text-zinc-300 group-hover:text-ink" />
 				</Link>
 			) : (
-				machine.can_start_checklist && (
+				machine.can_start_checklist && !usesForms && (
 					<Button className="mt-3 h-11 w-full" loading={busy} onClick={() => void start()}>
 						Start checklist
 					</Button>

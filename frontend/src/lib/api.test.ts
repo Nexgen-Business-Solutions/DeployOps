@@ -28,3 +28,6 @@ describe("post", () => {
 		await expect(post("frappe.core.doctype.user.user.update_password", {})).resolves.toBe("/app");
 	});
 });
+
+it("keeps form_errors from a refused save",async()=>{const formErrors=[{field:"f_aaaa",row:null,message:"x"}];respond(417,{form_errors:formErrors});await expect(post("save")).rejects.toMatchObject({formErrors});});
+it("allows answer saves to survive page unload",async()=>{respond(200,{});await post("forms_core.api.save_answers",{name:"S",changes:{a:1}},{keepalive:true});expect(vi.mocked(fetch).mock.calls[0][1]).toMatchObject({keepalive:true});});

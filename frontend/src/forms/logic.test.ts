@@ -1,0 +1,21 @@
+import { expect, it } from "vitest";
+import { visibleFieldIds, visibleSections, isRequired, errorsByField, fixedRowSeeds, displayValue } from "./logic";
+import type { Definition, FieldDef } from "./types";
+const a: FieldDef = { id: "f_a", key: "a", type: "text", label: "A" };
+const def: Definition = { schema: 1, sections: [{ id: "s_a", fields: [a, { ...a, id: "f_b", show: { field: "f_a", op: "eq", value: "Yes" } }, { ...a, id: "f_c", show: { field: "f_b", op: "not_empty" } }] }] };
+it("visibleFieldIds hides a chain once its first link is hidden", () => expect([...visibleFieldIds(def, { f_a: "No", f_b: "x", f_c: "y" })]).toEqual(["f_a"]));
+it("a hidden section hides its fields and drops their answers for later rules", () => { const d: Definition = { schema: 1, sections: [{ id: "s_a", show: { field: "x", op: "eq", value: true }, fields: [a] }, { id: "s_b", fields: [{ ...a, id: "f_b", show: { field: "f_a", op: "not_empty" } }] }] }; expect(visibleSections(d, { f_a: "x" })).toEqual([]); });
+it("required_when makes a field required", () => expect(isRequired({ ...a, required_when: { field: "x", op: "eq", value: 1 } }, { x: 1 })).toBe(true));
+it("errorsByField maps column errors to their table with the row number", () => { const d: Definition = { schema: 1, sections: [{ id: "s_a", fields: [{ ...a, type: "table", config: { columns: [{ id: "f_col", label: "Name", type: "text" }] } }] }] }; expect(errorsByField(d, [{ field: "f_col", row: "r_b", message: "Required" }, { field: null, row: null, message: "General" }], { f_a: [{ _row: "r_a" }, { _row: "r_b" }] })).toEqual({ byField: new Map([["f_a", "Row 2: Name: Required"]]), general: ["General"] }); });
+it("fixedRowSeeds fills untouched visible fixed tables", () => {
+	const d: Definition = { schema: 1, sections: [{ id: "s_a", fields: [{ ...a, type: "table", config: { fixed_rows: { column: "f_day", labels: ["Mon", "Tue"] } } }] }] }; const rows = fixedRowSeeds(d, {}).f_a as {
+		_row: string;
+		f_day: string;
+	}[]; expect(rows.map(r => r.f_day)).toEqual(["Mon", "Tue"]); expect(new Set(rows.map(r => r._row)).size).toBe(2); rows.forEach(r => expect(r._row).toMatch(/^r_[a-z0-9]{6}$/)); expect(fixedRowSeeds(d, { f_a: rows })).toEqual({});
+});
+it("displayValue uses context values only in preview", () => { const f = { ...a, fill_from: { value: "serial" } }; expect(displayValue(f, {}, { serial: "S" }, "preview")).toBe("S"); expect(displayValue(f, {}, { serial: "S" }, "fill")).toBeUndefined(); });
+import { checkComplete, progress } from "./logic";
+it("checkComplete mirrors the server", () => { const fields: FieldDef[] = [{ ...a, required: true }, { ...a, id: "f_box", type: "checkbox", required: true }, { ...a, id: "f_tick", type: "checkbox", config: { must_tick: true } }, { ...a, id: "f_multi", type: "multi_check", config: { min_selected: 2 } }, { ...a, id: "f_table", type: "table", config: { columns: [{ id: "f_col", type: "text", label: "Name", required: true }] } }, { ...a, id: "f_hide", required: true, show: { field: "none", op: "eq", value: true } }]; const d: Definition = { schema: 1, sections: [{ id: "s_a", fields }] }; const errors = checkComplete(d, { f_box: false, f_tick: false, f_multi: { selected: ["x"], other: null }, f_table: [{ _row: "r_b" }] }); expect(errors).toEqual([{ field: "f_a", row: null, message: "This field is required" }, { field: "f_tick", row: null, message: "This box must be ticked" }, { field: "f_multi", row: null, message: "Select at least 2" }, { field: "f_col", row: "r_b", message: "This field is required" }]); });
+it("progress counts required visible fields only", () => { const d: Definition = { schema: 1, sections: [{ id: "s_a", fields: [{ ...a, required: true }, { ...a, id: "f_b", required: true }] }] }; expect(progress(d, { f_a: "x" })).toBe(.5); expect(progress(def, {})).toBe(1); });
+import { screenHeader } from "./logic";
+it("screenHeader picks the job values", () => { expect(screenHeader({ customer_name: "Customer", item_name: "Machine", item_code: "CODE", serial_no: "SN", technician: "Tech" })).toEqual({ customer: "Customer", machine: "Machine", serial: "SN", technician: "Tech" }); expect(screenHeader({ item_code: "CODE" })).toEqual({ customer: null, machine: "CODE", serial: null, technician: null }); expect(screenHeader({})).toEqual({ customer: null, machine: null, serial: null, technician: null }); });

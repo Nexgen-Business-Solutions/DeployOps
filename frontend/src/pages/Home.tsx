@@ -1,4 +1,4 @@
-import { SlidersHorizontal } from "lucide-react";
+import { ClipboardList, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -9,6 +9,7 @@ import { CARD_COLORS, DEFAULT_COLOR } from "../lib/cards";
 import { useSession } from "../lib/session";
 import type { Card } from "../lib/types";
 import { useApi } from "../lib/useApi";
+import { isDesigner } from "../builder/api";
 
 function greeting(now: Date): string {
     const hour = now.getHours();
@@ -51,7 +52,8 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
                         : cards && (
                             <>
                                 {cards.map((card) => <CardTile key={card.id} card={card} />)}
-                                <SettingsTile />
+                                {isDesigner(me.roles, me.user) && <FormsTile />}
+                                {/* <SettingsTile /> */}
                             </>
                         )}
                 </ul>
@@ -79,6 +81,21 @@ function CardTile({ card }: { card: Card }) {
                 </span>
                 <span className="mt-4 text-sm font-semibold leading-tight md:text-[15px] text-gray-500">{card.title}</span>
                 <span className="mt-1 max-w-52 text-xs leading-snug text-muted md:text-[13px]">{card.subtitle}</span>
+            </Link>
+        </li>
+    );
+}
+
+/** Designers: the form builder. */
+function FormsTile() {
+    return (
+        <li>
+            <Link to="/builder" className="group flex flex-col items-center text-center">
+                <span className="relative grid size-28 place-items-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-200 transition group-hover:-translate-y-0.5 group-hover:shadow-md md:size-32">
+                    <ClipboardList className="size-10 md:size-12" strokeWidth={1.5} />
+                </span>
+                <span className="mt-4 text-sm font-semibold leading-tight md:text-[15px]">Forms</span>
+                <span className="mt-1 max-w-52 text-xs leading-snug text-muted md:text-[13px]">Design, publish and share forms</span>
             </Link>
         </li>
     );

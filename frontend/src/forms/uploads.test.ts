@@ -1,0 +1,4 @@
+import { expect, it } from "vitest";
+import { UploadTracker } from "./uploads";
+it("waits for active uploads and their answer callbacks before submitting", async () => { const counts: number[] = []; const tracker = new UploadTracker(n => counts.push(n)); let finish: ((url: string) => void) | undefined; let answer = ""; const uploading = tracker.run(() => new Promise<string>(r => { finish = r; })).then(url => { answer = url; }); let submitted = false; const submit = tracker.wait().then(() => { expect(answer).toBe("/private/files/sign.png"); submitted = true; }); await Promise.resolve(); expect(submitted).toBe(false); finish!("/private/files/sign.png"); await uploading; await submit; expect(counts).toEqual([1, 0]); });
+it("a refused upload releases the submit guard", async () => { const tracker = new UploadTracker(() => { }); await expect(tracker.run(async () => { throw new Error("refused"); })).rejects.toThrow("refused"); await tracker.wait(); });

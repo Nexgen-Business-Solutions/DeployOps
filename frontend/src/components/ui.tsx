@@ -187,7 +187,7 @@ export function Dialog({ open, title, children, onClose }: { open: boolean; titl
 	}, [open, onClose]);
 	if (!open) return null;
 	return (
-		<div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/30 backdrop-blur-[2px] sm:items-center" onClick={onClose}>
+		<div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/30 backdrop-blur-[2px] sm:items-start sm:pt-[8vh]" onClick={onClose}>
 			<div
 				role="dialog"
 				aria-modal="true"

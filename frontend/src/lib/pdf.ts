@@ -17,7 +17,8 @@ async function pdfjs() {
 }
 
 export function isPdf(url: string): boolean {
-	return url.toLowerCase().split("?")[0].endsWith(".pdf");
+	const parsed = new URL(url, "http://localhost");
+	return parsed.pathname.toLowerCase().endsWith(".pdf") || (parsed.searchParams.get("file") ?? "").toLowerCase().endsWith(".pdf");
 }
 
 /** The document at `url` (a private file: the session cookie is sent), loaded once per page view. */

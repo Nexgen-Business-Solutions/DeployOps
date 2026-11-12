@@ -3,10 +3,12 @@
 // full page and the sidebar's first link goes back to it. On phones and tablets the sidebar is a drawer
 // behind the menu button.
 
-import { House, LayoutDashboard, Menu, RefreshCw, X } from "lucide-react";
+import { ClipboardList, House, LayoutDashboard, Menu, RefreshCw, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 
+import { useSession } from "../lib/session";
+import { isDesigner } from "../builder/api";
 import { CardIcon } from "./CardIcon";
 import { CARD_COLORS, DEFAULT_COLOR } from "../lib/cards";
 import { ShellContext } from "../lib/shell";
@@ -37,9 +39,14 @@ export default function AppShell({ suite, onLogout }: { suite: boolean; onLogout
 		return () => window.removeEventListener("keydown", onKey);
 	}, [menuOpen]);
 
-	function refresh() {
+	function performRefresh() {
 		setRefreshKey((key) => key + 1); // remounts the screen, which reloads its data
 		void reload();
+	}
+
+	function refresh() {
+		const event = new CustomEvent("deployops-before-refresh", {cancelable: true, detail: {resume: performRefresh}});
+		if (window.dispatchEvent(event)) performRefresh();
 	}
 
 	return (
@@ -105,8 +112,10 @@ export default function AppShell({ suite, onLogout }: { suite: boolean; onLogout
 }
 
 function Sidebar({ suite, cards, loading }: { suite: boolean; cards: Card[] | null; loading: boolean }) {
+	const me = useSession();
 	return (
 		<nav className="flex flex-col gap-1 lg:pt-4">
+			{isDesigner(me.roles, me.user) && <Item to="/builder" icon={<ClipboardList className="size-[18px]" />}>Forms</Item>}
 			{suite ? (
 				<Item to="/" end icon={<LayoutDashboard className="size-[18px]" />}>
 					Overview

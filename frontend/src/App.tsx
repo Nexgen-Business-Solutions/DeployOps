@@ -1,6 +1,10 @@
 import { Loader2 } from "lucide-react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { useMemo } from "react";
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Navigate, Route } from "react-router";
 
+import Builder from "./builder/Builder";
+import FormsList from "./builder/FormsList";
+import { isDesigner } from "./builder/api";
 import AppShell from "./components/AppShell";
 import { Banner } from "./components/ui";
 import { logout } from "./lib/api";
@@ -11,6 +15,8 @@ import { useApi } from "./lib/useApi";
 import CardJobs from "./pages/CardJobs";
 import ChangePassword from "./pages/ChangePassword";
 import Form from "./pages/Form";
+import Submission from "./pages/Submission";
+import FillForm from "./pages/FillForm";
 import Home from "./pages/Home";
 import Job from "./pages/Job";
 import Login from "./pages/Login";
@@ -52,23 +58,25 @@ export default function App() {
         return <Login signedInAs={sessionUser()} />;
     }
 
-    return (
-        <SessionContext.Provider value={me}>
-            <BrowserRouter basename={APP_BASE}>
-                {/* Every screen has the header and sidebar. The landing screen is TrixaPOS-style Overview
-                    with the suite (trixapos_core installed); standalone it is the full-page home grid. */}
-                <Routes>
-                    {!me.suite && <Route path="/" element={<Home onLogout={signOut} />} />}
-                    <Route element={<AppShell suite={me.suite} onLogout={signOut} />}>
-                        {me.suite && <Route index element={<Overview />} />}
-                        <Route path="/c/:card" element={<CardJobs />} />
-                        <Route path="/job/:job" element={<Job />} />
-                        <Route path="/form/:doctype/:name" element={<Form />} />
-                        <Route path="/password" element={<ChangePassword />} />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </BrowserRouter>
-        </SessionContext.Provider>
-    );
+    return <SessionContext.Provider value={me}><SessionRouter me={me} signOut={signOut} /></SessionContext.Provider>;
+}
+
+function SessionRouter({me, signOut}: {me: Me; signOut: () => Promise<void>}) {
+    const router = useMemo(() => createBrowserRouter(createRoutesFromElements(
+        <>
+            {!me.suite && <Route path="/" element={<Home onLogout={signOut} />} />}
+            <Route element={<AppShell suite={me.suite} onLogout={signOut} />}>
+                {me.suite && <Route index element={<Overview />} />}
+                <Route path="/c/:card" element={<CardJobs />} />
+                <Route path="/job/:job" element={<Job />} />
+                <Route path="/form/:doctype/:name" element={<Form />} />
+                <Route path="/s/:name" element={<Submission />} />
+                <Route path="/f/:form" element={<FillForm />} />
+                {isDesigner(me.roles, me.user) && <><Route path="/builder" element={<FormsList />} /><Route path="/builder/:form" element={<Builder />} /></>}
+                <Route path="/password" element={<ChangePassword />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+    ), {basename: APP_BASE}), [me, signOut]);
+    return <RouterProvider router={router} />;
 }

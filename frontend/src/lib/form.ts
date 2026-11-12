@@ -122,3 +122,7 @@ export function toInputTime(value: Value | undefined): string {
 export function formPath(doctype: string, name: string): string {
 	return `/form/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`;
 }
+
+export function submissionPath(name: string): string {
+	return `/s/${encodeURIComponent(name)}`;
+}

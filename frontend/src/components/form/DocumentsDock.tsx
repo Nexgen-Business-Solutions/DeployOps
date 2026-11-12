@@ -6,12 +6,12 @@ import { BookOpen, Download, FileText, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { uniqueDocuments } from "../../lib/references";
-import type { Reference, Section } from "../../lib/types";
+import type { Reference } from "../../lib/types";
 import { PdfViewer } from "./PdfViewer";
 import { usePdfPreview } from "./usePdfPreview";
 
 /** `raised` lifts the button above the form's Submit bar. */
-export function DocumentsDock({ references, sections, raised = false }: { references: Reference[]; sections: Section[]; raised?: boolean }) {
+export function DocumentsDock({ references, sections, raised = false }: { references: Reference[]; sections: {name: string; label: string}[]; raised?: boolean }) {
 	const [open, setOpen] = useState(false);
 
 	useEffect(() => {

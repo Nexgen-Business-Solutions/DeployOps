@@ -1,12 +1,15 @@
+import type { FormError } from "../forms/types";
 // Thin wrapper around Frappe's REST API (same approach as Trixapos: plain fetch, no SDK).
 // Every rule is enforced on the server; this only sends requests and turns errors into messages.
 
 export class ApiError extends Error {
 	status: number;
+	formErrors: FormError[] | null;
 
-	constructor(message: string, status: number) {
+	constructor(message: string, status: number, formErrors: FormError[] | null = null) {
 		super(message);
 		this.status = status;
+		this.formErrors = formErrors;
 	}
 }
 
@@ -38,6 +41,7 @@ export function plainText(html: string): string {
 }
 
 type FrappeBody = {
+	form_errors?: FormError[];
 	message?: unknown;
 	exc_type?: string;
 	exception?: string;
@@ -77,7 +81,7 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
 	} catch {
 		body = null;
 	}
-	if (!response.ok) throw new ApiError(errorMessage(body, response.status), response.status);
+	if (!response.ok) throw new ApiError(errorMessage(body, response.status), response.status, body?.form_errors ?? null);
 	return body?.message as T;
 }
 
@@ -99,9 +103,10 @@ export function get<T>(method: string, args: Record<string, unknown> = {}): Prom
 }
 
 /** POST a whitelisted method (anything that changes data). */
-export function post<T>(method: string, args: Record<string, unknown> = {}): Promise<T> {
+export function post<T>(method: string, args: Record<string, unknown> = {}, options: {keepalive?: boolean} = {}): Promise<T> {
 	return request<T>(`/api/method/${method}`, {
 		method: "POST",
+		...options,
 		headers: {
 			Accept: "application/json",
 			"Content-Type": "application/json",
@@ -121,6 +126,18 @@ export async function login(usr: string, pwd: string): Promise<void> {
 
 export async function logout(): Promise<void> {
 	await post("logout");
+}
+
+/** POST a file (multipart field `file`) plus fields to a whitelisted method; returns its result. */
+export async function uploadTo<T>(method: string, file: Blob, filename: string, fields: Record<string, string> = {}): Promise<T> {
+	const form = new FormData();
+	form.append("file", file, filename);
+	for (const [key, value] of Object.entries(fields)) form.append(key, value);
+	return request<T>(`/api/method/${method}`, {
+		method: "POST",
+		headers: { Accept: "application/json", "X-Frappe-CSRF-Token": csrfToken() },
+		body: form,
+	});
 }
 
 /** Upload a file as a private attachment of a document; returns its URL. */
