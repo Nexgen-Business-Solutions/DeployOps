@@ -13,6 +13,8 @@ required_apps = ["erpnext", "forms_core"]
 # v2 forms (forms_core): jobs are a form context, and Managers and Administrators design forms.
 forms_core_context_providers = {"DeployOps Job": "deployops.forms.provider.JobFormProvider"}
 forms_core_designer_roles = ["DeployOps Manager", "DeployOps Administrator"]
+# Staff may fill forms with no context from their share link (many entries per link).
+forms_core_no_context_roles = ["DeployOps Technician", "DeployOps Supervisor"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

@@ -389,3 +389,84 @@ def report_rows(form: str, job: str | None = None, start: int = 0, page_length: 
 		"start": start,
 		"page_length": page_length,
 	}
+
+
+@frappe.whitelist(methods=["GET"])
+def form_rule_counts() -> dict[str, int]:
+	"""Active rule counts for the designer's forms list."""
+	from forms_core.permissions import require_designer
+
+	require_designer()
+	counts = {}
+	for row in frappe.get_all(RULE, filters={"active": 1}, fields=["form"]):
+		counts[row.form] = counts.get(row.form, 0) + 1
+	return counts
+
+
+@frappe.whitelist(methods=["GET"])
+def submission_pdf(name: str, audience: str = "internal"):
+	"""The PDF of a submitted form entry, for whoever may read the entry; every download is logged."""
+	from frappe.core.doctype.access_log.access_log import make_access_log
+
+	from deployops.forms import report
+
+	require_deployops_role()
+	doc = frappe.get_doc(SUBMISSION, name)
+	doc.check_permission("read")
+	content = report.render_pdf(doc, audience)
+	make_access_log(doctype=SUBMISSION, document=doc.name, file_type="PDF", method=f"Report: {audience}")
+	suffix = "-customer" if audience == "customer" else ""
+	frappe.local.response.filename = f"{doc.name}{suffix}.pdf"
+	frappe.local.response.filecontent = content
+	frappe.local.response.type = "pdf"
+
+
+# Form Rules from the builder (designers): which jobs and machines get a job form.
+
+RULE_FIELDS = ["name", "job_type", "equipment_category", "required", "active", "sort_order"]
+
+
+def _require_designer():
+	from forms_core.permissions import require_designer
+
+	require_designer()
+
+
+@frappe.whitelist(methods=["GET"])
+def form_rules(form: str) -> dict:
+	"""The form's rules, the choices for a new one, and how many open jobs each rule reaches."""
+	_require_designer()
+	rules = frappe.get_all(RULE, filters={"form": form}, fields=RULE_FIELDS, order_by="job_type, equipment_category")
+	for rule in rules:
+		rule["open_jobs"] = frappe.db.sql(
+			"""select count(distinct df.parent) from `tabDeployOps Job Device Form` df
+			join `tabDeployOps Job` j on j.name = df.parent
+			where df.form = %s and df.origin = 'Rule' and ifnull(df.removed, 0) = 0 and j.job_type = %s
+			and j.status not in ('Completed', 'Cancelled')""",
+			(form, rule.job_type),
+		)[0][0] if rule.active else 0
+	job_types = [o for o in (frappe.get_meta(JOB).get_field("job_type").options or "").split("\n") if o]
+	return {
+		"rules": rules,
+		"job_types": job_types,
+		"categories": frappe.get_all("DeployOps Equipment Category", pluck="name", order_by="name"),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def save_form_rule(form: str, job_type: str, equipment_category: str, required=1, active=1, name: str | None = None) -> str:
+	"""Create or change a rule; the rule's own checks apply and open jobs are re-planned."""
+	_require_designer()
+	doc = frappe.get_doc(RULE, name) if name else frappe.new_doc(RULE)
+	if name and doc.form != form:
+		frappe.throw(_("This rule belongs to another form."), frappe.PermissionError)
+	doc.update({"form": form, "job_type": job_type, "equipment_category": equipment_category,
+		"required": cint(required), "active": cint(active)})
+	doc.save(ignore_permissions=True)
+	return doc.name
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_form_rule(name: str) -> None:
+	_require_designer()
+	frappe.delete_doc(RULE, name, ignore_permissions=True)

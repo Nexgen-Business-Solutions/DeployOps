@@ -1,5 +1,6 @@
 """The forms_core context provider for DeployOps jobs (v2 Plan 3, spec §7.1)."""
 
+import re
 from typing import Any
 
 import frappe
@@ -51,6 +52,15 @@ VALUES = (
 )
 
 
+def _plain(html: str | None) -> str | None:
+	"""ERPNext's address/contact display is HTML; forms show plain text, one line per line."""
+	if not html:
+		return None
+	text = frappe.utils.strip_html(re.sub(r"<br\s*/?>", "\n", html))
+	lines = [line.strip() for line in text.splitlines()]
+	return "\n".join(line for line in lines if line) or None
+
+
 class JobFormProvider(ContextProvider):
 	def values(self, context_name: str, context_row: str | None) -> dict[str, Any]:
 		job = (
@@ -87,8 +97,8 @@ class JobFormProvider(ContextProvider):
 			"job_type": job.job_type,
 			"customer": job.customer,
 			"customer_name": job.customer_name,
-			"address": job.address_display,
-			"contact": job.contact_display,
+			"address": _plain(job.address_display),
+			"contact": _plain(job.contact_display),
 			"company": job.company,
 			"planned_date": str(job.planned_date) if job.planned_date else None,
 			"technician": frappe.db.get_value("User", technician, "full_name") if technician else None,
