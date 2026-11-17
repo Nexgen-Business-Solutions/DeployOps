@@ -14,7 +14,7 @@ export function SignatureInput({ field, value, disabled, ctx, onChange }: FieldI
 			onChange(null);
 			return;
 		} setBusy(true); setError(null); try {
-			onChange({ file: ctx.upload ? await ctx.upload(dataUrlToBlob(url), `signature-${field.id}.png`) : url });
+			onChange({ file: ctx.upload ? await ctx.upload(dataUrlToBlob(url), `signature-${field.id}.png`, field.id) : url });
 		}
 		catch (e) {
 			setError(e instanceof Error ? e.message : "Signature could not be uploaded.");

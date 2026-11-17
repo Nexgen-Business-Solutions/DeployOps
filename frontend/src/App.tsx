@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { createBrowserRouter, createRoutesFromElements, RouterProvider, Navigate, Route } from "react-router";
 
 import Builder from "./builder/Builder";
@@ -21,6 +21,7 @@ import Home from "./pages/Home";
 import Job from "./pages/Job";
 import Login from "./pages/Login";
 import Overview from "./pages/Overview";
+import { isFillPath, outsideFill } from "./pages/fillRoutes";
 
 function sessionUser(): string | undefined {
     const match = document.cookie.match(/(?:^|;\s*)user_id=([^;]*)/);
@@ -29,6 +30,27 @@ function sessionUser(): string | undefined {
 }
 
 export default function App() {
+    // Share links work without a DeployOps role (or any login): their own router, no app shell.
+    return isFillPath(window.location.pathname) ? <FillRouter /> : <SignedInApp />;
+}
+
+function FillRouter() {
+    const router = useMemo(() => createBrowserRouter(createRoutesFromElements(
+        <>
+            <Route path="/f/:form" element={<FillForm />} />
+            <Route path="/f/:form/entry/:name" element={<Submission bare />} />
+            <Route path="*" element={<LeaveFill />} />
+        </>
+    ), {basename: APP_BASE}), []);
+    return <RouterProvider router={router} />;
+}
+
+function LeaveFill() {
+    useEffect(() => {window.location.assign(outsideFill());}, []);
+    return null;
+}
+
+function SignedInApp() {
     const { data: me, error, loading } = useApi<Me>("deployops.api.technician.me");
 
     async function signOut() {
@@ -71,7 +93,6 @@ function SessionRouter({me, signOut}: {me: Me; signOut: () => Promise<void>}) {
                 <Route path="/job/:job" element={<Job />} />
                 <Route path="/form/:doctype/:name" element={<Form />} />
                 <Route path="/s/:name" element={<Submission />} />
-                <Route path="/f/:form" element={<FillForm />} />
                 {isDesigner(me.roles, me.user) && <><Route path="/builder" element={<FormsList />} /><Route path="/builder/:form" element={<Builder />} /></>}
                 <Route path="/password" element={<ChangePassword />} />
             </Route>

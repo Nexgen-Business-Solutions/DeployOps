@@ -3,8 +3,9 @@ import { useState } from "react";
 import type { Definition, FormError } from "../forms/types";
 import { ApiError } from "../lib/api";
 import { publishChecked } from "./safety";
-import { read, shareUrl, write, type FormRecord } from "./api";
-import { Alert, Btn, Modal, ShareLink } from "./kit";
+import { read, write, type FormRecord } from "./api";
+import { Alert, Btn, Modal } from "./kit";
+import { SharePanel } from "./ShareSettings";
 
 export type PublishCheck = {modified: string; errors: FormError[]; summary: {added: string[]; removed: string[]; changed: string[]}; drafts_on_older: Record<string, number>};
 
@@ -55,8 +56,7 @@ export function Publish({record, check, definition, flush, onSelect, onPublished
 	function finish() {void onPublished(); onClose();}
 	if (published) return <Modal open size="md" title={<span className="flex items-center gap-2"><PartyPopper className="size-5 text-emerald-600" />Version {nextVersion} is live</span>} onClose={finish} footer={<Btn tone={standalone ? "primary" : "secondary"} onClick={finish}>Done</Btn>}>
 		{standalone ? <div className="space-y-4">
-			<p className="text-sm text-slate-600">Share this link with your team. Each person who opens it can submit a new entry, as many times as needed. Answers show up under <strong>Entries</strong>.</p>
-			<ShareLink url={shareUrl(record.name)} title={record.title} />
+			<SharePanel form={record.name} title={record.title} />
 		</div> : <div className="space-y-4 text-sm text-slate-600">
 			<p>Jobs that already use this checklist get this version for machines that haven't started it yet. To choose which job types and equipment get it, add a rule.</p>
 			<Btn tone="primary" icon={<ChevronRight className="size-4" />} onClick={() => {onChooseJobs?.(); finish();}}>Choose which jobs get it</Btn>

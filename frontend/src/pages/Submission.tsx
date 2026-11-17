@@ -13,16 +13,25 @@ import { toDocuments } from "../forms/references";
 import type { Answers, FormError, SubmissionView } from "../forms/types";
 import { ApiError, post, uploadPrivateFile } from "../lib/api";
 import { useApi } from "../lib/useApi";
-export default function Submission() {
+import { APP_BASE } from "../lib/paths";
+import { entryPath } from "./fillRoutes";
+/** `bare`: opened from a share link (/f/<form>/entry/<name>), outside the signed-in app shell. */
+export default function Submission({ bare = false }: { bare?: boolean }) {
 	const { name = "" } = useParams();
 	const { data, error, loading, reload } = useApi<SubmissionView>("forms_core.api.get_submission", { name });
-	if (!data || data.name !== name)
-		return <><TopBar title="Form" back="/" /><Page>{error ? <Banner>{error.message}</Banner> : loading ? <Skeleton /> : null}</Page></>;
-	return <LoadedSubmission key={`${data.name}-${data.docstatus}`} data={data} reload={reload} />;
+	const shareEntry = !!data && data.name === name && !data.context_doctype;
+	useEffect(() => {
+		// A share-form entry lives under its share link, which the app shell's router doesn't serve.
+		if (shareEntry && !bare && data) window.location.replace(`${APP_BASE}${entryPath(data.form, data.name)}`);
+	}, [shareEntry, bare, data]);
+	if (!data || data.name !== name || (shareEntry && !bare))
+		return <><TopBar title="Form" back="/" /><Page>{error ? <Banner>{error.message}</Banner> : loading || shareEntry ? <Skeleton /> : null}</Page></>;
+	return <LoadedSubmission key={`${data.name}-${data.docstatus}`} data={data} reload={reload} bare={bare} />;
 }
-function LoadedSubmission({ data, reload }: {
+function LoadedSubmission({ data, reload, bare }: {
 	data: SubmissionView;
 	reload: () => Promise<void>;
+	bare: boolean;
 }) {
 	const editable = data.can_write && data.docstatus === 0;
 	const [values, setValues] = useState<Answers>(() => ({ ...data.answers, ...(editable ? fixedRowSeeds(data.definition, data.answers) : {}) }));
@@ -118,7 +127,7 @@ function LoadedSubmission({ data, reload }: {
 	const header = screenHeader(data.context_values), done = progress(data.definition, values), mapped = errorsByField(data.definition, problems, values), documents = toDocuments(data.references, data.definition);
 	const back = data.context_doctype === "DeployOps Job" && data.context_name ? `/job/${encodeURIComponent(data.context_name)}` : !data.context_doctype ? `/f/${encodeURIComponent(data.form)}` : "/";
 	return <><TopBar title={data.title} subtitle={`${data.name}${header.customer ? ` · ${header.customer}` : ""}`} back={back} right={editable ? <span className="text-sm text-muted">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "offline" ? "Offline" : ""}</span> : undefined} progress={editable ? done : undefined} />
-		<Page className={editable ? "pb-36" : "pb-24"}><header><p className="font-mono text-xs text-muted">{data.name} · Form v{data.version_no}</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">{data.title}</h1><dl className="mt-6 grid grid-cols-2 gap-4">{Object.entries(header).map(([key, value]) => <div key={key}><dt className="text-xs capitalize text-muted">{key}</dt><dd className="font-medium">{value ?? "—"}</dd></div>)}</dl></header><div className="mt-6 space-y-3">{data.docstatus === 1 && <Banner kind="success">Submitted on {data.submitted_on ? new Date(data.submitted_on.replace(" ", "T")).toLocaleString("en-GB") : "—"} by {data.submitted_by ?? "—"}. This form is locked.</Banner>}{data.docstatus === 1 && <div className="flex flex-wrap gap-2"><a href={pdfUrl(data.name, "internal")} className="inline-flex h-11 items-center gap-2 rounded-full bg-zinc-100 px-5 text-sm font-medium hover:bg-zinc-200"><FileDown className="size-4" />Download PDF</a><a href={pdfUrl(data.name, "customer")} className="inline-flex h-11 items-center gap-2 rounded-full bg-zinc-100 px-5 text-sm font-medium hover:bg-zinc-200"><FileDown className="size-4" />Customer copy</a></div>}{data.docstatus === 1 && !data.context_doctype && <Link to={`/f/${encodeURIComponent(data.form)}`} className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600"><Plus className="size-4" />Fill in another entry</Link>}{data.docstatus === 2 && <Banner kind="warning">This form was cancelled.</Banner>}{data.amended_from && <Banner kind="warning">This form amends {data.amended_from}.</Banner>}{saveState === "offline" && <Banner kind="warning">You're offline. Changes are kept on this page and saved when you're back online.</Banner>}{saveState === "error" && saveError && <Banner>{saveError.message}</Banner>}{mapped.byField.size > 0 && <Banner>{mapped.byField.size} answers still needed.</Banner>}{mapped.general.map((message, i) => <Banner key={i}>{message}</Banner>)}</div>
+		<Page className={editable ? "pb-36" : "pb-24"}><header><p className="font-mono text-xs text-muted">{data.name} · Form v{data.version_no}</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">{data.title}</h1><dl className="mt-6 grid grid-cols-2 gap-4">{Object.entries(header).map(([key, value]) => <div key={key}><dt className="text-xs capitalize text-muted">{key}</dt><dd className="font-medium">{value ?? "—"}</dd></div>)}</dl></header><div className="mt-6 space-y-3">{data.docstatus === 1 && <Banner kind="success">Submitted on {data.submitted_on ? new Date(data.submitted_on.replace(" ", "T")).toLocaleString("en-GB") : "—"} by {data.submitted_by ?? "—"}. This form is locked.</Banner>}{data.docstatus === 1 && !bare && <div className="flex flex-wrap gap-2"><a href={pdfUrl(data.name, "internal")} className="inline-flex h-11 items-center gap-2 rounded-full bg-zinc-100 px-5 text-sm font-medium hover:bg-zinc-200"><FileDown className="size-4" />Download PDF</a><a href={pdfUrl(data.name, "customer")} className="inline-flex h-11 items-center gap-2 rounded-full bg-zinc-100 px-5 text-sm font-medium hover:bg-zinc-200"><FileDown className="size-4" />Customer copy</a></div>}{data.docstatus === 1 && !data.context_doctype && <Link to={`/f/${encodeURIComponent(data.form)}`} className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600"><Plus className="size-4" />Fill in another entry</Link>}{data.docstatus === 2 && <Banner kind="warning">This form was cancelled.</Banner>}{data.amended_from && <Banner kind="warning">This form amends {data.amended_from}.</Banner>}{saveState === "offline" && <Banner kind="warning">You're offline. Changes are kept on this page and saved when you're back online.</Banner>}{saveState === "error" && saveError && <Banner>{saveError.message}</Banner>}{mapped.byField.size > 0 && <Banner>{mapped.byField.size} answers still needed.</Banner>}{mapped.general.map((message, i) => <Banner key={i}>{message}</Banner>)}</div>
 			<FormRenderer definition={data.definition} answers={values} errors={mapped.byField} references={data.references} ctx={{ mode: editable ? "fill" : "readonly", values: data.context_values, ...(editable ? { upload: (file: Blob, filename: string) => uploads.run(() => uploadPrivateFile(file, filename, "Form Submission", data.name)) } : {}) }} onChange={change} /></Page>
 		<DocumentsDock {...documents} raised={editable} />{data.can_submit && data.docstatus === 0 && <footer className="fixed bottom-0 left-(--shell-left) right-0 z-30 bg-white px-5 py-4"><div className="mx-auto flex max-w-[52rem] items-center gap-3"><span className="text-sm text-muted">{Math.round(done * 100)}%</span><Button className="flex-1" disabled={uploadCount > 0 || submitting} onClick={() => void trySubmit()}>Submit form</Button></div></footer>}
 		<ActionDialog open={confirmOpen} title="Submit form?" needsReason={false} warning="The answers are locked once submitted." confirmLabel="Submit form" busy={submitting} error={submitError} onConfirm={() => void submit()} onClose={() => setConfirmOpen(false)} /></>;

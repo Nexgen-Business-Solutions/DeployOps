@@ -2,7 +2,8 @@ import { Briefcase, FileJson, FileSpreadsheet, FileText, Link2, UploadCloud } fr
 import { useState } from "react";
 import { duplicateForm } from "./safety";
 import { JOB_CONTEXT, download, entriesExportUrl, fileDownload, read, shareUrl, write, type EntryFilter } from "./api";
-import { Alert, Btn, ChoiceCards, Modal, ShareLink, TextField } from "./kit";
+import { Alert, Btn, ChoiceCards, Modal, TextField } from "./kit";
+import { SharePanel } from "./ShareSettings";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 type Kind = "standalone" | "job";
@@ -98,8 +99,8 @@ export function ExportDialog({open, form, title, hasEntries, initial = "xlsx", f
 
 export function ShareDialog({open, form, title, onClose}: {open: boolean; form: string; title: string; onClose: () => void}) {
 	const url = shareUrl(form);
-	return <Modal open={open} title="Share form" description="Anyone on your team with a DeployOps login can open this link. Each visit starts a new entry." onClose={onClose} footer={<><a className="mr-auto text-sm font-medium text-brand-600 hover:underline" href={url} target="_blank" rel="noreferrer">Open form ↗</a><Btn onClick={onClose}>Done</Btn></>}>
-		<ShareLink url={url} title={title} />
+	return <Modal open={open} title="Share form" onClose={onClose} footer={<><a className="mr-auto text-sm font-medium text-brand-600 hover:underline" href={url} target="_blank" rel="noreferrer">Open form ↗</a><Btn tone="primary" onClick={onClose}>Done</Btn></>}>
+		{open && <SharePanel form={form} title={title} />}
 	</Modal>;
 }
 

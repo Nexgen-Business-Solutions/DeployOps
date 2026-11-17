@@ -25,7 +25,7 @@ export function FilesInput({ field, value, disabled, ctx, onChange, inputId }: F
 					continue;
 				const blob = photos ? await resizeImage(file) : file;
 				const filename = blob === file ? file.name : file.name.replace(/\.[^.]+$/, "") + ".jpg";
-				const url = ctx.upload ? await ctx.upload(blob, filename) : URL.createObjectURL(blob);
+				const url = ctx.upload ? await ctx.upload(blob, filename, field.id) : URL.createObjectURL(blob);
 				if (!ctx.upload)
 					urls.current.push(url);
 				latest.current = [...latest.current, { file: url, caption: null }];
@@ -51,3 +51,4 @@ export function FilesInput({ field, value, disabled, ctx, onChange, inputId }: F
 		<p className="mt-2 text-sm text-muted">{entries.length} of {Number(c.min ?? 0)} minimum{!ctx.upload && ctx.mode === "preview" ? " · Uploads are off in preview" : ""}</p>{error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 	</div>;
 }
+

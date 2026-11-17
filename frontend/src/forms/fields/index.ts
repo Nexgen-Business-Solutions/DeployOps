@@ -11,7 +11,8 @@ export type { RenderMode } from "../types";
 export type RenderContext = {
 	mode: RenderMode;
 	values: Record<string, unknown>;
-	upload?: (file: Blob, filename: string) => Promise<string>;
+	/** `fieldId`: the field the file is for (public forms need it). */
+	upload?: (file: Blob, filename: string, fieldId?: string) => Promise<string>;
 };
 export type FieldInputProps = {
 	field: FieldDef | ColumnDef;
